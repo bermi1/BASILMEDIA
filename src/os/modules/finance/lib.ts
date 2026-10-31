@@ -36,10 +36,12 @@ export interface Expense { id: string; date: string; amount: number; category: s
 export interface LineItem { title: string; detail: string; qty: number; unit_price: number }
 export interface Instalment { label: string; pct: number; due: string }
 export type InvStatus = 'draft' | 'sent' | 'viewed' | 'partially_paid' | 'paid' | 'overdue' | 'cancelled';
-export interface Invoice { id: string; number: string; client_id: string | null; project_id: string | null; quotation_id: string | null; title: string; po_ref: string; items: LineItem[]; discount: number; vat_on: boolean; vat_rate: number; deposit: number; schedule: Instalment[]; issue_date: string; due_date: string; status: InvStatus; sent_at: string | null; viewed_at: string | null; paid_at: string | null; cancelled_at: string | null; notes: string; terms: string; created_at: string }
+export interface Invoice { id: string; number: string; client_id: string | null; project_id: string | null; quotation_id: string | null; proforma_id?: string | null; title: string; po_ref: string; items: LineItem[]; discount: number; vat_on: boolean; vat_rate: number; deposit: number; schedule: Instalment[]; issue_date: string; due_date: string; status: InvStatus; sent_at: string | null; viewed_at: string | null; paid_at: string | null; cancelled_at: string | null; notes: string; terms: string; created_at: string }
 export interface Payment { id: string; invoice_id: string; amount: number; paid_on: string; method: string; reference: string; account_id: string | null; receipt_no: string; is_deposit: boolean; created_at: string }
 export type QuoStatus = 'draft' | 'sent' | 'viewed' | 'accepted' | 'declined' | 'expired';
 export interface Quotation { id: string; number: string; client_id: string | null; project_id: string | null; prospect: string; title: string; items: LineItem[]; discount: number; vat_on: boolean; vat_rate: number; issue_date: string; valid_until: string; status: QuoStatus; sent_at: string | null; viewed_at: string | null; accepted_at: string | null; declined_at: string | null; invoice_id: string | null; notes: string; created_at: string }
+export type ProStatus = 'draft' | 'sent' | 'accepted' | 'expired' | 'cancelled';
+export interface Proforma { id: string; number: string; client_id: string | null; project_id: string | null; quotation_id: string | null; prospect: string; title: string; items: LineItem[]; discount: number; vat_on: boolean; vat_rate: number; issue_date: string; valid_until: string; status: ProStatus; sent_at: string | null; accepted_at: string | null; cancelled_at: string | null; invoice_id: string | null; notes: string; terms: string; created_at: string }
 export interface PriceItem { id: string; name: string; detail: string; unit: string; unit_price: number; active: boolean }
 export interface Category { id: string; name: string; active: boolean; sort_order: number }
 export interface SalaryProfile { id: string; user_id: string; full_name: string; title: string; basic: number; allowances: number; deductions: number; pay_method: string; pay_account: string; active: boolean }
@@ -90,7 +92,7 @@ export const DEFAULT_SETTINGS: FinSettings = {
   approval_limits: { gm_cfo_alone_below: 50000, boss_required_from: 50000, gm_cfo_daily_cap: 1000000 },
   vat_rate: 18,
   statutory_rates: { nssf_employee: 10, nssf_employer: 10, wcf: 0.5, sdl: 3.5, paye_bands: [[270000, 0], [520000, 8], [760000, 20], [1000000, 25], [null, 30]] },
-  numbering: { invoice: 'BM-INV-{YYYY}-{0000}', quotation: 'BM-QUO-{YYYY}-{0000}', request: 'BM-REQ-{0000}', receipt: 'BM-RCT-{YYYY}-{0000}' },
+  numbering: { invoice: 'BM-INV-{YYYY}-{0000}', quotation: 'BM-QUO-{YYYY}-{0000}', proforma: 'BM-PF-{YYYY}-{0000}', request: 'BM-REQ-{0000}', receipt: 'BM-RCT-{YYYY}-{0000}' },
   retirement_days: 3,
   block_on_unretired: true,
 };
@@ -122,7 +124,7 @@ export async function saveSetting(key: string, value: unknown) {
 }
 
 // ---------------------------------------------------------------- numbering (demo)
-export function nextNumber(kind: 'invoice' | 'quotation' | 'request' | 'receipt', existing: string[], fmtOverride?: string) {
+export function nextNumber(kind: 'invoice' | 'quotation' | 'proforma' | 'request' | 'receipt', existing: string[], fmtOverride?: string) {
   const fmt = fmtOverride ?? settingsNow().numbering[kind] ?? DEFAULT_SETTINGS.numbering[kind];
   const yr = String(new Date().getFullYear());
   const prefix = fmt.split('{0000}')[0].replace('{YYYY}', yr);
@@ -168,6 +170,15 @@ export function quotationStatus(q: Quotation): QuoStatus {
   if (['draft', 'sent', 'viewed'].includes(q.status) && q.valid_until < today()) return 'expired';
   return q.status;
 }
+/** Effective proforma status: past its validity (and not invoiced) reads as expired. */
+export function proformaStatus(p: Proforma): ProStatus {
+  if (['draft', 'sent'].includes(p.status) && !p.invoice_id && p.valid_until < today()) return 'expired';
+  return p.status;
+}
+/** Who may raise and convert money documents (mirrors the SQL convert functions). */
+export const MONEY_DOC_ROLES: AppRole[] = ['gm_cfo', 'finance', 'boss'];
+/** Who may record a client payment against an invoice (Finance, and the GM/CFO who owns money documents). */
+export const PAYMENT_ROLES: AppRole[] = ['finance', 'gm_cfo'];
 
 export function paye(taxable: number, bands: [number | null, number][]) {
   let lo = 0, tax = 0;
@@ -531,7 +542,7 @@ export function reconcileRequest(id: string, decision: 'ok' | 'query', comment: 
 // ---------------------------------------------------------------- invoices (demo twins of the SQL triggers)
 export async function recordPayment(inv: Invoice, p: { amount: number; paid_on: string; method: string; reference: string; account_id: string | null; is_deposit: boolean }, actor: Actor) {
   if (supabase) return insertRow('invoice_payments', { invoice_id: inv.id, ...p });
-  if (actor.role !== 'finance') throw new Error('Only Finance records payments');
+  if (!PAYMENT_ROLES.includes(actor.role)) throw new Error('Only Finance or the GM/CFO records payments');
   const pays = demoTable('invoice_payments') as unknown as Payment[];
   const receipt_no = nextNumber('receipt', pays.map((x) => x.receipt_no));
   const row = await insertRow<Payment>('invoice_payments', { invoice_id: inv.id, ...p, receipt_no, recorded_by: actor.userId });
@@ -540,6 +551,60 @@ export async function recordPayment(inv: Invoice, p: { amount: number; paid_on: 
   const total = docTotals(inv).total;
   await updateRow('invoices', inv.id, { status: paid >= total ? 'paid' : 'partially_paid', paid_at: paid >= total ? nowIso() : null });
   return row;
+}
+
+// ---------------------------------------------------------------- proformas (demo twins of 0013_proforma.sql)
+const proTable = () => demoTable('proformas') as unknown as Proforma[];
+export const PROFORMA_TERMS = 'Payment by bank transfer or mobile money. Quote the proforma number as reference.';
+
+/** Quotation → proforma: copies client, lines and VAT, marks the quotation accepted. Returns the proforma id. */
+export function convertQuotationToProforma(quotationId: string, actor: Actor, validUntil?: string) {
+  return rpc<string>('convert_quotation_to_proforma', { _quotation_id: quotationId, _valid_until: validUntil ?? null }, () => {
+    need(MONEY_DOC_ROLES.includes(actor.role), 'Only the GM/CFO or Finance can raise a proforma');
+    const q = (demoTable('quotations') as unknown as Quotation[]).find((x) => x.id === quotationId);
+    need(!!q, 'Quotation not found');
+    need(['sent', 'viewed', 'accepted'].includes(q!.status), `Only a sent or accepted quotation can become a proforma (this one is ${STATUS_LABEL[q!.status] ?? q!.status})`);
+    need(!q!.invoice_id, 'This quotation is already invoiced');
+    need(!proTable().some((p) => p.quotation_id === quotationId && p.status !== 'cancelled'), 'This quotation already has a proforma');
+    need(q!.items.length > 0, 'The quotation has no line items');
+    const id = newId();
+    proTable().push({
+      id, number: nextNumber('proforma', proTable().map((p) => p.number)), client_id: q!.client_id, project_id: q!.project_id, quotation_id: q!.id, prospect: q!.prospect, title: q!.title,
+      items: structuredClone(q!.items), discount: q!.discount, vat_on: q!.vat_on, vat_rate: q!.vat_rate, issue_date: today(), valid_until: validUntil ?? addDays(today(), 30), status: 'draft',
+      sent_at: null, accepted_at: null, cancelled_at: null, invoice_id: null, notes: q!.notes ?? '', terms: PROFORMA_TERMS, created_at: nowIso(),
+    });
+    Object.assign(q!, { status: 'accepted', accepted_at: q!.accepted_at ?? nowIso() });
+    return id;
+  });
+}
+
+/** Proforma → tax invoice (draft, 50/50 schedule, proforma and quotation linked). Returns the invoice id. */
+export function convertProformaToInvoice(id: string, actor: Actor, dueDate?: string) {
+  return rpc<string>('convert_proforma_to_invoice', { _id: id, _due_date: dueDate ?? null }, () => {
+    need(MONEY_DOC_ROLES.includes(actor.role), 'Only the GM/CFO or Finance can raise an invoice');
+    const p = proTable().find((x) => x.id === id);
+    need(!!p, 'Proforma not found');
+    need(!p!.invoice_id, 'This proforma is already invoiced');
+    need(['sent', 'accepted'].includes(p!.status), `Send the proforma before invoicing it (this one is ${STATUS_LABEL[p!.status] ?? p!.status})`);
+    need(!!p!.client_id, `Add ${p!.prospect || 'the prospect'} as a client before invoicing`);
+    need(p!.items.length > 0, 'The proforma has no line items');
+    const due = dueDate ?? addDays(today(), 14);
+    const total = docTotals(p!).total;
+    const invs = demoTable('invoices') as unknown as Invoice[];
+    const inv: Invoice = {
+      id: newId(), number: nextNumber('invoice', invs.map((x) => x.number)), client_id: p!.client_id, project_id: p!.project_id, quotation_id: p!.quotation_id, proforma_id: p!.id,
+      title: p!.title, po_ref: '', items: structuredClone(p!.items), discount: p!.discount, vat_on: p!.vat_on, vat_rate: p!.vat_rate, deposit: Math.round(total / 2),
+      schedule: [{ label: 'Deposit', pct: 50, due }, { label: 'On delivery', pct: 50, due: addDays(due, 31) }], issue_date: today(), due_date: due, status: 'draft',
+      sent_at: null, viewed_at: null, paid_at: null, cancelled_at: null, notes: p!.notes, terms: p!.terms, created_at: nowIso(),
+    };
+    invs.push(inv);
+    Object.assign(p!, { status: 'accepted', accepted_at: p!.accepted_at ?? nowIso(), invoice_id: inv.id });
+    if (p!.quotation_id) {
+      const q = (demoTable('quotations') as unknown as Quotation[]).find((x) => x.id === p!.quotation_id);
+      if (q && !q.invoice_id) q.invoice_id = inv.id;
+    }
+    return inv.id;
+  });
 }
 
 // ---------------------------------------------------------------- payroll workflow

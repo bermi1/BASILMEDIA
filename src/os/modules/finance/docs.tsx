@@ -1,7 +1,7 @@
 // Invoices, quotations, receipts (incl. printable A4 letterhead) and quick income/expense recording.
 import { useEffect, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { Bell, FilePlus2, FileText, Plus, Printer, Trash2 } from 'lucide-react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { ArrowRightLeft, Bell, FilePlus2, FileText, Plus, Printer, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/hooks/useData';
 import { useActing } from '@/os/lib/session';
@@ -10,8 +10,8 @@ import { notify } from '@/os/lib/notify';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Field, Pill, Sheet, StageTracker, Tabs, inputCls, tsh, tshShort } from '@/os/ui';
 import {
-  METHODS, STATUS_LABEL, addDays, docTotals, fmtDate, fmtShort, invoicePaid, invoiceStatus, nextNumber, quotationStatus, recordPayment, statusTone, today, useFinance,
-  type Category, type Fin, type Instalment, type Invoice, type LineItem, type Payment, type PriceItem, type Quotation,
+  METHODS, MONEY_DOC_ROLES, PAYMENT_ROLES, STATUS_LABEL, addDays, convertQuotationToProforma, docTotals, fmtDate, fmtShort, invoicePaid, invoiceStatus, nextNumber, proformaStatus, quotationStatus, recordPayment, statusTone, today, useFinance,
+  type Category, type Fin, type Instalment, type Invoice, type LineItem, type Payment, type PriceItem, type Proforma, type Quotation,
 } from './lib';
 import { StatusPill, errMsg } from './components';
 
@@ -40,8 +40,10 @@ export function quotationTracker(q: Quotation) {
 // ---------------------------------------------------------------- lists
 export function InvoicesList({ compact }: { compact?: boolean }) {
   const fin = useFinance();
-  const [f, setF] = useState('open');
-  const [open, setOpen] = useState<string | null>(null);
+  const [params, setParams] = useSearchParams();
+  const [f, setF] = useState(params.get('open') ? 'all' : 'open');
+  const [open, setOpen] = useState<string | null>(params.get('open'));
+  useEffect(() => { if (params.get('open')) setParams((p) => (p.delete('open'), p), { replace: true }); }, [params, setParams]);
   const [edit, setEdit] = useState<Invoice | 'new' | null>(null);
   const rows = fin.invRows.filter((r) => (f === 'open' ? !['paid', 'cancelled', 'draft'].includes(r.status) : f === 'overdue' ? r.status === 'overdue' : f === 'draft' ? r.status === 'draft' : f === 'paid' ? r.status === 'paid' : true));
   return (
@@ -67,8 +69,15 @@ export function InvoicesList({ compact }: { compact?: boolean }) {
 
 export function QuotationsList() {
   const fin = useFinance();
+  const nav = useNavigate();
+  const { role, userId } = useActing();
+  const toast = useToast();
   const { rows } = useTable<Quotation>('quotations', { order: 'issue_date', ascending: false });
+  const { rows: pros } = useTable<Proforma>('proformas');
   const [open, setOpen] = useState<string | null>(null);
+  const toProforma = async (q: Quotation) => {
+    try { const id = await convertQuotationToProforma(q.id, { role, userId }); toast('Proforma created as draft'); nav(`/os/finance/proformas?open=${id}`); } catch (e) { toast(errMsg(e), 'error'); }
+  };
   const [edit, setEdit] = useState<Quotation | 'new' | null>(null);
   return (
     <div className="flex flex-col gap-3">
@@ -76,13 +85,20 @@ export function QuotationsList() {
         <div><h2 className="m-0 text-xl font-extrabold">Quotations</h2><p className="m-0 text-sm text-basil-muted">{rows.filter((q) => ['sent', 'viewed'].includes(quotationStatus(q))).length} awaiting client · {tshShort(rows.filter((q) => ['sent', 'viewed'].includes(quotationStatus(q))).reduce((s, q) => s + docTotals(q).total, 0))} in play</p></div>
         <button type="button" onClick={() => setEdit('new')} className="btn-primary min-h-[44px]"><Plus size={18} />New quotation</button>
       </div>
-      {rows.map((q) => (
-        <button key={q.id} type="button" onClick={() => setOpen(q.id)} className="flex items-center gap-3 rounded-2xl border border-basil-line bg-white p-3 text-left">
-          <span className="min-w-0 flex-1"><b className="block truncate">{fin.client(q.client_id)?.name ?? q.prospect}</b><span className="block truncate text-xs text-basil-muted">{q.number} · {q.title}</span><span className="mt-1 flex gap-1"><StatusPill status={quotationStatus(q)} />{q.invoice_id && <Pill tone="green">Invoiced</Pill>}<span className="text-xs text-basil-muted">Valid to {fmtDate(q.valid_until)}</span></span></span>
-          <b className="shrink-0 font-display">{tshShort(docTotals(q).total)}</b>
-        </button>
-      ))}
-      <Sheet open={!!open} onClose={() => setOpen(null)} title="Quotation">{open && <QuotationDetail q={rows.find((x) => x.id === open)!} fin={fin} onEdit={(q) => { setOpen(null); setEdit(q); }} onClose={() => setOpen(null)} />}</Sheet>
+      {rows.map((q) => {
+        const pf = pros.find((p) => p.quotation_id === q.id && p.status !== 'cancelled');
+        const convertible = canConvertQuotation(q, pf) && MONEY_DOC_ROLES.includes(role);
+        return (
+          <div key={q.id} className="flex items-stretch overflow-hidden rounded-2xl border border-basil-line bg-white">
+            <button type="button" onClick={() => setOpen(q.id)} className="flex min-w-0 flex-1 items-center gap-3 border-0 bg-transparent p-3 text-left">
+              <span className="min-w-0 flex-1"><b className="block truncate">{fin.client(q.client_id)?.name ?? q.prospect}</b><span className="block truncate text-xs text-basil-muted">{q.number} · {q.title}</span><span className="mt-1 flex flex-wrap gap-1"><StatusPill status={quotationStatus(q)} />{q.invoice_id && <Pill tone="green">Invoiced</Pill>}{pf && !q.invoice_id && <Pill tone="blue">Proforma {pf.number.slice(-4)}</Pill>}<span className="text-xs text-basil-muted">Valid to {fmtDate(q.valid_until)}</span></span></span>
+              <b className="shrink-0 font-display">{tshShort(docTotals(q).total)}</b>
+            </button>
+            {convertible && <button type="button" onClick={() => void toProforma(q)} className="flex w-[104px] shrink-0 flex-col items-center justify-center gap-1 border-0 border-l border-basil-line bg-basil-mist px-2 text-xs font-bold text-basil-deep" title="Convert to proforma"><ArrowRightLeft size={18} />Convert to proforma</button>}
+          </div>
+        );
+      })}
+      <Sheet open={!!open} onClose={() => setOpen(null)} title="Quotation">{open && <QuotationDetail q={rows.find((x) => x.id === open)!} fin={fin} onEdit={(q) => { setOpen(null); setEdit(q); }} onClose={() => setOpen(null)} onProforma={(id) => nav(`/os/finance/proformas?open=${id}`)} />}</Sheet>
       <Sheet open={!!edit} onClose={() => setEdit(null)} title={edit === 'new' ? 'New quotation' : 'Edit quotation'}>{edit && <DocEditor kind="quotation" fin={fin} existing={edit === 'new' ? undefined : edit} onDone={() => setEdit(null)} />}</Sheet>
     </div>
   );
@@ -95,7 +111,7 @@ function Totals({ d, paid }: { d: { items: LineItem[]; discount: number; vat_on:
   return <div className="flex flex-col gap-1 text-sm">{row('Subtotal', tsh(t.sub))}{t.discount > 0 && row('Discount', `− ${tsh(t.discount)}`)}{d.vat_on && row(`VAT ${d.vat_rate}%`, tsh(t.vat))}{row('Total', tsh(t.total), true)}{paid !== undefined && <>{row('Paid', `− ${tsh(paid)}`)}{row('Balance due', tsh(Math.max(t.total - paid, 0)), true)}</>}</div>;
 }
 
-function InvoiceDetail({ id, fin, onEdit }: { id: string; fin: Fin; onEdit: (i: Invoice) => void }) {
+export function InvoiceDetail({ id, fin, onEdit }: { id: string; fin: Fin; onEdit: (i: Invoice) => void }) {
   const { role, userId } = useActing();
   const toast = useToast();
   const inv = fin.invoices.find((x) => x.id === id);
@@ -108,7 +124,7 @@ function InvoiceDetail({ id, fin, onEdit }: { id: string; fin: Fin; onEdit: (i: 
   const set = async (patch: Partial<Invoice>, msg: string) => { try { await updateRow('invoices', inv.id, patch); toast(msg); } catch (e) { toast(errMsg(e), 'error'); } };
   return (
     <div className="flex flex-col gap-4">
-      <div><span className="text-sm text-basil-muted">{inv.number} · {fin.client(inv.client_id)?.name}</span><b className="block font-display text-2xl">{tsh(total)}</b><span className="text-sm">{inv.title}</span><div className="mt-1 flex gap-1"><StatusPill status={st} /><span className="text-xs text-basil-muted">Issued {fmtDate(inv.issue_date)} · due {fmtDate(inv.due_date)}</span></div></div>
+      <div><span className="text-sm text-basil-muted">{inv.number} · {fin.client(inv.client_id)?.name}</span><b className="block font-display text-2xl">{tsh(total)}</b><span className="text-sm">{inv.title}</span><div className="mt-1 flex flex-wrap gap-1"><StatusPill status={st} /><span className="text-xs text-basil-muted">Issued {fmtDate(inv.issue_date)} · due {fmtDate(inv.due_date)}</span></div>{inv.proforma_id && <ProformaSource id={inv.proforma_id} />}</div>
       <StageTracker {...invoiceTracker(inv, fin.payments)} />
       <ul className="m-0 flex list-none flex-col gap-1 p-0 text-sm">{inv.items.map((i, k) => <li key={k} className="flex justify-between gap-2"><span>{i.title} <span className="text-basil-muted">× {i.qty}</span></span><span>{tsh(i.qty * i.unit_price)}</span></li>)}</ul>
       <Totals d={inv} paid={paid} />
@@ -123,19 +139,19 @@ function InvoiceDetail({ id, fin, onEdit }: { id: string; fin: Fin; onEdit: (i: 
       <div className="grid grid-cols-2 gap-2">
         <Link to={`/os/finance/print/invoice/${inv.id}`} className="btn-outline min-h-[44px]"><Printer size={16} />Print / PDF</Link>
         {st === 'draft' && <button type="button" className="btn-outline min-h-[44px]" onClick={() => onEdit(inv)}>Edit</button>}
-        {st === 'draft' && <button type="button" className="btn-primary min-h-[44px]" onClick={() => set({ status: 'sent', sent_at: nowIso() }, 'Marked as sent')}>Mark sent</button>}
+        {st === 'draft' && <button type="button" className="btn-primary col-span-2 min-h-[44px]" onClick={() => set({ status: 'sent', sent_at: nowIso() }, 'Marked as sent')}>Mark sent</button>}
         {st === 'sent' && <button type="button" className="btn-outline min-h-[44px]" onClick={() => set({ status: 'viewed', viewed_at: nowIso() }, 'Marked as viewed')}>Client viewed</button>}
-        {['sent', 'viewed', 'partially_paid', 'overdue'].includes(st) && role === 'finance' && <button type="button" className="btn-primary min-h-[44px] !bg-emerald-600" onClick={() => setPay(true)}>Record payment</button>}
+        {['sent', 'viewed', 'partially_paid', 'overdue'].includes(st) && PAYMENT_ROLES.includes(role) && <button type="button" className="btn-primary min-h-[44px] !bg-emerald-600" onClick={() => setPay(true)}>Record payment</button>}
         {st === 'overdue' && <button type="button" className="btn-outline min-h-[44px]" onClick={() => { void notify('u-growth', `Chase ${inv.number}`, `${fin.client(inv.client_id)?.name} · ${tsh(total - paid)} overdue`, '', 'alert'); toast('Reminder sent to the client and account manager'); }}><Bell size={16} />Send reminder</button>}
         {!['paid', 'cancelled'].includes(st) && paid === 0 && <button type="button" className="btn-outline min-h-[44px] !text-red-700" onClick={() => confirm('Cancel this invoice?') && set({ status: 'cancelled', cancelled_at: nowIso() }, 'Invoice cancelled')}>Cancel</button>}
       </div>
-      {role !== 'finance' && ['sent', 'viewed', 'partially_paid', 'overdue'].includes(st) && <p className="m-0 text-xs text-basil-muted">Only Finance records payments.</p>}
+      {!PAYMENT_ROLES.includes(role) && ['sent', 'viewed', 'partially_paid', 'overdue'].includes(st) && <p className="m-0 text-xs text-basil-muted">Only Finance or the GM/CFO records payments.</p>}
       <Sheet open={pay} onClose={() => setPay(false)} title="Record payment"><PaymentForm inv={inv} fin={fin} balance={total - paid} onDone={() => setPay(false)} actor={{ role, userId }} /></Sheet>
     </div>
   );
 }
 
-function PaymentForm({ inv, fin, balance, onDone, actor }: { inv: Invoice; fin: Fin; balance: number; onDone: () => void; actor: { role: never | string; userId: string } }) {
+export function PaymentForm({ inv, fin, balance, onDone, actor }: { inv: Invoice; fin: Fin; balance: number; onDone: () => void; actor: { role: never | string; userId: string } }) {
   const toast = useToast();
   const [f, setF] = useState({ amount: String(Math.round(balance)), paid_on: today(), method: 'Bank transfer', reference: '', account_id: fin.accounts.find((a) => a.kind === 'bank')?.id ?? null as string | null, is_deposit: invoicePaid(inv, fin.payments) === 0 && inv.deposit > 0 });
   return (
@@ -151,9 +167,23 @@ function PaymentForm({ inv, fin, balance, onDone, actor }: { inv: Invoice; fin: 
   );
 }
 
-function QuotationDetail({ q, fin, onEdit, onClose }: { q: Quotation; fin: Fin; onEdit: (q: Quotation) => void; onClose: () => void }) {
+function ProformaSource({ id }: { id: string }) {
+  const { rows } = useTable<Proforma>('proformas');
+  const p = rows.find((x) => x.id === id);
+  return p ? <span className="mt-1 block text-xs text-basil-muted">From proforma {p.number}</span> : null;
+}
+
+export const canConvertQuotation = (q: Quotation, pf?: Proforma) => ['sent', 'viewed', 'accepted'].includes(quotationStatus(q)) && !q.invoice_id && !pf;
+
+export function QuotationDetail({ q, fin, onEdit, onClose, onProforma }: { q: Quotation; fin: Fin; onEdit: (q: Quotation) => void; onClose: () => void; onProforma?: (proformaId: string) => void }) {
   const toast = useToast();
+  const { role, userId } = useActing();
+  const { rows: pros } = useTable<Proforma>('proformas');
+  const pf = pros.find((p) => p.quotation_id === q.id && p.status !== 'cancelled');
   const st = quotationStatus(q);
+  const toProforma = async () => {
+    try { const id = await convertQuotationToProforma(q.id, { role, userId }); toast('Proforma created as draft'); onClose(); onProforma?.(id); } catch (e) { toast(errMsg(e), 'error'); }
+  };
   const set = async (patch: Partial<Quotation>, msg: string) => { try { await updateRow('quotations', q.id, patch); toast(msg); } catch (e) { toast(errMsg(e), 'error'); } };
   const convert = async () => {
     try {
@@ -177,11 +207,13 @@ function QuotationDetail({ q, fin, onEdit, onClose }: { q: Quotation; fin: Fin; 
       <div className="grid grid-cols-2 gap-2">
         <Link to={`/os/finance/print/quotation/${q.id}`} className="btn-outline min-h-[44px]"><Printer size={16} />Print / PDF</Link>
         {st === 'draft' && <button type="button" className="btn-outline min-h-[44px]" onClick={() => onEdit(q)}>Edit</button>}
-        {st === 'draft' && <button type="button" className="btn-primary min-h-[44px]" onClick={() => set({ status: 'sent', sent_at: nowIso() }, 'Marked as sent')}>Mark sent</button>}
+        {st === 'draft' && <button type="button" className="btn-primary col-span-2 min-h-[44px]" onClick={() => set({ status: 'sent', sent_at: nowIso() }, 'Marked as sent')}>Mark sent</button>}
         {st === 'sent' && <button type="button" className="btn-outline min-h-[44px]" onClick={() => set({ status: 'viewed', viewed_at: nowIso() }, 'Marked as viewed')}>Client viewed</button>}
         {['sent', 'viewed'].includes(st) && <button type="button" className="btn-outline min-h-[44px] !text-red-700" onClick={() => set({ status: 'declined', declined_at: nowIso() }, 'Marked declined')}>Declined</button>}
-        {['sent', 'viewed', 'accepted'].includes(st) && !q.invoice_id && <button type="button" className="btn-primary min-h-[44px] !bg-emerald-600" onClick={convert}><FilePlus2 size={16} />Accept → invoice</button>}
+        {canConvertQuotation(q, pf) && MONEY_DOC_ROLES.includes(role) && <button type="button" className="btn-primary min-h-[44px]" onClick={toProforma}><ArrowRightLeft size={16} />Convert to proforma</button>}
+        {['sent', 'viewed', 'accepted'].includes(st) && !q.invoice_id && !pf && <button type="button" className="btn-primary min-h-[44px] !bg-emerald-600" onClick={convert}><FilePlus2 size={16} />Accept → invoice</button>}
       </div>
+      {pf && <p className="m-0 rounded-xl bg-basil-ice p-3 text-sm">Proforma <b>{pf.number}</b> · {STATUS_LABEL[proformaStatus(pf)]}{onProforma && <button type="button" onClick={() => { onClose(); onProforma(pf.id); }} className="ml-2 border-0 bg-transparent p-0 font-bold text-basil underline">Open</button>}</p>}
     </div>
   );
 }
@@ -268,26 +300,29 @@ export function PrintDoc() {
   const { kind, id } = useParams();
   const fin = useFinance();
   const s = useSettings();
+  const nav = useNavigate();
   const { rows: quotes } = useTable<Quotation>('quotations');
+  const { rows: pros } = useTable<Proforma>('proformas');
   const inv = kind === 'invoice' ? fin.invoices.find((x) => x.id === id) : undefined;
   const q = kind === 'quotation' ? quotes.find((x) => x.id === id) : undefined;
+  const pf = kind === 'proforma' ? pros.find((x) => x.id === id) : undefined;
   const pay = kind === 'receipt' ? fin.payments.find((x) => x.id === id) : undefined;
   const payInv = pay ? fin.invoices.find((x) => x.id === pay.invoice_id) : undefined;
-  const doc = inv ?? q ?? payInv;
+  const doc = inv ?? q ?? pf ?? payInv;
   if (!doc) return <Empty title="Document not found" sub="It may still be loading." />;
   const client = fin.client(doc.client_id);
   const project = fin.project(doc.project_id);
   const t = docTotals(doc);
   const paid = inv ? invoicePaid(inv, fin.payments) : 0;
   const deposit = inv ? fin.payments.find((p) => p.invoice_id === inv.id && p.is_deposit) : undefined;
-  const title = kind === 'invoice' ? 'TAX INVOICE' : kind === 'quotation' ? 'QUOTATION' : 'OFFICIAL RECEIPT';
+  const title = kind === 'invoice' ? 'TAX INVOICE' : kind === 'quotation' ? 'QUOTATION' : kind === 'proforma' ? 'PROFORMA INVOICE' : 'OFFICIAL RECEIPT';
   const number = kind === 'receipt' ? pay!.receipt_no : doc.number;
   const k = (l: string, v: string, sub?: string) => <div><div className="font-mono text-[9px] tracking-[0.16em] text-basil-muted">{l}</div><div className="font-bold">{v}</div>{sub && <div className="text-[11px] text-basil-muted">{sub}</div>}</div>;
   return (
     <div>
       <style>{PRINT_CSS}</style>
       <div className="no-print mb-4 flex flex-wrap items-center justify-between gap-2">
-        <Link to={kind === 'quotation' ? '/os/finance/quotations' : '/os/finance/invoices'} className="text-sm font-bold">← Back</Link>
+        <Link to={kind === 'quotation' ? '/os/finance/quotations' : kind === 'proforma' ? '/os/finance/proformas' : '/os/finance/invoices'} onClick={(e) => { if (history.length > 1) { e.preventDefault(); nav(-1); } }} className="flex min-h-[44px] items-center text-sm font-bold">← Back</Link>
         <button type="button" onClick={() => print()} className="btn-primary min-h-[44px]"><Printer size={18} />Print or save as PDF</button>
       </div>
       <article className="print-area mx-auto max-w-[210mm] overflow-x-auto bg-white p-6 text-[12px] text-basil-ink shadow-card sm:p-10" style={{ minHeight: '297mm' }}>
@@ -297,15 +332,17 @@ export function PrintDoc() {
             <div><div className="font-display text-2xl font-extrabold">Basil <span className="text-basil">Media</span></div><div className="text-basil-muted">{s.address || 'Mikocheni, Dar es Salaam, Tanzania'}</div><div className="text-basil-muted">{[s.phone, s.contact_email].filter(Boolean).join(' · ')}</div></div>
           </div>
           <div className="text-right"><div className="font-display text-xl font-extrabold tracking-wide text-basil-deep">{title}</div><div className="font-mono text-sm font-bold">{number}</div>
-            {kind === 'invoice' && inv && <div className="mt-1"><Pill tone={statusTone(invoiceStatus(inv, fin.payments)) as never}>{STATUS_LABEL[invoiceStatus(inv, fin.payments)]}</Pill></div>}</div>
+            {kind === 'invoice' && inv && <div className="mt-1"><Pill tone={statusTone(invoiceStatus(inv, fin.payments)) as never}>{STATUS_LABEL[invoiceStatus(inv, fin.payments)]}</Pill></div>}
+            {pf && <div className="mt-1 text-[11px] font-bold uppercase tracking-wide text-amber-800">Not a tax invoice</div>}</div>
         </header>
         <section className="grid grid-cols-2 gap-5 py-5 sm:grid-cols-4">
-          <div className="col-span-2">{k(kind === 'receipt' ? 'RECEIVED FROM' : 'BILL TO', client?.name ?? (q?.prospect || '—'))}<div className="text-basil-muted">{client?.address}</div>{client?.contact_name && <div className="text-basil-muted">Attn: {client.contact_name}</div>}{client?.tin && <div className="text-basil-muted">TIN {client.tin}</div>}</div>
+          <div className="col-span-2">{k(kind === 'receipt' ? 'RECEIVED FROM' : 'BILL TO', client?.name ?? (q?.prospect || pf?.prospect || '—'))}<div className="text-basil-muted">{client?.address}</div>{client?.contact_name && <div className="text-basil-muted">Attn: {client.contact_name}</div>}{client?.tin && <div className="text-basil-muted">TIN {client.tin}</div>}</div>
           {k('PROJECT', doc.title || project?.name || '—', inv?.po_ref ? `Ref. ${inv.po_ref}` : undefined)}
           {kind === 'receipt' ? k('DATE RECEIVED', fmtDate(pay!.paid_on)) : k('ISSUE DATE', fmtDate(doc.issue_date))}
           {k('CURRENCY', 'TSH')}
           {kind === 'invoice' && inv && k('DUE DATE', fmtDate(inv.due_date), `${Math.max(0, Math.round((new Date(inv.due_date).getTime() - new Date(inv.issue_date).getTime()) / 864e5))} days net`)}
           {kind === 'quotation' && q && k('VALID UNTIL', fmtDate(q.valid_until))}
+          {pf && k('VALID UNTIL', fmtDate(pf.valid_until), pf.quotation_id ? `Ref. ${quotes.find((x) => x.id === pf.quotation_id)?.number ?? 'quotation'}` : undefined)}
           {kind === 'receipt' && k('METHOD', `${pay!.method} · ${pay!.reference}`)}
         </section>
         {kind === 'receipt' ? (
@@ -328,10 +365,11 @@ export function PrintDoc() {
               <div className="w-full max-w-[260px]">
                 <div className="flex justify-between py-0.5"><span>Subtotal</span><span>{tsh(t.sub)}</span></div>
                 {t.discount > 0 && <div className="flex justify-between py-0.5"><span>Discount</span><span>− {tsh(t.discount)}</span></div>}
-                {doc.vat_on && <div className="flex justify-between py-0.5"><span>VAT {doc.vat_rate}%</span><span>{tsh(t.vat)}</span></div>}
+                {doc.vat_on && <div className="flex justify-between py-0.5"><span>VAT {doc.vat_rate}%{pf ? ' (indicative)' : ''}</span><span>{tsh(t.vat)}</span></div>}
                 <div className="flex justify-between border-t border-basil-line py-1 font-bold"><span>Total{doc.vat_on ? ' (VAT incl.)' : ''}</span><span>{tsh(t.total)}</span></div>
                 {inv && paid > 0 && <div className="flex justify-between py-0.5"><span>{deposit ? `Paid incl. deposit ${fmtDate(deposit.paid_on)}` : 'Paid'}</span><span>− {tsh(paid)}</span></div>}
                 {inv && <div className="mt-1 flex justify-between rounded-lg bg-basil p-2 font-display text-base font-extrabold text-white"><span>BALANCE DUE</span><span>{tsh(Math.max(t.total - paid, 0))}</span></div>}
+                {pf && <div className="mt-1 flex justify-between rounded-lg bg-basil p-2 font-display text-base font-extrabold text-white"><span>AMOUNT PAYABLE</span><span>{tsh(t.total)}</span></div>}
               </div>
             </section>
           </>
@@ -344,7 +382,10 @@ export function PrintDoc() {
         )}
         <section className="mt-6 text-[11px] text-basil-muted">
           <div className="font-mono text-[9px] tracking-[0.16em]">TERMS</div>
+          {pf && <p className="m-0 mb-2 rounded-lg border border-amber-300 bg-amber-50 p-2 font-bold text-amber-900">This is not a tax invoice. It is issued so the client can raise a purchase order or pay in advance; a tax invoice follows on confirmation or payment.</p>}
+          {pf?.notes && <p className="m-0 mb-1">{pf.notes}</p>}
           {kind === 'quotation' ? <p className="m-0">Prices valid until {fmtDate(q?.valid_until)}. Two revision rounds included. A deposit confirms the booking.</p>
+            : pf ? <p className="m-0">Prices valid until {fmtDate(pf.valid_until)}. {pf.terms || 'Quote the proforma number as the payment reference.'}</p>
             : <p className="m-0">Payment within the due date. Quote the {kind === 'receipt' ? 'invoice' : 'invoice'} number as the payment reference. Final masters are released once the delivery instalment is received. Two revision rounds are included.</p>}
         </section>
         <footer className="mt-10 flex flex-wrap items-end justify-between gap-4 border-t border-basil-line pt-4">
