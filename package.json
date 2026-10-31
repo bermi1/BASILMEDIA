@@ -10,6 +10,7 @@
     "typecheck": "tsc -b --noEmit",
     "seed:sql": "node scripts/gen-seed-sql.mjs",
     "db:setup": "node scripts/build-setup-sql.mjs",
+    "db:upgrade": "node scripts/build-upgrade-sql.mjs",
     "accounts": "node scripts/create-accounts.mjs"
   },
   "dependencies": {
