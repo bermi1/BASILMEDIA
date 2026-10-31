@@ -12,6 +12,7 @@ from PIL import Image, ImageFilter, ImageEnhance
 
 ROOT = Path(__file__).resolve().parent.parent
 PUB = ROOT / 'public'
+# Note: the live hero now uses real footage (basil-hero-reel*.mp4); this montage is a fallback.
 PHOTOS = [
     'img/team/basil-media-team.jpg',
     'img/services/video-crew-conference.jpg',
@@ -72,5 +73,5 @@ def build(w: int, h: int, name: str):
 
 
 if __name__ == '__main__':
-    build(1280, 720, 'basil-hero')
-    build(720, 1280, 'basil-hero-portrait')
+    build(1280, 720, 'basil-hero-montage')
+    build(720, 1280, 'basil-hero-montage-portrait')

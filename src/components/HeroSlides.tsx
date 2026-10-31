@@ -25,7 +25,13 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
     const src = builtIn && tall ? v.src.replace(/\.mp4$/, '-portrait.mp4') : v.src;
     const poster = builtIn ? src.replace(/\.mp4$/, '-poster.jpg') : images[0];
     if (reduce) return <img aria-hidden="true" src={poster} alt="" className="absolute inset-0 h-full w-full object-cover" />;
-    return <video key={src} aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" src={src} poster={poster} autoPlay muted loop playsInline preload="auto" />;
+    return (
+      <>
+        <video key={src} aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" src={src} poster={poster} autoPlay muted loop playsInline preload="auto" />
+        {/* transparent Basil-blue coating: keeps the footage on brand and the text readable */}
+        <div aria-hidden="true" className="absolute inset-0 mix-blend-multiply" style={{ background: 'linear-gradient(135deg, rgba(15,110,194,0.55), rgba(10,47,92,0.35) 55%, rgba(43,134,218,0.45))' }} />
+      </>
+    );
   }
   if (v.kind === 'youtube') {
     return (
