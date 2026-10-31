@@ -18,9 +18,9 @@ const projectRef = (url) => (url.match(/^https:\/\/([a-z0-9]+)\.supabase\.(co|in
 /** Returns { url, key, source, problems[] } */
 export function pickSupabaseEnv(env) {
   const groups = [
-    ['VITE_SUPABASE', clean(env.VITE_SUPABASE_URL), clean(env.VITE_SUPABASE_ANON_KEY || env.VITE_SUPABASE_PUBLISHABLE_KEY)],
-    ['SUPABASE', clean(env.SUPABASE_URL), clean(env.SUPABASE_ANON_KEY || env.SUPABASE_PUBLISHABLE_KEY)],
-    ['NEXT_PUBLIC_SUPABASE', clean(env.NEXT_PUBLIC_SUPABASE_URL), clean(env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)],
+    ['VITE_SUPABASE', clean(env.VITE_SUPABASE_URL), clean(env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY)],
+    ['SUPABASE', clean(env.SUPABASE_URL), clean(env.SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY)],
+    ['NEXT_PUBLIC_SUPABASE', clean(env.NEXT_PUBLIC_SUPABASE_URL), clean(env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY)],
   ];
   const problems = [];
   let fallback = null;
