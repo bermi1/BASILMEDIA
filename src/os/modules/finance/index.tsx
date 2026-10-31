@@ -1,4 +1,45 @@
+import { Banknote, FileSpreadsheet, FileText, HandCoins, LayoutDashboard, PiggyBank, Settings2, Stamp, Users, Wallet, ArrowLeftRight, ClipboardCheck } from 'lucide-react';
+import { isDemo } from '@/lib/supabase';
+import { demoTable } from '@/os/lib/store';
 import type { OsModule } from '../types';
+import './seed';
+import { InvoicesList, MoneyInOut, PrintDoc, QuotationsList } from './docs';
+import { ApprovalsPage, BudgetsPage, FinanceOverview, FinanceSettingsPage, MyRequestsPage, PayPage, PayrollPage, ReconcilePage, RegisterPage } from './pages';
+import { PageTitle } from '@/os/OsLayout';
 
-// Placeholder manifest — replaced when the finance module is built.
-export const financeModule: OsModule = { key: 'finance', section: '', nav: [], routes: [] };
+const count = (statuses: string[]) => () => (isDemo ? demoTable('money_requests').filter((r) => statuses.includes(String(r.status))).length : 0);
+const wrap = (title: string, el: JSX.Element) => <div className="mx-auto max-w-3xl"><PageTitle tag="MONEY" title={title} />{el}</div>;
+
+export const financeModule: OsModule = {
+  key: 'finance',
+  section: 'MONEY',
+  nav: [
+    { to: '/os/approvals', label: 'Approvals', icon: Stamp, roles: ['boss', 'gm_cfo'], badge: count(['gm_review', 'boss_approval']) },
+    { to: '/os/approvals/mine', label: 'My money requests', icon: HandCoins, roles: ['gm_cfo', 'finance', 'project_lead', 'staff'] },
+    { to: '/os/finance', label: 'Finance overview', icon: LayoutDashboard, roles: ['boss', 'gm_cfo', 'finance'] },
+    { to: '/os/finance/pay', label: 'Pay queue', icon: Banknote, roles: ['finance', 'gm_cfo'], badge: count(['approved']) },
+    { to: '/os/finance/requests', label: 'All requests', icon: Wallet, roles: ['boss', 'gm_cfo', 'finance'] },
+    { to: '/os/finance/reconcile', label: 'Reconcile', icon: ClipboardCheck, roles: ['gm_cfo'], badge: count(['retired']) },
+    { to: '/os/finance/invoices', label: 'Invoices', icon: FileText, roles: ['boss', 'gm_cfo', 'finance'] },
+    { to: '/os/finance/quotations', label: 'Quotations', icon: FileSpreadsheet, roles: ['gm_cfo', 'finance'] },
+    { to: '/os/finance/money', label: 'Income & expenses', icon: ArrowLeftRight, roles: ['gm_cfo', 'finance'] },
+    { to: '/os/finance/budgets', label: 'Budgets', icon: PiggyBank, roles: ['boss', 'gm_cfo', 'finance'] },
+    { to: '/os/finance/payroll', label: 'Payroll', icon: Users, roles: ['boss', 'gm_cfo', 'finance'] },
+    { to: '/os/finance/settings', label: 'Finance settings', icon: Settings2, roles: ['gm_cfo', 'finance'] },
+  ],
+  routes: [
+    { path: 'approvals', element: <ApprovalsPage /> },
+    { path: 'approvals/mine', element: <MyRequestsPage /> },
+    { path: 'finance', element: <FinanceOverview /> },
+    { path: 'finance/pay', element: <PayPage /> },
+    { path: 'finance/requests', element: <RegisterPage /> },
+    { path: 'finance/reconcile', element: <ReconcilePage /> },
+    { path: 'finance/invoices', element: wrap('Invoices', <InvoicesList />) },
+    { path: 'finance/quotations', element: wrap('Quotations', <QuotationsList />) },
+    { path: 'finance/money', element: wrap('Income & expenses', <MoneyInOut />) },
+    { path: 'finance/budgets', element: <BudgetsPage /> },
+    { path: 'finance/payroll', element: <PayrollPage /> },
+    { path: 'finance/settings', element: <FinanceSettingsPage /> },
+    { path: 'finance/print/:kind/:id', element: <PrintDoc /> },
+  ],
+};
