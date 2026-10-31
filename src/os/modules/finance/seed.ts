@@ -147,7 +147,7 @@ registerSeed('retirements', () => B().rets);
 // ---------------------------------------------------------------- invoices, payments, quotations
 const vat = () => DEFAULT_SETTINGS.vat_rate; // lazy: lib and seed import each other
 const it = (title: string, detail: string, qty: number, unit_price: number): LineItem => ({ title, detail, qty, unit_price });
-type InvSeed = { n: number; client: string; project: string | null; title: string; issue: number; due: number; items: LineItem[]; status: string; schedule?: { label: string; pct: number; due: number }[]; pays?: { pct?: number; amount?: number; daysAgo: number; method: string; deposit?: boolean; account: string }[]; discount?: number; po?: string; quote?: string };
+type InvSeed = { n: number; client: string; project: string | null; title: string; issue: number; due: number; items: LineItem[]; status: string; schedule?: { label: string; pct: number; due: number }[]; pays?: { pct?: number; amount?: number; daysAgo: number; method: string; deposit?: boolean; account: string }[]; discount?: number; po?: string; quote?: string; proforma?: string };
 const INVOICES: InvSeed[] = [
   { n: 41, client: 'c-bank', project: 'p-bank', title: 'Scholarship campaign film', issue: -46, due: 14, po: 'PO-BF-2026-118', status: 'sent',
     items: [it('Pre-production & script', 'Research, interviews, bilingual script', 1, 2400000), it('Filming · Dar es Salaam & Dodoma', '4 shoot days, 2-camera crew, drone', 4, 1800000), it('Edit, grade & sound mix', 'Hero film 3 min + 3 cut-downs', 1, 4200000), it('Motion graphics & subtitles', 'English/Kiswahili', 1, 1400000)],
@@ -178,6 +178,9 @@ const INVOICES: InvSeed[] = [
   { n: 42, client: 'c-cement', project: 'p-cement', title: 'Plant safety film — deposit', issue: 0, due: 14, status: 'draft', quote: 'qu-18',
     items: [it('Scriptwriting', 'Safety procedures script, Kiswahili + English', 1, 800000), it('Camera crew day (2 cameras)', 'Wazo Hill plant', 4, 1200000), it('Editing', '', 6, 450000), it('Voice-over', 'Kiswahili', 1, 250000), it('Subtitles', 'English', 12, 30000)],
     schedule: [{ label: 'Deposit', pct: 50, due: 14 }, { label: 'On delivery', pct: 50, due: 45 }] },
+  { n: 43, client: 'c-summit', project: 'p-summit', title: 'Summit 2027 save-the-date film', issue: -3, due: 11, status: 'sent', proforma: 'pf-3',
+    items: [it('Motion graphics', 'Animated save-the-date, 60 seconds', 1, 350000), it('Editing', 'Speaker montage from 2026 footage', 2, 450000), it('Subtitles', 'English/Kiswahili', 2, 30000)],
+    schedule: [{ label: 'Deposit', pct: 50, due: 11 }, { label: 'On delivery', pct: 50, due: 40 }] },
   { n: 39, client: 'c-hospital', project: 'p-podcast', title: 'Health Talk podcast — pilot', issue: -25, due: -11, status: 'cancelled',
     items: [it('Podcast episode', 'Pilot', 1, 450000)] },
 ];
@@ -192,7 +195,7 @@ function buildInvoices() {
     const total = docTotals(doc).total;
     const paid = (s.pays ?? []).reduce((a, p) => a + (p.amount ?? Math.round((total * (p.pct ?? 0)) / 100)), 0);
     invoices.push({
-      id, number: `BM-INV-${YR}-${String(s.n).padStart(4, '0')}`, client_id: s.client, project_id: s.project, quotation_id: s.quote ?? null, title: s.title, po_ref: s.po ?? '',
+      id, number: `BM-INV-${YR}-${String(s.n).padStart(4, '0')}`, client_id: s.client, project_id: s.project, quotation_id: s.quote ?? null, proforma_id: s.proforma ?? null, title: s.title, po_ref: s.po ?? '',
       ...doc, deposit: s.schedule?.[0] ? Math.round((total * s.schedule[0].pct) / 100) : 0,
       schedule: (s.schedule ?? []).map((x) => ({ label: x.label, pct: x.pct, due: day(x.due) })),
       issue_date: day(s.issue), due_date: day(s.due),
@@ -229,6 +232,20 @@ registerSeed('quotations', () => {
     q(16, 'c-uni', '', null, 'Open day promotional film', -40, -10, 'declined', [it('Camera crew day (2 cameras)', '', 2, 1200000), it('Editing', '', 4, 450000)]),
     q(15, null, 'Kilimanjaro Coffee Exporters', null, 'Brand documentary', -55, -25, 'sent', [it('Scriptwriting', '', 1, 800000), it('Camera crew day (2 cameras)', 'Moshi, 3 days', 3, 1200000), it('Out-of-town per diem', '4 crew × 3 days', 12, 120000), it('Editing', '', 5, 450000)]),
     q(21, null, 'Zanzibar Tourism Board', null, 'Destination photo + drone package', 0, 30, 'draft', [it('Photography', '', 3, 700000), it('Drone aerials', '', 2, 600000)]),
+  ];
+});
+
+// Proformas: one draft from scratch, one sent awaiting the client, one already converted to invoice 43.
+registerSeed('proformas', () => {
+  const pf = (n: number, client: string | null, prospect: string, title: string, issue: number, valid: number, status: string, items: LineItem[], extra: Record<string, unknown> = {}) => ({
+    id: `pf-${n}`, number: `BM-PF-${YR}-${String(n).padStart(4, '0')}`, client_id: client, project_id: null, quotation_id: null, prospect, title, items, discount: 0, vat_on: true, vat_rate: vat(),
+    issue_date: day(issue), valid_until: day(valid), status, sent_at: status !== 'draft' ? iso(issue, 11) : null, accepted_at: status === 'accepted' ? iso(issue + 1, 15) : null, cancelled_at: null,
+    invoice_id: null, notes: '', terms: 'Payment by bank transfer or mobile money. Quote the proforma number as reference.', created_at: iso(issue, 10), ...extra,
+  });
+  return [
+    pf(1, 'c-uni', '', 'Convocation livestream — December', -1, 29, 'draft', [it('Live streaming (multi-camera)', 'Main hall, 3 cameras, YouTube delivery', 1, 3500000), it('Photography', 'Graduates gallery', 1, 700000)]),
+    pf(2, 'c-bank', '', 'Scholars’ day photo + film package', -5, 25, 'sent', [it('Photography', 'Scholar portraits, 2 days', 2, 700000), it('Camera crew day (2 cameras)', 'Ceremony coverage', 1, 1200000), it('Editing', '3-minute recap film', 2, 450000)], { notes: 'Client needs this to raise a purchase order.' }),
+    pf(3, 'c-summit', '', 'Summit 2027 save-the-date film', -8, 22, 'accepted', INVOICES.find((x) => x.n === 43)!.items, { invoice_id: 'inv-43' }),
   ];
 });
 
