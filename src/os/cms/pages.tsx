@@ -61,7 +61,8 @@ const GROUPS: { title: string; fields: Field[] }[] = [
     { key: 'tagline', label: 'Tagline (first part)', type: 'text' },
     { key: 'tagline_highlight', label: 'Tagline (highlighted part)', type: 'text' },
     { key: 'hero_subtitle', label: 'Subtitle', type: 'textarea' },
-    { key: 'hero_image_url', label: 'Hero background picture', type: 'image', folder: 'site' },
+    { key: 'hero_images', label: 'Hero photos (team, office, studio)', type: 'images', folder: 'hero', help: 'They rotate behind the home page headline. Landscape photos of the team and office work best.' },
+    { key: 'hero_image_url', label: 'Fallback hero picture', type: 'image', folder: 'site' },
     { key: 'live_ticker', label: 'Live ticker card', type: 'text', wide: true, help: 'e.g. “Gallery delivered · Tanzania Health Summit · 2,431 photos”. Leave empty to hide.' },
     { key: 'services_mega_image_url', label: 'Services menu feature picture', type: 'image', folder: 'site' },
   ] },
@@ -82,6 +83,7 @@ const GROUPS: { title: string; fields: Field[] }[] = [
     { key: 'phone', label: 'Phone', type: 'text' },
     { key: 'whatsapp', label: 'WhatsApp number', type: 'text', help: 'International format, e.g. +255712345678' },
     { key: 'address', label: 'Office address', type: 'text' },
+    { key: 'office_hours', label: 'Office hours', type: 'text' },
     { key: 'map_embed_url', label: 'Google Maps embed URL (optional)', type: 'url', wide: true, help: 'Leave empty to place the pin from the address.' },
   ] },
 ];
@@ -116,7 +118,7 @@ export function SettingsCms() {
             <h2 className="m-0 mb-4 text-lg font-extrabold">{g.title}</h2>
             <div className="grid gap-4 md:grid-cols-2">
               {g.fields.map((f) => (
-                <div key={f.key} className={`flex flex-col gap-1.5 ${f.wide || ['textarea', 'image', 'file'].includes(f.type) ? 'md:col-span-2' : ''}`}>
+                <div key={f.key} className={`flex flex-col gap-1.5 ${f.wide || ['textarea', 'image', 'images', 'file'].includes(f.type) ? 'md:col-span-2' : ''}`}>
                   <span className="text-sm font-bold text-[#33465F]">{f.label}</span>
                   <FieldInput f={f} value={(d as unknown as Record<string, unknown>)[f.key]} onChange={(v) => setD({ ...d, [f.key]: v })} />
                   {f.help && <span className="text-xs text-basil-muted">{f.help}</span>}

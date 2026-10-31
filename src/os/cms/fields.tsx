@@ -3,7 +3,7 @@ import { ImagePlus, Link2, Loader2, Trash2, Upload, X } from 'lucide-react';
 import { uploadFile } from '@/lib/storage';
 import { parseVideo, videoLabel } from '@/lib/video';
 
-export type FieldType = 'text' | 'textarea' | 'number' | 'url' | 'image' | 'video' | 'file' | 'list' | 'select' | 'boolean' | 'date' | 'multiselect';
+export type FieldType = 'text' | 'textarea' | 'number' | 'url' | 'image' | 'images' | 'video' | 'file' | 'list' | 'select' | 'boolean' | 'date' | 'multiselect';
 export interface Field {
   key: string;
   label: string;
@@ -48,6 +48,8 @@ export function FieldInput({ f, value, onChange }: { f: Field; value: unknown; o
       return <ListInput value={(value as string[]) ?? []} onChange={onChange} />;
     case 'image':
       return <UploadInput kind="image" folder={f.folder ?? 'site'} value={(value as string) ?? ''} onChange={onChange} />;
+    case 'images':
+      return <ImagesInput folder={f.folder ?? 'site'} value={(value as string[]) ?? []} onChange={onChange} />;
     case 'video':
       return <UploadInput kind="video" folder={f.folder ?? 'video'} value={(value as string) ?? ''} onChange={onChange} />;
     case 'file':
@@ -120,6 +122,54 @@ export function UploadInput({ kind, folder, value, onChange }: { kind: 'image' |
         <Link2 size={16} className="shrink-0" />
         <input className={`${input} h-10 text-sm`} value={value.startsWith('data:') ? '(uploaded in demo mode)' : value} onChange={(e) => onChange(e.target.value)} placeholder={kind === 'video' ? 'or paste a YouTube, Vimeo or Instagram link' : 'or paste a link'} />
       </label>
+      {err && <span role="alert" className="text-sm font-bold text-red-700">{err}</span>}
+    </div>
+  );
+}
+
+/** Several pictures (e.g. the rotating hero photos): upload many at once, reorder, remove. */
+function ImagesInput({ folder, value, onChange }: { folder: string; value: string[]; onChange: (v: string[]) => void }) {
+  const ref = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const add = async (files: FileList | null) => {
+    if (!files?.length) return;
+    setBusy(true);
+    setErr('');
+    const urls: string[] = [];
+    for (const f of Array.from(files)) {
+      try {
+        urls.push(await uploadFile(f, folder));
+      } catch (e) {
+        setErr((e as Error).message);
+      }
+    }
+    onChange([...value, ...urls]);
+    setBusy(false);
+  };
+  const move = (i: number, d: number) => {
+    const next = [...value];
+    [next[i], next[i + d]] = [next[i + d], next[i]];
+    onChange(next);
+  };
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+        {value.map((src, i) => (
+          <div key={src + i} className="group relative aspect-video overflow-hidden rounded-xl border border-basil-line bg-basil-mist">
+            <img src={src} alt="" className="h-full w-full object-cover" />
+            <div className="absolute inset-x-1 bottom-1 flex justify-between gap-1">
+              <button type="button" aria-label="Move left" disabled={i === 0} onClick={() => move(i, -1)} className="h-7 w-7 rounded-lg border-0 bg-white/90 text-xs font-bold disabled:opacity-30">←</button>
+              <button type="button" aria-label="Remove picture" onClick={() => onChange(value.filter((_, j) => j !== i))} className="h-7 w-7 rounded-lg border-0 bg-white/90 text-red-700"><X size={14} className="mx-auto" /></button>
+              <button type="button" aria-label="Move right" disabled={i === value.length - 1} onClick={() => move(i, 1)} className="h-7 w-7 rounded-lg border-0 bg-white/90 text-xs font-bold disabled:opacity-30">→</button>
+            </div>
+          </div>
+        ))}
+        <button type="button" onClick={() => ref.current?.click()} disabled={busy} className="flex aspect-video flex-col items-center justify-center gap-1 rounded-xl border-2 border-dashed border-basil-edge bg-white text-sm font-bold text-basil">
+          {busy ? <Loader2 className="animate-spin" size={18} /> : <ImagePlus size={18} />}{busy ? 'Uploading…' : 'Add pictures'}
+        </button>
+      </div>
+      <input ref={ref} type="file" accept="image/*" multiple className="hidden" onChange={(e) => add(e.target.files)} />
       {err && <span role="alert" className="text-sm font-bold text-red-700">{err}</span>}
     </div>
   );

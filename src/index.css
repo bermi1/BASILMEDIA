@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 @layer base {
-  html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; }
+  html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+  button, a { touch-action: manipulation; }
   body { @apply bg-white font-sans text-basil-ink antialiased; }
   h1, h2, h3, h4 { @apply font-display; }
   a { @apply text-basil; }
@@ -17,7 +18,9 @@
 @layer components {
   .container-bm { @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6; }
   .kicker { @apply font-mono text-xs tracking-[0.18em] text-basil; }
-  .h-section { @apply font-display text-[clamp(30px,4vw,48px)] font-extrabold leading-tight; }
+  .h-section { @apply font-display text-[clamp(26px,4vw,48px)] font-extrabold leading-[1.08] tracking-[-0.01em]; }
+  .section { @apply py-10 sm:py-14 lg:py-16; }
+  .snap-row { @apply scrollbar-none -mx-4 flex snap-x snap-mandatory scroll-pl-4 gap-3 overflow-x-auto px-4 sm:mx-0 sm:px-0; }
   .btn { @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-5 font-bold no-underline transition; }
   .btn-primary { @apply btn bg-basil text-white shadow-glow hover:bg-basil-deep hover:text-white; }
   .btn-white { @apply btn bg-white text-basil hover:bg-basil-ice hover:text-basil; }

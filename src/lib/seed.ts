@@ -14,6 +14,9 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     'Films, photography, podcasts and live streams for brands, hospitals, banks and universities across Tanzania.',
   hero_image_url: '',
   hero_video_url: '',
+  // Team, office and studio photos uploaded in the CMS (Site settings → Hero photos).
+  hero_images: [],
+  office_hours: 'Mon–Fri 08:30–17:30 · Sat 09:00–13:00',
   logo_url: '/logo.svg',
   logo_reverse_url: '/logo-reverse.svg',
   // Published text: the "About" description of the Basil Media Tz YouTube channel

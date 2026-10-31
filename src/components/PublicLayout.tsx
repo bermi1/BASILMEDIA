@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Header } from './Header';
 import { Footer, WhatsAppButton } from './Footer';
 import { Cursor } from './Cursor';
+import { MobileTabBar } from './MobileTabBar';
 
 export function PublicLayout() {
   const { pathname, hash } = useLocation();
@@ -14,14 +16,17 @@ export function PublicLayout() {
     scrollTo({ top: 0 });
   }, [pathname, hash]);
   return (
-    <div className="relative min-h-screen bg-white">
+    <div className="relative min-h-screen bg-white pb-[84px] md:pb-0">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-white focus:p-3">Skip to content</a>
       <Header />
-      <main id="main">
-        <Outlet />
-      </main>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.main id="main" key={pathname} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+          <Outlet />
+        </motion.main>
+      </AnimatePresence>
       <Footer />
       <WhatsAppButton />
+      <MobileTabBar />
       <Cursor />
     </div>
   );

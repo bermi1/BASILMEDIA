@@ -23,6 +23,9 @@ export interface SiteSettings {
   hero_subtitle: string;
   hero_image_url: string;
   hero_video_url: string;
+  /** Team, office and studio photos that rotate behind the hero. */
+  hero_images: string[];
+  office_hours: string;
   logo_url: string;
   logo_reverse_url: string;
   about_story: string;

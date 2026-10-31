@@ -59,8 +59,9 @@ export function Header() {
 
   return (
     <header ref={ref} onMouseLeave={() => setMega(null)} className={`sticky top-0 z-40 border-b transition ${scrolled || mega ? 'border-[#E3EDF8] bg-white/90 shadow-[0_10px_30px_rgba(10,47,92,0.06)] backdrop-blur-xl' : 'border-transparent bg-white/80 backdrop-blur-md'}`}>
-      <div className="container-bm flex items-center justify-between gap-3 py-2.5 sm:py-3">
-        <Logo size={scrolled ? 56 : 64} />
+      <div className="container-bm flex items-center justify-between gap-3 py-2 sm:py-3">
+        <span className="sm:hidden"><Logo size={40} /></span>
+        <span className="hidden sm:block"><Logo size={scrolled ? 56 : 64} /></span>
         <nav aria-label="Main" className="hidden items-center gap-1 text-[15px] lg:flex">
           {megaBtn('services', t('services'))}
           {megaBtn('work', t('ourWork'))}
@@ -69,13 +70,13 @@ export function Header() {
           <NavLink to="/find-me" className="rounded-xl px-3.5 py-3 font-bold text-basil no-underline">{t('findPhotos')}</NavLink>
         </nav>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} aria-label="Switch language" className="h-11 rounded-full border border-basil-edge bg-white px-3 text-sm font-bold text-basil-deep">
+          <button type="button" onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} aria-label="Switch language" className="h-10 rounded-full sm:h-11 border border-basil-edge bg-white px-3 text-sm font-bold text-basil-deep">
             {lang === 'en' ? 'SW' : 'EN'}
           </button>
           <Link to="/#book" className="hidden rounded-full bg-basil px-[22px] py-[13px] text-[15px] font-bold text-white no-underline shadow-glow hover:bg-basil-deep hover:text-white sm:inline-flex">
             {t('book')}
           </Link>
-          <button type="button" className="flex h-11 w-11 items-center justify-center rounded-xl border border-basil-edge bg-white text-basil-deep lg:hidden" aria-label={mobile ? 'Close menu' : 'Open menu'} aria-expanded={mobile} onClick={() => setMobile(!mobile)}>
+          <button type="button" className="flex h-10 w-10 items-center justify-center rounded-xl border border-basil-edge bg-white text-basil-deep sm:h-11 sm:w-11 lg:hidden" aria-label={mobile ? 'Close menu' : 'Open menu'} aria-expanded={mobile} onClick={() => setMobile(!mobile)}>
             {mobile ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
@@ -123,14 +124,15 @@ export function Header() {
       <AnimatePresence>
         {mobile && (
           <motion.nav aria-label="Mobile" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-[#E3EDF8] bg-white lg:hidden">
-            <div className="container-bm flex flex-col gap-1 py-4 text-[16px]">
+            <div className="container-bm grid grid-cols-2 gap-2 py-4 text-[15px]">
               {[
                 ['/services', t('services')], ['/our-work', t('ourWork')], ['/about', t('about')], ['/contact', t('contact')],
                 ['/health-news', t('healthNews')], ['/find-me', t('findPhotos')],
               ].map(([to, label]) => (
-                <NavLink key={to} to={to} className={linkCls}>{label}</NavLink>
+                <NavLink key={to} to={to} className={({ isActive }) => `rounded-2xl px-4 py-3.5 font-semibold no-underline ${isActive ? 'bg-basil text-white' : 'bg-basil-mist text-basil-ink'}`}>{label}</NavLink>
               ))}
-              <Link to="/#book" className="btn-primary mt-2">{t('book')}</Link>
+              <Link to="/#book" className="btn-primary col-span-2 mt-1 h-12">{t('book')}</Link>
+              <Link to="/login" className="col-span-2 py-2 text-center text-sm font-bold">{t('login')}</Link>
             </div>
           </motion.nav>
         )}
