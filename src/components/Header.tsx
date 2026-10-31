@@ -20,7 +20,7 @@ export function Header() {
     return () => removeEventListener('scroll', on);
   }, []);
   // Pages that open with a dark hero let the header float transparent; the rest get the frosted bar.
-  const overHero = /^\/($|services|our-work|about|contact|health-news$|find-me|subscribe|g\/)/.test(loc.pathname);
+  const overHero = /^\/($|services|our-work|about|contact|health-news$|subscribe)/.test(loc.pathname);
   const glass = solid || open || !overHero;
   const links: [string, string][] = [['/services', t('services')], ['/our-work', t('ourWork')], ['/about', t('about')], ['/health-news', 'News'], ['/contact', t('contact')]];
 

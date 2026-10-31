@@ -43,13 +43,13 @@ export default function App() {
                 <Route path="health-news" element={<HealthNews />} />
                 <Route path="health-news/:id" element={<NewsStory />} />
                 <Route path="subscribe" element={<Subscribe />} />
-                <Route path="g/:slug" element={<Gallery />} />
                 <Route path="find-me" element={<FindMe />} />
                 <Route path="privacy" element={<Privacy />} />
                 <Route path="privacy/face-search" element={<FacePrivacy />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
               <Route path="login" element={<Login />} />
+              <Route path="g/:slug" element={<Gallery />} />
               <Route path="s/:slug" element={<Showcase />} />
               <Route path="d/:token" element={<DealRoom />} />
               <Route path="admin/*" element={<OsRoutes />} />

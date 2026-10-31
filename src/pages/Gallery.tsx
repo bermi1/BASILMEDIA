@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowDown, ChevronLeft, ChevronRight, Columns3, Download, Heart, LayoutGrid, Lock, ScanFace, Send, Share2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Heart, Lock, Pause, PlayCircle, ScanFace, Send, Share2, X } from 'lucide-react';
 import { galleryMedia, get, submit } from '@/lib/db';
 import { fmtDate, fmtDateLong, waLink } from '@/lib/format';
 import type { Gallery as G, MediaItem } from '@/lib/types';
@@ -17,7 +17,7 @@ export default function Gallery() {
   const [pin, setPin] = useState('');
   const [pinErr, setPinErr] = useState('');
   const [tab, setTab] = useState('All');
-  const [layout, setLayout] = useState<'grid' | 'strip'>('grid');
+  const [play, setPlay] = useState(false);
   const [onlyFavs, setOnlyFavs] = useState(false);
   const [favs, setFavs] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem(favKey(slug)) ?? '[]'); } catch { return []; }
@@ -52,6 +52,12 @@ export default function Gallery() {
     return () => removeEventListener('keydown', k);
   }, [open, shown.length]);
 
+  useEffect(() => {
+    if (!play || open === null) return;
+    const t = setTimeout(() => setOpen((o) => (o === null ? o : (o + 1) % shown.length)), 3500);
+    return () => clearTimeout(t);
+  }, [play, open, shown.length]);
+
   if (g === undefined) return <div className="container-bm py-24 text-basil-muted">Opening gallery…</div>;
   if (!g) return <div className="container-bm py-24"><h1>Gallery not found</h1><p className="text-basil-muted">Check the link or QR code, or ask the Basil Media team.</p><Link to="/find-me">Find my photos</Link></div>;
   if (expired) return <div className="container-bm py-24"><h1>This gallery has closed</h1><p className="text-basil-muted">It was open until {fmtDate(g.expires_on)}. Contact Basil Media to reopen it.</p><Link to="/contact">Contact us</Link></div>;
@@ -74,91 +80,85 @@ export default function Gallery() {
 
   const cover = g.cover_url || items?.find((m) => m.url)?.url;
   const cur = open !== null ? shown[open] : null;
-  const pct = limit ? Math.min(100, (favs.length / limit) * 100) : 0;
+  const count = (c: string) => (items ?? []).filter((m) => c === 'All' || m.collection === c).length;
+  const iconBtn = 'flex h-10 w-10 items-center justify-center rounded-full border-0 bg-transparent text-[#222] transition hover:bg-black/5';
 
   return (
-    <>
-      <section aria-label="Gallery cover" className="grain relative flex min-h-[460px] items-end overflow-hidden text-white sm:min-h-[560px]" style={{ background: gradient(0) }}>
-        {cover && <img src={cover} alt="" className="absolute inset-0 h-full w-full object-cover" />}
-        <div className="absolute inset-0 bg-gradient-to-t from-basil-night via-basil-night/40 to-transparent" />
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="container-bm relative pb-10">
-          <div className="font-mono text-[11px] tracking-[0.18em] text-basil-haze">CLIENT GALLERY · {location.host.toUpperCase()}/G/{g.slug.toUpperCase()}</div>
-          <h1 className="my-3 text-[clamp(40px,6vw,76px)] font-extrabold leading-none">{g.title}</h1>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-basil-frost">
-            <span>{fmtDateLong(g.event_date)} · {g.location}</span><span>{items?.length ?? 0} photos · {g.collections.length} collections</span>
-            <span className="flex items-center gap-1.5"><img src="/logo-reverse.svg" alt="" className="h-5 w-5" />Delivered by Basil Media</span>
-          </div>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <a href="#grid" className="flex items-center gap-2 rounded-2xl bg-white px-6 py-3.5 font-bold text-basil-deep no-underline hover:bg-basil-ice">Enter gallery <ArrowDown size={18} /></a>
-            {g.face_search_enabled && <Link to={`/find-me?g=${g.slug}`} className="btn-ghost px-6 py-3.5"><ScanFace size={18} /> Find my photos</Link>}
-          </div>
+    <div className="min-h-screen bg-white text-[#222]">
+      {/* COVER — full screen, centred title, Pixieset-style */}
+      <section aria-label="Gallery cover" className="relative flex h-[100svh] items-center justify-center overflow-hidden bg-[#111] text-white">
+        {cover ? <motion.img initial={{ scale: 1.08 }} animate={{ scale: 1 }} transition={{ duration: 2.4, ease: 'easeOut' }} src={cover} alt="" className="absolute inset-0 h-full w-full object-cover" /> : <div className="absolute inset-0" style={{ background: gradient(0) }} />}
+        <div className="absolute inset-0 bg-black/35" />
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.8 }} className="relative px-6 text-center">
+          <h1 className="m-0 text-[clamp(22px,4vw,44px)] font-light uppercase tracking-[0.28em]">{g.title}</h1>
+          <div className="mt-3 text-[12px] uppercase tracking-[0.3em] text-white/80">{fmtDateLong(g.event_date)}</div>
+          <a href="#grid" className="mt-8 inline-flex h-11 items-center gap-2 border border-white/80 px-7 text-[12px] font-medium uppercase tracking-[0.25em] text-white no-underline transition hover:bg-white hover:text-[#111]">View gallery</a>
         </motion.div>
+        <div className="absolute bottom-6 left-0 right-0 flex flex-col items-center gap-1 text-[10px] uppercase tracking-[0.3em] text-white/70">
+          <span className="flex items-center gap-2"><img src="/logo-reverse.svg" alt="" className="h-5 w-5" />Basil Media</span>
+        </div>
       </section>
 
-      <div id="grid" className="sticky top-[74px] z-20 scroll-mt-20 border-b border-basil-line bg-white/90 backdrop-blur-xl sm:top-[88px]">
-        <div className="container-bm flex flex-wrap items-center justify-between gap-3 py-3">
-          <div role="tablist" aria-label="Collections" className="scrollbar-none flex gap-1.5 overflow-x-auto">
-            {['All', ...g.collections].map((c) => (
-              <button key={c} role="tab" aria-selected={tab === c} type="button" onClick={() => setTab(c)} className={`min-h-[40px] shrink-0 rounded-full px-3.5 text-sm font-semibold ${tab === c ? 'border-0 bg-basil text-white' : 'border border-basil-edge bg-white text-basil-deep'}`}>
-                {c} <span className="opacity-60">{(items ?? []).filter((m) => c === 'All' || m.collection === c).length}</span>
-              </button>
-            ))}
+      {/* BAR — name, collections, actions */}
+      <div id="grid" className="sticky top-0 z-30 scroll-mt-0 border-b border-black/5 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-14 max-w-[1600px] items-center justify-between gap-3 px-4 sm:h-16 sm:px-8">
+          <div className="min-w-0"><b className="block truncate text-[13px] font-medium uppercase tracking-[0.18em]">{g.title}</b><span className="hidden text-[11px] uppercase tracking-[0.2em] text-black/45 sm:block">Basil Media</span></div>
+          <div className="flex items-center">
+            <button type="button" aria-pressed={onlyFavs} onClick={() => setOnlyFavs(!onlyFavs)} className={iconBtn} aria-label={`Favourites (${favs.length})`}><Heart size={18} fill={onlyFavs ? '#222' : 'none'} /></button>
+            {favs.length > 0 && <span className="-ml-1.5 mr-1 text-[11px] font-medium">{favs.length}</span>}
+            <button type="button" onClick={() => shown.length && (setOpen(0), setPlay(true))} className={iconBtn} aria-label="Slideshow"><PlayCircle size={18} /></button>
+            <button type="button" onClick={() => setSheet('share')} className={iconBtn} aria-label="Share"><Share2 size={18} /></button>
+            {g.face_search_enabled && <Link to={`/find-me?g=${g.slug}`} className={iconBtn} aria-label="Find my photos"><ScanFace size={18} /></Link>}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <div role="group" aria-label="Layout" className="flex rounded-xl border border-basil-edge p-0.5">
-              <button type="button" aria-pressed={layout === 'grid'} aria-label="Grid" onClick={() => setLayout('grid')} className={`flex h-9 w-9 items-center justify-center rounded-lg border-0 ${layout === 'grid' ? 'bg-basil-ice text-basil' : 'bg-transparent text-basil-muted'}`}><LayoutGrid size={16} /></button>
-              <button type="button" aria-pressed={layout === 'strip'} aria-label="Cinematic strip" onClick={() => setLayout('strip')} className={`flex h-9 w-9 items-center justify-center rounded-lg border-0 ${layout === 'strip' ? 'bg-basil-ice text-basil' : 'bg-transparent text-basil-muted'}`}><Columns3 size={16} /></button>
-            </div>
-            <button type="button" aria-pressed={onlyFavs} onClick={() => setOnlyFavs(!onlyFavs)} className={`flex h-10 items-center gap-1.5 rounded-xl px-3 text-sm font-bold ${onlyFavs ? 'border-0 bg-basil text-white' : 'border border-basil-edge bg-white text-basil-deep'}`}><Heart size={16} fill="currentColor" /> Favourites ({favs.length})</button>
-            <button type="button" onClick={() => setSheet('share')} className="flex h-10 items-center gap-1.5 rounded-xl border border-basil-edge bg-white px-3 text-sm font-bold text-basil-deep"><Share2 size={16} /> Share</button>
-          </div>
+        </div>
+        <div role="tablist" aria-label="Collections" className="scrollbar-none mx-auto flex max-w-[1600px] gap-6 overflow-x-auto px-4 sm:justify-center sm:px-8">
+          {['All', ...g.collections].map((c) => (
+            <button key={c} role="tab" type="button" aria-selected={tab === c} onClick={() => setTab(c)} className={`relative h-10 shrink-0 border-0 bg-transparent px-0 text-[11.5px] font-medium uppercase tracking-[0.2em] ${tab === c ? 'text-[#111]' : 'text-black/40 hover:text-black/70'}`}>
+              {c} <span className="text-black/30">{count(c)}</span>
+              {tab === c && <motion.span layoutId="g-tab" className="absolute inset-x-0 bottom-0 h-px bg-[#111]" />}
+            </button>
+          ))}
         </div>
       </div>
 
-      <main className="container-bm py-8">
+      <main className="mx-auto max-w-[1600px] px-1.5 py-1.5 sm:px-6 sm:py-6">
         {limit > 0 && (
-          <div className="mb-6 flex flex-wrap items-center gap-4 rounded-3xl bg-basil-mist p-4 sm:p-5">
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-basil"><Heart size={20} fill="currentColor" /></span>
-            <div className="min-w-0 flex-[1_1_240px]">
-              <div className="font-bold">Choose up to {limit} for your album — {favs.length} chosen</div>
-              <div className="text-sm text-basil-muted">{favs.length >= limit ? 'Limit reached. Remove one to add another.' : `${limit - favs.length} left to choose.`}</div>
-              <div className="mt-2 h-1.5 rounded-full bg-basil-line"><div className="h-1.5 rounded-full bg-basil transition-all" style={{ width: `${pct}%` }} /></div>
-            </div>
-            <button type="button" disabled={!favs.length} onClick={() => setSheet('send')} className="btn-primary disabled:opacity-50"><Send size={18} /> Send my selection</button>
+          <div className="mx-1.5 mb-3 flex flex-wrap items-center justify-between gap-3 border border-black/10 px-4 py-3 sm:mx-0">
+            <span className="text-[12px] uppercase tracking-[0.16em]">Album selection · <b>{favs.length}</b> / {limit}</span>
+            <button type="button" disabled={!favs.length} onClick={() => setSheet('send')} className="flex h-9 items-center gap-2 border-0 bg-[#111] px-4 text-[11px] font-medium uppercase tracking-[0.2em] text-white disabled:opacity-30"><Send size={14} />Send selection</button>
           </div>
         )}
-        {onlyFavs && !shown.length && <div className="rounded-3xl border border-dashed border-basil-edge p-10 text-center"><b>No favourites yet</b><p className="mb-0 text-basil-muted">Tap the heart on any photo to add it to your album selection.</p></div>}
-        {layout === 'grid' ? (
-          <div className="columns-2 gap-3 sm:columns-3 lg:columns-4">
-            {shown.map((m, i) => <Tile key={m.id} m={m} i={i} fav={favs.includes(m.id)} onOpen={() => setOpen(i)} onFav={() => toggleFav(m.id)} tall={i % 3 === 0} />)}
-          </div>
-        ) : (
-          <div className="scrollbar-none -mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-4">
-            {shown.map((m, i) => <div key={m.id} className="w-[78vw] max-w-[640px] shrink-0 snap-center"><Tile m={m} i={i} fav={favs.includes(m.id)} onOpen={() => setOpen(i)} onFav={() => toggleFav(m.id)} wide /></div>)}
-          </div>
-        )}
-        <div className="mt-10 grid gap-4 md:grid-cols-3">
-          <div className="rounded-3xl border border-basil-line p-6"><div className="kicker">GALLERY OPEN UNTIL</div><div className="my-1 font-display text-2xl font-extrabold">{fmtDate(g.expires_on)}</div><div className="text-sm text-basil-muted">Download your favourites before then. Your album selection locks once you send it.</div></div>
-          <div className="rounded-3xl bg-basil-mist p-6"><div className="kicker">PRINTS &amp; ALBUMS</div><div className="my-1 font-display text-xl font-extrabold">Lay-flat albums and prints</div><div className="text-sm text-basil-muted">Ask the team for album and print options printed in Dar es Salaam.</div></div>
-          <div className="rounded-3xl bg-basil p-6 text-white"><div className="font-mono text-xs tracking-[0.18em] text-basil-frost">CAN’T FIND YOURSELF?</div><div className="my-1 font-display text-xl font-extrabold">Search by selfie</div><Link to={`/find-me?g=${g.slug}`} className="mt-2 inline-flex rounded-xl bg-white px-4 py-2.5 font-bold text-basil no-underline">Find my photos</Link></div>
+        {onlyFavs && !shown.length && <p className="py-20 text-center text-[13px] uppercase tracking-[0.2em] text-black/40">No favourites yet — tap the heart on a photo</p>}
+        <div className="columns-2 gap-1.5 sm:columns-3 sm:gap-3 xl:columns-4">
+          {shown.map((m, i) => <Tile key={m.id} m={m} i={i} fav={favs.includes(m.id)} canDownload={g.allow_downloads} onOpen={() => setOpen(i)} onFav={() => toggleFav(m.id)} />)}
         </div>
+        <footer className="mt-16 flex flex-col items-center gap-2 pb-10 text-center text-[11px] uppercase tracking-[0.25em] text-black/45">
+          <img src="/logo.svg" alt="" className="h-8 w-8" />
+          <span>Delivered by Basil Media · open until {fmtDate(g.expires_on)}</span>
+          <span className="flex gap-4"><Link to="/" className="text-black/60">Website</Link><Link to="/find-me" className="text-black/60">Find my photos</Link><Link to="/contact" className="text-black/60">Prints &amp; albums</Link></span>
+        </footer>
       </main>
 
       <AnimatePresence>
         {cur && open !== null && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} role="dialog" aria-modal="true" aria-label={cur.caption} className="fixed inset-0 z-50 flex flex-col bg-basil-night/95 backdrop-blur-md">
-            <div className="flex items-center justify-between p-3 text-white">
-              <span className="text-sm text-basil-haze">{open + 1} / {shown.length} · {cur.caption}</span>
-              <div className="flex gap-2">
-                <button type="button" aria-label="Favourite" aria-pressed={favs.includes(cur.id)} onClick={() => toggleFav(cur.id)} className="flex h-11 w-11 items-center justify-center rounded-full border-0 bg-white/10 text-white"><Heart size={20} fill={favs.includes(cur.id) ? 'currentColor' : 'none'} /></button>
-                {g.allow_downloads && cur.url && <a href={cur.url} download aria-label="Download" className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white hover:text-white"><Download size={20} /></a>}
-                <button type="button" aria-label="Close" onClick={() => setOpen(null)} className="flex h-11 w-11 items-center justify-center rounded-full border-0 bg-white/10 text-white"><X size={20} /></button>
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} role="dialog" aria-modal="true" aria-label={cur.caption} className="fixed inset-0 z-50 flex flex-col bg-[#0b0b0b] text-white">
+            <div className="flex items-center justify-between px-3 py-2 sm:px-6">
+              <span className="text-[11px] uppercase tracking-[0.2em] text-white/60">{open + 1} / {shown.length}</span>
+              <div className="flex items-center gap-1">
+                <button type="button" aria-label="Favourite" aria-pressed={favs.includes(cur.id)} onClick={() => toggleFav(cur.id)} className="flex h-11 w-11 items-center justify-center border-0 bg-transparent text-white"><Heart size={19} fill={favs.includes(cur.id) ? 'currentColor' : 'none'} /></button>
+                <button type="button" aria-label={play ? 'Pause slideshow' : 'Play slideshow'} onClick={() => setPlay(!play)} className="flex h-11 w-11 items-center justify-center border-0 bg-transparent text-white">{play ? <Pause size={19} /> : <PlayCircle size={19} />}</button>
+                {g.allow_downloads && cur.url && <a href={cur.url} download aria-label="Download" className="flex h-11 w-11 items-center justify-center text-white hover:text-white"><Download size={19} /></a>}
+                <button type="button" aria-label="Close" onClick={() => (setOpen(null), setPlay(false))} className="flex h-11 w-11 items-center justify-center border-0 bg-transparent text-white"><X size={21} /></button>
               </div>
             </div>
-            <div className="relative flex flex-1 items-center justify-center p-3">
-              {cur.url ? (cur.kind === 'video' ? <video src={cur.url} controls autoPlay playsInline className="max-h-full max-w-full rounded-xl" /> : <img src={cur.url} alt={cur.caption} className="max-h-full max-w-full rounded-xl object-contain" />) : <div className="aspect-[3/2] w-full max-w-3xl rounded-xl" style={{ background: gradient(open) }} />}
-              <button type="button" aria-label="Previous" onClick={() => setOpen((open - 1 + shown.length) % shown.length)} className="absolute left-3 flex h-12 w-12 items-center justify-center rounded-full border-0 bg-white/15 text-white"><ChevronLeft /></button>
-              <button type="button" aria-label="Next" onClick={() => setOpen((open + 1) % shown.length)} className="absolute right-3 flex h-12 w-12 items-center justify-center rounded-full border-0 bg-white/15 text-white"><ChevronRight /></button>
+            <div className="relative flex min-h-0 flex-1 items-center justify-center px-2 pb-6 sm:px-16">
+              <AnimatePresence mode="wait">
+                <motion.div key={cur.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35 }} className="flex h-full w-full items-center justify-center">
+                  {cur.url ? (cur.kind === 'video' ? <video src={cur.url} controls autoPlay playsInline className="max-h-full max-w-full" /> : <img src={cur.url} alt={cur.caption} className="max-h-full max-w-full object-contain" />) : <div className="aspect-[3/2] w-full max-w-3xl" style={{ background: gradient(open) }} />}
+                </motion.div>
+              </AnimatePresence>
+              <button type="button" aria-label="Previous" onClick={() => setOpen((open - 1 + shown.length) % shown.length)} className="absolute left-1 flex h-14 w-11 items-center justify-center border-0 bg-transparent text-white/80 sm:left-4"><ChevronLeft size={30} strokeWidth={1.2} /></button>
+              <button type="button" aria-label="Next" onClick={() => setOpen((open + 1) % shown.length)} className="absolute right-1 flex h-14 w-11 items-center justify-center border-0 bg-transparent text-white/80 sm:right-4"><ChevronRight size={30} strokeWidth={1.2} /></button>
             </div>
           </motion.div>
         )}
@@ -167,19 +167,20 @@ export default function Gallery() {
       <AnimatePresence>
         {sheet && <Sheet g={g} kind={sheet} favs={(items ?? []).filter((m) => favs.includes(m.id))} onClose={() => setSheet(null)} />}
       </AnimatePresence>
-    </>
+    </div>
   );
 }
 
-function Tile({ m, i, fav, onOpen, onFav, tall, wide }: { m: MediaItem; i: number; fav: boolean; onOpen: () => void; onFav: () => void; tall?: boolean; wide?: boolean }) {
+function Tile({ m, i, fav, canDownload, onOpen, onFav }: { m: MediaItem; i: number; fav: boolean; canDownload: boolean; onOpen: () => void; onFav: () => void }) {
   return (
-    <div className="group relative mb-3 break-inside-avoid overflow-hidden rounded-2xl" style={{ background: gradient(i), aspectRatio: m.url ? undefined : wide ? '3 / 2' : tall ? '3 / 4' : '4 / 3' }}>
-      {m.url && <img src={m.thumb_url || m.url} alt={m.caption} loading="lazy" decoding="async" className={`block w-full transition duration-500 group-hover:scale-[1.03] ${wide ? 'aspect-[3/2] object-cover' : ''}`} />}
+    <div className="group relative mb-1.5 break-inside-avoid overflow-hidden sm:mb-3" style={{ background: gradient(i), aspectRatio: m.url ? undefined : i % 3 === 0 ? '3 / 4' : '4 / 3' }}>
+      {m.url && <img src={m.thumb_url || m.url} alt={m.caption} loading="lazy" decoding="async" className="block w-full transition duration-500 group-hover:opacity-90" />}
       <button type="button" onClick={onOpen} aria-label={`Open ${m.caption}`} className="absolute inset-0 border-0 bg-transparent" />
-      {!m.url && <span className="pointer-events-none absolute bottom-3 left-3 text-xs text-basil-frost">{m.caption}</span>}
-      <button type="button" onClick={onFav} aria-label={fav ? 'Remove from favourites' : 'Add to favourites'} aria-pressed={fav} className={`absolute right-2 top-2 flex h-10 w-10 items-center justify-center rounded-full border-0 transition ${fav ? 'bg-white text-basil' : 'bg-basil-night/45 text-white opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}`}>
-        <Heart size={18} fill={fav ? 'currentColor' : 'none'} />
-      </button>
+      {m.kind === 'video' && <span className="pointer-events-none absolute left-2 top-2 rounded-sm bg-black/50 px-1.5 py-0.5 text-[10px] uppercase tracking-widest text-white">Video</span>}
+      <div className={`absolute bottom-0 right-0 flex gap-0.5 p-1.5 transition ${fav ? 'opacity-100' : 'opacity-100 sm:opacity-0 sm:group-hover:opacity-100'}`}>
+        {canDownload && m.url && <a href={m.url} download aria-label="Download" onClick={(e) => e.stopPropagation()} className="hidden h-9 w-9 items-center justify-center text-white drop-shadow sm:flex"><Download size={17} /></a>}
+        <button type="button" onClick={onFav} aria-label={fav ? 'Remove from favourites' : 'Add to favourites'} aria-pressed={fav} className="flex h-9 w-9 items-center justify-center border-0 bg-transparent text-white drop-shadow"><Heart size={17} fill={fav ? 'currentColor' : 'none'} /></button>
+      </div>
     </div>
   );
 }
