@@ -31,10 +31,10 @@ export default function HealthNews() {
   return (
     <>
       <section className="relative overflow-hidden text-white" style={{ background: 'radial-gradient(ellipse at 85% 10%, rgba(124,192,245,0.3), transparent 50%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
-        <div className="container-bm relative flex flex-wrap items-end gap-5 pb-6 pt-8 sm:gap-8 sm:pb-10 sm:pt-14">
+        <div className="container-bm relative flex flex-wrap items-end gap-5 pb-6 pt-24 sm:gap-8 sm:pb-10 sm:pt-32">
           <div className="min-w-0 flex-[1_1_520px]">
             <div className="font-mono text-xs tracking-[0.2em] text-basil-haze">HEALTH NEWS · FOR DOCTORS &amp; HEALTH PROFESSIONALS</div>
-            <h1 className="my-2 text-[clamp(36px,6vw,80px)] font-extrabold leading-[0.95] sm:my-3">Basil Health <span className="text-basil-sky">Brief</span></h1>
+            <h1 className="my-2 text-[clamp(26px,4.5vw,56px)] font-bold leading-[1.05] tracking-[-0.02em] sm:my-3">Basil Health <span className="text-basil-sky">Brief</span></h1>
             <p className="m-0 max-w-[600px] text-[15px] text-basil-frost sm:text-lg">Policy, research, CPD and opportunities across Tanzania’s health sector — curated weekly and delivered the way you prefer: SMS, email or WhatsApp.</p>
           </div>
           <div className="hidden flex-[0_1_340px] rounded-3xl border border-white/25 bg-white/10 p-6 backdrop-blur-xl sm:block">
@@ -140,13 +140,13 @@ export default function HealthNews() {
   );
 }
 
-export function SubscribeSection({ source = 'health-news' }: { source?: string }) {
+export function SubscribeSection({ source = 'health-news', standalone }: { source?: string; standalone?: boolean }) {
   return (
     <section id="subscribe" className="scroll-mt-24 text-white" style={{ background: 'radial-gradient(ellipse at 10% 10%, rgba(124,192,245,0.3), transparent 50%), linear-gradient(160deg, #0F6EC2, #0A2F5C 60%, #061E3D)' }}>
-      <div className="container-bm grid items-center gap-6 py-10 sm:gap-10 sm:py-16 lg:grid-cols-[1fr_1.2fr]">
+      <div className={`container-bm grid items-center gap-6 pb-10 sm:gap-10 sm:pb-16 lg:grid-cols-[1fr_1.2fr] ${standalone ? 'pt-24 sm:pt-32' : 'pt-10 sm:pt-16'}`}>
         <div>
           <div className="font-mono text-xs tracking-[0.2em] text-basil-haze">SUBSCRIBE · JIUNGE</div>
-          <h2 className="my-2 text-[clamp(28px,4.5vw,56px)] font-extrabold leading-[1.02] sm:my-3">Your specialty.<br />Your language.<br /><span className="text-basil-sky">Your channel.</span></h2>
+          <h2 className="my-2 text-[clamp(22px,3.4vw,42px)] font-bold leading-[1.1] sm:my-3">Your specialty.<br />Your language.<br /><span className="text-basil-sky">Your channel.</span></h2>
           <p className="m-0 max-w-[460px] text-[15px] text-basil-frost sm:text-lg">Pick the specialties you care about and we only send what is relevant. One brief a week, plus urgent drug alerts when they matter.</p>
           <ul className="mt-4 hidden list-none flex-col gap-2.5 p-0 sm:mt-6 sm:flex">
             {['Free for health professionals', 'Stop anytime — reply STOP', 'Your data stays in line with the PDPA 2022'].map((x) => (

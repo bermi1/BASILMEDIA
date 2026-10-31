@@ -10,13 +10,14 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   tagline: "We Don't Just Capture Moments —",
   tagline_highlight: 'We Create Them.',
   hero_kicker: 'VIDEO · PHOTOGRAPHY · PODCAST · LIVE STREAMING — DAR ES SALAAM',
-  hero_subtitle:
-    'Films, photography, podcasts and live streams for brands, hospitals, banks and universities across Tanzania.',
+  hero_subtitle: 'Films, photos, podcasts and live streams from Dar es Salaam.',
   hero_image_url: '',
   hero_video_url: '',
   // Team, office and studio photos uploaded in the CMS (Site settings → Hero photos).
   hero_images: [],
   office_hours: 'Mon–Fri 08:30–17:30 · Sat 09:00–13:00',
+  home_about_title: 'Pioneering health, innovation and youth empowerment — one story at a time.',
+  home_about_text: 'Basil Media is a Dar es Salaam studio telling the stories that move Tanzania forward: the clinicians, innovators and young people shaping what comes next.',
   logo_url: '/logo.svg',
   logo_reverse_url: '/logo-reverse.svg',
   // Published text: the "About" description of the Basil Media Tz YouTube channel
@@ -31,7 +32,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   contact_email: 'hello@basilmedia.co.tz',
   phone: '+255 700 000 000',
   whatsapp: '+255700000000',
-  address: 'Mikocheni, Dar es Salaam, Tanzania',
+  address: '2 Mataka Street, Upanga, Dar es Salaam, Tanzania',
   map_embed_url: '',
   footer_about:
     'Video, photography, podcasts and live streaming from Dar es Salaam — delivered through our own studio platform.',
@@ -71,11 +72,11 @@ export const SEED_SERVICES: Service[] = SV.map(([title, short, description, deli
   icon: ICONS[i], image_url: '', video_url: '', sort_order: i + 1, published: true,
 }));
 
-// Real work published on the Basil Media Tz YouTube channel (https://www.youtube.com/@basilmediatz).
+// Real Basil Media productions (titles and cover stills). Videos are published on Instagram:
+// paste each reel link into the project in the CMS and it plays inside the page.
 // Titles are the published video titles; "client" is the organisation or event named in the video
 // title or thumbnail (the subject of the production), not a confirmed commercial contract.
 // Sources and evidence: docs/CONTENT_SOURCES.md.
-const yt = (v: string) => `https://www.youtube.com/watch?v=${v}`;
 const PJ: [string, Project['category'], string, string, string, string][] = [
   ['#LIVE: The 2026 PAT Scientific Conference — Mwanza', 'Corporate', 'Paediatric Association of Tanzania (PAT)', 'em1S7s6k7BI', 'pat-scientific-conference-2026-live',
     'Live stream of the 2026 PAT Scientific Conference, 15 July 2026, Malaika Beach Resort, Mwanza. Theme: “Resilient Health Systems for Every Child: Innovation, Equity and Quality of Care”.'],
@@ -107,8 +108,8 @@ const PJ: [string, Project['category'], string, string, string, string][] = [
     'What you did not know about the journey to the moon — a science explainer.'],
 ];
 export const SEED_PROJECTS: Project[] = [
-  ...PJ.map(([title, category, client, v, img, description], i): Project => ({
-    id: id('prj'), title, category, client, image_url: `/media/${img}.webp`, video_url: yt(v), external_url: '',
+  ...PJ.map(([title, category, client, , img, description], i): Project => ({
+    id: id('prj'), title, category, client, image_url: `/media/${img}.webp`, video_url: '', external_url: '',
     description, featured: i < 6, sort_order: i + 1, published: true,
   })),
   // Placeholders kept until real photo stories are published (no public photo work found yet).
@@ -121,30 +122,19 @@ export const SEED_PROJECTS: Project[] = [
   ),
 ];
 
-export const SEED_PARTNERS: Partner[] = [
-  'National Referral Hospital', 'Bank Foundation', 'University of Health Sciences', 'Tanzania Health Summit', 'Cement Co.', 'Beverage Co.',
-].map((name, i) => ({ id: id('ptn'), name, logo_url: '', website: '', sort_order: i + 1 }));
+// Real partner logos are added by the admin (CMS → Partners); none are invented here.
+export const SEED_PARTNERS: Partner[] = [];
 
-export const SEED_HIGHLIGHTS: Highlight[] = ([
-  ['Basil Media studio · short', 'https://www.youtube.com/shorts/Z_Am6jJOZrc', 'basil-media-studio-btv'],
-  ['Mainjinia wanaofanya kazi hospitalini', yt('UA6Ip24aIRo'), 'hospital-engineers'],
-  ['Mtambo wa kisasa wa matibabu ya moyo', yt('vmlEFNrpl0g'), 'modern-heart-treatment-machine'],
-  ['The Tranquility', yt('WkFwnOZ89e0'), 'the-tranquility'],
-] as const).map(([title, video_url, img], i) => ({
-  id: id('hl'), title, video_url, thumbnail_url: `/media/${img}.webp`, sort_order: i + 1, published: true,
-}));
+// Instagram reels for the home page "work at a glance" — added in the CMS (Highlights).
+export const SEED_HIGHLIGHTS: Highlight[] = [];
 
 export const SEED_TEAM: TeamMember[] = [
   ['Emmanuel', 'Chief Executive Officer'], ['Saul', 'General Manager & CFO'], ['Benedicto', 'Head of Production'],
   ['Jonathan', 'Director of Photography'], ['Enock', 'Project Lead · Events'], ['Rehema', 'Front Desk & Client Care'],
 ].map(([name, role], i) => ({ id: id('tm'), name, role, photo_url: '', bio: '', sort_order: i + 1, published: true }));
 
-export const SEED_TESTIMONIALS: Testimonial[] = [
-  ['National Referral Hospital', 'They filmed our wards with real respect for patients and staff. The documentary is now part of our induction for every new nurse.'],
-  ['Tanzania Health Summit', 'Three days, four halls, one live stream that never dropped. Delegates had their photos before the closing dinner.'],
-  ['Bank Foundation', 'The scholarship film made our board cry and our applications double. Calm crew, sharp edit, delivered early.'],
-  ['University of Health Sciences', 'Graduates found their photos with a selfie. Parents still send us thank-you messages about that gallery.'],
-].map(([company, quote], i) => ({ id: id('tst'), company, quote, rating: 5, person_name: '', sort_order: i + 1, published: true }));
+// Real client quotes are added by the admin (CMS → Testimonials).
+export const SEED_TESTIMONIALS: Testimonial[] = [];
 
 const today = new Date();
 const plus = (d: number) => new Date(today.getTime() + d * 864e5).toISOString().slice(0, 10);

@@ -1,139 +1,56 @@
-import { useEffect, useRef, useState } from 'react';
+// Floating glass header: a pill on desktop, a slim bar on phones. Transparent over the hero, frosted once you scroll.
+import { useEffect, useState } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Briefcase, Camera, ChevronDown, Menu, Mic, Radio, Sparkles, Video, X } from 'lucide-react';
-import { useRows } from '@/hooks/useData';
+import { Menu, X } from 'lucide-react';
 import { useSettings } from '@/hooks/useData';
 import { useI18n } from '@/lib/i18n';
-import { Logo } from './Logo';
-import { Media } from './Media';
-
-export const SERVICE_ICONS: Record<string, typeof Video> = { video: Video, camera: Camera, mic: Mic, radio: Radio, sparkles: Sparkles, briefcase: Briefcase };
-
-const WORK_MENU = [
-  { label: 'All Projects', cat: '' },
-  { label: 'Films & Documentaries', cat: 'Films & Documentaries' },
-  { label: 'Photo Stories', cat: 'Photo Stories' },
-  { label: 'Podcasts', cat: 'Podcasts' },
-  { label: 'Corporate', cat: 'Corporate' },
-];
 
 export function Header() {
   const { t, lang, setLang } = useI18n();
-  const settings = useSettings();
-  const { rows: services } = useRows('services', { publishedOnly: true });
-  const { rows: projects } = useRows('projects_public', { publishedOnly: true });
-  const [mega, setMega] = useState<'services' | 'work' | null>(null);
-  const [mobile, setMobile] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
+  const s = useSettings();
   const loc = useLocation();
-  const ref = useRef<HTMLElement>(null);
-
+  const [open, setOpen] = useState(false);
+  const [solid, setSolid] = useState(false);
+  useEffect(() => setOpen(false), [loc.pathname, loc.hash]);
   useEffect(() => {
-    setMega(null);
-    setMobile(false);
-  }, [loc.pathname, loc.hash]);
-  useEffect(() => {
-    const on = () => setScrolled(scrollY > 8);
+    const on = () => setSolid(scrollY > 24);
     on();
     addEventListener('scroll', on, { passive: true });
-    const esc = (e: KeyboardEvent) => e.key === 'Escape' && (setMega(null), setMobile(false));
-    addEventListener('keydown', esc);
-    return () => (removeEventListener('scroll', on), removeEventListener('keydown', esc));
+    return () => removeEventListener('scroll', on);
   }, []);
-
-  const coverFor = (cat: string) => projects.find((p) => (!cat || p.category === cat) && p.image_url)?.image_url;
-  const linkCls = ({ isActive }: { isActive: boolean }) =>
-    `rounded-xl px-3.5 py-3 no-underline ${isActive ? 'bg-basil-ice font-bold text-basil' : 'text-basil-ink hover:text-basil'}`;
-  const megaBtn = (key: 'services' | 'work', label: string) => (
-    <button
-      type="button"
-      aria-expanded={mega === key}
-      onClick={() => setMega(mega === key ? null : key)}
-      onMouseEnter={() => matchMedia('(hover: hover)').matches && setMega(key)}
-      className={`flex items-center gap-1 rounded-xl border-0 px-3.5 py-3 font-medium ${mega === key ? 'bg-basil-ice text-basil' : 'bg-transparent text-basil-ink hover:text-basil'}`}
-    >
-      {label} <ChevronDown size={16} className={`transition ${mega === key ? 'rotate-180' : ''}`} />
-    </button>
-  );
+  // Pages that open with a dark hero let the header float transparent; the rest get the frosted bar.
+  const overHero = /^\/($|services|our-work|about|contact|health-news$|find-me|subscribe|g\/)/.test(loc.pathname);
+  const glass = solid || open || !overHero;
+  const links: [string, string][] = [['/services', t('services')], ['/our-work', t('ourWork')], ['/about', t('about')], ['/health-news', 'News'], ['/contact', t('contact')]];
 
   return (
-    <header ref={ref} onMouseLeave={() => setMega(null)} className={`sticky top-0 z-40 border-b transition ${scrolled || mega ? 'border-[#E3EDF8] bg-white/90 shadow-[0_10px_30px_rgba(10,47,92,0.06)] backdrop-blur-xl' : 'border-transparent bg-white/80 backdrop-blur-md'}`}>
-      <div className="container-bm flex items-center justify-between gap-3 py-2 sm:py-3">
-        <span className="sm:hidden"><Logo size={40} /></span>
-        <span className="hidden sm:block"><Logo size={scrolled ? 56 : 64} /></span>
-        <nav aria-label="Main" className="hidden items-center gap-1 text-[15px] lg:flex">
-          {megaBtn('services', t('services'))}
-          {megaBtn('work', t('ourWork'))}
-          <NavLink to="/about" className={linkCls}>{t('about')}</NavLink>
-          <NavLink to="/contact" className={linkCls}>{t('contact')}</NavLink>
-          <NavLink to="/find-me" className="rounded-xl px-3.5 py-3 font-bold text-basil no-underline">{t('findPhotos')}</NavLink>
+    <header className="fixed inset-x-0 top-0 z-40 px-3 pt-[max(10px,env(safe-area-inset-top))] sm:px-5 sm:pt-4">
+      <div className={`mx-auto flex h-14 max-w-[1240px] items-center justify-between gap-2 rounded-[20px] pl-2 pr-1.5 transition-all duration-300 sm:h-16 sm:rounded-full sm:pl-3 sm:pr-2 ${glass ? 'border border-white/60 bg-white/80 shadow-[0_12px_40px_rgba(10,47,92,0.14)] backdrop-blur-2xl' : 'border border-white/15 bg-white/[0.08] backdrop-blur-md'}`}>
+        <Link to="/" aria-label="Basil Media home" className="flex items-center gap-2 no-underline">
+          <img src={s.logo_url || '/logo.svg'} alt="" className="h-10 w-10 sm:h-11 sm:w-11" />
+          <span className={`whitespace-nowrap font-display text-[16px] font-bold tracking-tight sm:text-[17px] ${glass ? 'text-basil-ink' : 'text-white'}`}>Basil <span className={glass ? 'text-basil' : 'text-basil-sky'}>Media</span></span>
+        </Link>
+        <nav aria-label="Main" className="hidden items-center gap-0.5 lg:flex">
+          {links.map(([to, label]) => (
+            <NavLink key={to} to={to} className={({ isActive }) => `relative whitespace-nowrap rounded-full px-3.5 py-2 text-[14px] font-medium no-underline transition ${isActive ? (glass ? 'bg-basil-ice text-basil' : 'bg-white/15 text-white') : glass ? 'text-basil-ink hover:text-basil' : 'text-white/85 hover:text-white'}`}>{label}</NavLink>
+          ))}
         </nav>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} aria-label="Switch language" className="h-10 rounded-full sm:h-11 border border-basil-edge bg-white px-3 text-sm font-bold text-basil-deep">
-            {lang === 'en' ? 'SW' : 'EN'}
-          </button>
-          <Link to="/#book" className="hidden rounded-full bg-basil px-[22px] py-[13px] text-[15px] font-bold text-white no-underline shadow-glow hover:bg-basil-deep hover:text-white sm:inline-flex">
-            {t('book')}
-          </Link>
-          <button type="button" className="flex h-10 w-10 items-center justify-center rounded-xl border border-basil-edge bg-white text-basil-deep sm:h-11 sm:w-11 lg:hidden" aria-label={mobile ? 'Close menu' : 'Open menu'} aria-expanded={mobile} onClick={() => setMobile(!mobile)}>
-            {mobile ? <X size={22} /> : <Menu size={22} />}
-          </button>
+        <div className="flex items-center gap-1.5">
+          <button type="button" onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} aria-label="Switch language" className={`hidden h-10 rounded-full sm:block border-0 px-3 text-[13px] font-bold ${glass ? 'bg-basil-mist text-basil-deep' : 'bg-white/10 text-white'}`}>{lang === 'en' ? 'SW' : 'EN'}</button>
+          <Link to="/find-me" className={`hidden h-10 items-center whitespace-nowrap rounded-full px-3 text-[14px] font-medium no-underline xl:flex ${glass ? 'text-basil' : 'text-white'}`}>{t('findPhotos')}</Link>
+          <Link to="/#book" className="flex h-10 items-center whitespace-nowrap rounded-full bg-basil px-4 text-[13.5px] font-semibold text-white no-underline shadow-glow hover:bg-basil-deep hover:text-white sm:px-5 sm:text-[14.5px]"><span className="sm:hidden">Book</span><span className="hidden sm:inline">{t('book')}</span></Link>
+          <button type="button" onClick={() => setOpen(!open)} aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open} className={`flex h-10 w-10 items-center justify-center rounded-full border-0 lg:hidden ${glass ? 'bg-basil-mist text-basil-deep' : 'bg-white/10 text-white'}`}>{open ? <X size={20} /> : <Menu size={20} />}</button>
         </div>
       </div>
-
       <AnimatePresence>
-        {mega && (
-          <motion.div key={mega} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} transition={{ duration: 0.18 }} className="hidden border-t border-[#E3EDF8] bg-white shadow-[0_30px_60px_rgba(10,47,92,0.12)] lg:block">
-            {mega === 'services' ? (
-              <div className="container-bm flex gap-5 py-6">
-                <div className="grid flex-[2] grid-cols-2 gap-2">
-                  {services.map((s) => {
-                    const Icon = SERVICE_ICONS[s.icon] ?? Video;
-                    return (
-                      <Link key={s.id} to={`/services#${s.slug}`} className="flex gap-3.5 rounded-2xl bg-basil-mist p-3.5 text-basil-ink no-underline transition hover:bg-basil-ice hover:text-basil-ink">
-                        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-basil text-white"><Icon size={20} /></span>
-                        <span><b className="block">{s.title}</b><span className="text-[13px] text-basil-muted">{s.short}</span></span>
-                      </Link>
-                    );
-                  })}
-                </div>
-                <Link to="/services" className="group flex-1 no-underline">
-                  <Media src={settings.services_mega_image_url || coverFor('')} index={1} className="flex h-full min-h-[220px] flex-col justify-end gap-2 rounded-[22px] p-6 text-white">
-                    <b className="relative font-display text-[22px]">End-to-end production, one team.</b>
-                    <span className="relative text-basil-frost">Explore Services →</span>
-                  </Media>
-                </Link>
-              </div>
-            ) : (
-              <div className="container-bm grid grid-cols-5 gap-3 py-6">
-                {WORK_MENU.map((w, i) => (
-                  <Link key={w.label} to={w.cat ? `/our-work?c=${encodeURIComponent(w.cat)}` : '/our-work'} className="group no-underline">
-                    <Media src={coverFor(w.cat)} index={i} className="flex h-[260px] flex-col justify-end rounded-[22px] p-5 text-white">
-                      <b className="relative font-display text-lg leading-tight">{w.label}</b>
-                      <span className="relative text-sm text-basil-frost">View →</span>
-                    </Media>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {mobile && (
-          <motion.nav aria-label="Mobile" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden border-t border-[#E3EDF8] bg-white lg:hidden">
-            <div className="container-bm grid grid-cols-2 gap-2 py-4 text-[15px]">
-              {[
-                ['/services', t('services')], ['/our-work', t('ourWork')], ['/about', t('about')], ['/contact', t('contact')],
-                ['/health-news', t('healthNews')], ['/find-me', t('findPhotos')],
-              ].map(([to, label]) => (
-                <NavLink key={to} to={to} className={({ isActive }) => `rounded-2xl px-4 py-3.5 font-semibold no-underline ${isActive ? 'bg-basil text-white' : 'bg-basil-mist text-basil-ink'}`}>{label}</NavLink>
-              ))}
-              <Link to="/#book" className="btn-primary col-span-2 mt-1 h-12">{t('book')}</Link>
-              <Link to="/login" className="col-span-2 py-2 text-center text-sm font-bold">{t('login')}</Link>
-            </div>
+        {open && (
+          <motion.nav aria-label="Menu" initial={{ opacity: 0, y: -8, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -8 }} className="mx-auto mt-2 grid max-w-[1240px] grid-cols-2 gap-2 rounded-[22px] border border-white/60 bg-white/95 p-2.5 shadow-[0_20px_50px_rgba(10,47,92,0.18)] backdrop-blur-2xl lg:hidden">
+            {[...links, ['/find-me', t('findPhotos')] as [string, string]].map(([to, label]) => (
+              <NavLink key={to} to={to} className={({ isActive }) => `rounded-2xl px-4 py-3.5 text-[15px] font-medium no-underline ${isActive ? 'bg-basil text-white' : 'bg-basil-mist text-basil-ink'}`}>{label}</NavLink>
+            ))}
+            <button type="button" onClick={() => setLang(lang === 'en' ? 'sw' : 'en')} className="rounded-2xl border-0 bg-basil-mist px-4 py-3.5 text-left text-[15px] font-semibold text-basil-ink">{lang === 'en' ? 'Kiswahili' : 'English'}</button>
+            <Link to="/login" className="col-span-2 py-2 text-center text-sm font-bold">{t('login')}</Link>
           </motion.nav>
         )}
       </AnimatePresence>

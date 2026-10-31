@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, Clock, Loader2, Mail, MapPin, Navigation, Phone, Send } from 'lucide-react';
+import { CheckCircle2, Clock, Loader2, Mail, MapPin, MessageSquareText, Navigation, Phone, Send } from 'lucide-react';
+import { Sheet } from '@/os/ui';
 import { useSettings } from '@/hooks/useData';
 import { useSeo } from '@/hooks/useSeo';
 import { useI18n } from '@/lib/i18n';
@@ -21,6 +22,7 @@ export default function Contact() {
   const [f, setF] = useState({ name: '', contact: '', message: '' });
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [err, setErr] = useState('');
+  const [sheet, setSheet] = useState(false);
   const mapSrc = s.map_embed_url || `https://www.google.com/maps?q=${encodeURIComponent(s.address)}&output=embed`;
   const directions = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}`;
 
@@ -50,44 +52,7 @@ export default function Contact() {
   ];
   const chip = (on: boolean) => `min-h-[40px] shrink-0 rounded-full px-3.5 text-[13.5px] font-semibold transition ${on ? 'border-0 bg-basil text-white shadow-glow' : 'border border-basil-edge bg-white text-basil-deep'}`;
 
-  return (
-    <div className="bg-[#F3F7FC]">
-      <section className="relative overflow-hidden text-white" style={{ background: 'radial-gradient(ellipse at 85% 0%, rgba(124,192,245,0.35), transparent 55%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
-        <div className="container-bm pb-24 pt-9 sm:pb-28 sm:pt-14">
-          <div className="font-mono text-[11px] tracking-[0.2em] text-basil-haze sm:text-xs">{t('contact').toUpperCase()} · KARIBU</div>
-          <h1 className="mb-2 mt-2 text-[clamp(34px,5.5vw,64px)] font-extrabold leading-[1.02]">Let’s talk about<br className="sm:hidden" /> <span className="text-basil-sky">your next moment.</span></h1>
-          <p className="m-0 flex items-center gap-2 text-[15px] text-basil-frost"><Clock size={16} />{s.office_hours || 'We reply within one working day.'}</p>
-        </div>
-      </section>
-
-      <div className="container-bm relative -mt-16 grid gap-4 pb-12 sm:-mt-20 sm:gap-6 lg:grid-cols-[1fr_1.1fr] lg:items-start">
-        <div className="flex flex-col gap-4 sm:gap-6">
-          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-            {actions.map((a) => (
-              <motion.a whileTap={{ scale: 0.97 }} key={a.label} href={a.href} target={a.ext ? '_blank' : undefined} rel={a.ext ? 'noreferrer' : undefined} className={`flex min-h-[112px] flex-col justify-between rounded-[22px] p-4 no-underline shadow-[0_14px_30px_rgba(10,47,92,0.14)] transition hover:-translate-y-0.5 ${a.cls}`}>
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">{a.icon}</span>
-                <span><b className="block font-display text-[15px]">{a.label}</b><span className="block truncate text-[12px] opacity-85">{a.sub}</span></span>
-              </motion.a>
-            ))}
-          </div>
-
-          <div className="overflow-hidden rounded-[24px] border border-basil-line bg-white shadow-[0_14px_30px_rgba(10,47,92,0.08)]">
-            <div className="relative h-[220px] sm:h-[280px]">
-              <iframe title="Basil Media office on the map" src={mapSrc} className="h-full w-full border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
-            </div>
-            <div className="flex items-center gap-3 p-4">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-basil-ice text-basil"><MapPin size={20} /></span>
-              <div className="min-w-0 flex-1"><b className="block">Basil Media studio</b><span className="text-sm text-basil-muted">{s.address}</span></div>
-              <a href={directions} target="_blank" rel="noreferrer" className="btn-primary h-11 min-h-0 px-4 text-sm">Go</a>
-            </div>
-          </div>
-          <div className="flex flex-col gap-3 rounded-[22px] border border-basil-line bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
-            <b className="text-sm">Follow our work</b>
-            <SocialRow dark={false} />
-          </div>
-        </div>
-
-        <div className="rounded-[26px] border border-basil-line bg-white p-5 shadow-[0_20px_50px_rgba(10,47,92,0.12)] sm:p-7 lg:sticky lg:top-28">
+  const form = (
           <AnimatePresence mode="wait">
             {state === 'sent' ? (
               <motion.div key="ok" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} role="status" className="flex flex-col items-center gap-3 py-12 text-center">
@@ -121,8 +86,53 @@ export default function Contact() {
               </motion.form>
             )}
           </AnimatePresence>
+  );
+
+  return (
+    <div className="bg-[#F3F7FC]">
+      <section className="relative overflow-hidden text-white" style={{ background: 'radial-gradient(ellipse at 85% 0%, rgba(124,192,245,0.35), transparent 55%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
+        <div className="container-bm pb-20 pt-[88px] sm:pb-28 sm:pt-32">
+          <div className="font-mono text-[11px] tracking-[0.2em] text-basil-haze sm:text-xs">{t('contact').toUpperCase()} · KARIBU</div>
+          <h1 className="mb-1.5 mt-1.5 text-[clamp(23px,3.8vw,46px)] font-bold leading-[1.12] tracking-[-0.02em]">Let’s talk about <span className="text-glow">your next moment.</span></h1>
+          <p className="m-0 flex items-center gap-2 text-[15px] text-basil-frost"><Clock size={16} />{s.office_hours || 'We reply within one working day.'}</p>
         </div>
+      </section>
+
+      <div className="container-bm relative -mt-14 grid gap-3 pb-6 sm:-mt-20 sm:gap-6 sm:pb-12 lg:grid-cols-[1fr_1.1fr] lg:items-start">
+        <div className="flex flex-col gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+            {actions.map((a) => (
+              <motion.a whileTap={{ scale: 0.97 }} key={a.label} href={a.href} target={a.ext ? '_blank' : undefined} rel={a.ext ? 'noreferrer' : undefined} className={`flex min-h-[96px] flex-col justify-between rounded-[20px] p-3.5 sm:min-h-[112px] sm:rounded-[22px] sm:p-4 no-underline shadow-[0_14px_30px_rgba(10,47,92,0.14)] transition hover:-translate-y-0.5 ${a.cls}`}>
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">{a.icon}</span>
+                <span><b className="block font-display text-[15px]">{a.label}</b><span className="block truncate text-[12px] opacity-85">{a.sub}</span></span>
+              </motion.a>
+            ))}
+          </div>
+
+          <button type="button" onClick={() => setSheet(true)} className="flex items-center gap-3 rounded-[20px] border-0 bg-basil-night p-4 text-left text-white shadow-[0_14px_30px_rgba(10,47,92,0.2)] lg:hidden">
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15"><MessageSquareText size={20} /></span>
+            <span className="flex-1"><b className="block font-display">{t('sendMessage')}</b><span className="text-[12.5px] text-basil-haze">Booking, quotation, partnership…</span></span>
+            <Send size={18} />
+          </button>
+          <div className="overflow-hidden rounded-[22px] border border-basil-line bg-white shadow-[0_14px_30px_rgba(10,47,92,0.08)]">
+            <div className="relative hidden h-[280px] sm:block">
+              <iframe title="Basil Media office on the map" src={mapSrc} className="h-full w-full border-0" loading="lazy" referrerPolicy="no-referrer-when-downgrade" />
+            </div>
+            <div className="flex items-center gap-3 p-3.5 sm:p-4">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-basil-ice text-basil"><MapPin size={20} /></span>
+              <div className="min-w-0 flex-1"><b className="block">Basil Media studio</b><span className="text-sm text-basil-muted">{s.address}</span></div>
+              <a href={directions} target="_blank" rel="noreferrer" className="btn-primary h-11 min-h-0 px-4 text-sm">Go</a>
+            </div>
+          </div>
+          <div className="hidden flex-col gap-3 rounded-[22px] border border-basil-line bg-white p-4 sm:flex sm:flex-row sm:items-center sm:justify-between">
+            <b className="text-sm">Follow our work</b>
+            <SocialRow dark={false} />
+          </div>
+        </div>
+
+        <div className="hidden rounded-[26px] border border-basil-line bg-white p-5 shadow-[0_20px_50px_rgba(10,47,92,0.12)] sm:p-7 lg:sticky lg:top-28 lg:block">{form}</div>
       </div>
+      <Sheet open={sheet} onClose={() => setSheet(false)} title={t('sendMessage')}>{form}</Sheet>
     </div>
   );
 }

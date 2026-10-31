@@ -20,7 +20,7 @@ export function MobileTabBar() {
         {tabs.map(({ to, label, icon: Icon, match }) => {
           const on = match(pathname);
           return (
-            <NavLink key={to} to={to} aria-current={on ? 'page' : undefined} className="relative flex h-[54px] flex-col items-center justify-center gap-0.5 rounded-[19px] text-[10.5px] font-semibold no-underline">
+            <NavLink key={to} to={to} aria-current={on ? 'page' : undefined} className="relative flex h-[52px] flex-col items-center justify-center gap-0.5 whitespace-nowrap rounded-[19px] text-[10.5px] font-medium no-underline">
               {on && <motion.span layoutId="pub-tab" className="absolute inset-0 rounded-[19px] bg-basil-ice" transition={{ type: 'spring', stiffness: 420, damping: 32 }} />}
               <Icon size={21} strokeWidth={on ? 2.3 : 1.8} className={`relative ${on ? 'text-basil' : 'text-basil-muted'}`} />
               <span className={`relative ${on ? 'text-basil' : 'text-basil-muted'}`}>{label}</span>

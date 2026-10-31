@@ -20,11 +20,12 @@ export function PublicLayout() {
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-white focus:p-3">Skip to content</a>
       <Header />
       <AnimatePresence mode="wait" initial={false}>
-        <motion.main id="main" key={pathname} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
+        <motion.main id="main" key={pathname} className={/^\/($|services|our-work|about|contact|health-news$|find-me|subscribe|g\/)/.test(pathname) ? '' : 'pt-24'} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
           <Outlet />
         </motion.main>
       </AnimatePresence>
-      <Footer />
+      {/* Phones: only the landing page carries the footer; the tab bar does the rest. */}
+      <div className={pathname === '/' ? '' : 'hidden md:block'}><Footer /></div>
       <WhatsAppButton />
       <MobileTabBar />
       <Cursor />

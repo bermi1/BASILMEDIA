@@ -9,6 +9,7 @@ import { VideoEmbed } from '@/components/VideoEmbed';
 import { Media } from '@/components/Media';
 import { Reveal } from '@/components/Reveal';
 import { Sheet } from '@/os/ui';
+import { PageHero } from '@/components/PageHero';
 import { youtubeThumb } from '@/lib/video';
 
 const ICONS: Record<string, typeof Video> = { video: Video, camera: Camera, mic: Mic, radio: Radio, sparkles: Sparkles, briefcase: Briefcase };
@@ -32,13 +33,7 @@ export default function Services() {
 
   return (
     <>
-      <section className="text-white" style={{ background: 'radial-gradient(ellipse at 90% 0%, rgba(124,192,245,0.3), transparent 55%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
-        <div className="container-bm py-9 sm:py-16">
-          <div className="font-mono text-[11px] tracking-[0.2em] text-basil-haze sm:text-xs">{t('services').toUpperCase()}</div>
-          <h1 className="mb-2 mt-2 text-[clamp(32px,5vw,60px)] font-extrabold leading-[1.04]">One team, from brief <span className="text-basil-sky">to final cut.</span></h1>
-          <p className="m-0 max-w-[560px] text-[15px] text-basil-frost sm:text-lg">Six services, one crew, one invoice — and a client portal where you approve every step.</p>
-        </div>
-      </section>
+      <PageHero kicker={t('services').toUpperCase()} title={<>One team, from brief <span className="text-glow">to final cut.</span></>} sub="Six services, one crew, one invoice." />
 
       <section className="container-bm section">
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3">

@@ -111,7 +111,7 @@ export function WhatsAppButton() {
   const { t } = useI18n();
   const s = useSettings();
   return (
-    <a href={waLink(s.whatsapp || s.phone, 'Hello Basil Media, ')} target="_blank" rel="noreferrer" className="fixed bottom-[92px] right-4 z-30 flex h-14 w-14 items-center justify-center gap-2.5 rounded-full bg-[#25D366] font-bold text-white no-underline shadow-[0_14px_30px_rgba(37,211,102,0.45)] transition hover:scale-105 hover:text-white md:bottom-[22px] md:right-[22px] md:h-auto md:w-auto md:py-3.5 md:pl-4 md:pr-5" aria-label="Chat with us on WhatsApp">
+    <a href={waLink(s.whatsapp || s.phone, 'Hello Basil Media, ')} target="_blank" rel="noreferrer" className="fixed bottom-[22px] right-[22px] z-30 hidden h-14 w-14 items-center justify-center md:flex gap-2.5 rounded-full bg-[#25D366] font-bold text-white no-underline shadow-[0_14px_30px_rgba(37,211,102,0.45)] transition hover:scale-105 hover:text-white md:bottom-[22px] md:right-[22px] md:h-auto md:w-auto md:py-3.5 md:pl-4 md:pr-5" aria-label="Chat with us on WhatsApp">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
         <path d="M4 20 L5.3 16.2 A8 8 0 1 1 8 18.8 Z" />
       </svg>

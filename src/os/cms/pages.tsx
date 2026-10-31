@@ -57,10 +57,10 @@ export function CmsOverview() {
 
 const GROUPS: { title: string; fields: Field[] }[] = [
   { title: 'Hero (home page top)', fields: [
-    { key: 'hero_kicker', label: 'Small kicker text', type: 'text', wide: true },
     { key: 'tagline', label: 'Tagline (first part)', type: 'text' },
     { key: 'tagline_highlight', label: 'Tagline (highlighted part)', type: 'text' },
-    { key: 'hero_subtitle', label: 'Subtitle', type: 'textarea' },
+    { key: 'hero_subtitle', label: 'One short line under the headline', type: 'text', wide: true },
+    { key: 'hero_video_url', label: 'Hero video (optional — plays muted behind the headline)', type: 'video', folder: 'hero', help: 'Upload an MP4 or paste a YouTube link. Takes priority over the photos.' },
     { key: 'hero_images', label: 'Hero photos (team, office, studio)', type: 'images', folder: 'hero', help: 'They rotate behind the home page headline. Landscape photos of the team and office work best.' },
     { key: 'hero_image_url', label: 'Fallback hero picture', type: 'image', folder: 'site' },
     { key: 'live_ticker', label: 'Live ticker card', type: 'text', wide: true, help: 'e.g. “Gallery delivered · Tanzania Health Summit · 2,431 photos”. Leave empty to hide.' },
@@ -69,6 +69,10 @@ const GROUPS: { title: string; fields: Field[] }[] = [
   { title: 'Brand', fields: [
     { key: 'logo_url', label: 'Logo (on light backgrounds)', type: 'image', folder: 'brand' },
     { key: 'logo_reverse_url', label: 'Logo (on dark backgrounds)', type: 'image', folder: 'brand' },
+  ] },
+  { title: 'Home · who we are', fields: [
+    { key: 'home_about_title', label: 'Headline', type: 'text', wide: true },
+    { key: 'home_about_text', label: 'Short text', type: 'textarea' },
   ] },
   { title: 'About us', fields: [
     { key: 'about_story', label: 'Company story', type: 'textarea' },

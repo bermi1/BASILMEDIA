@@ -21,13 +21,13 @@ export default function FindMe() {
 
   return (
     <section className="relative min-h-[80vh] overflow-hidden text-white" style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(124,192,245,0.35), transparent 55%), linear-gradient(170deg, #0A2F5C, #061E3D)' }}>
-      <div className="container-bm relative max-w-[920px] py-14">
+      <div className="container-bm relative max-w-[920px] pb-14 pt-24 sm:pt-32">
         <AnimatePresence mode="wait">
           {step === 'landing' && (
             <motion.div key="l" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="flex flex-col items-center gap-6 text-center">
               <span className="relative flex h-28 w-28 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/30"><span className="absolute inset-0 animate-pulseRing rounded-full" /><ScanFace size={52} className="text-basil-sky" /></span>
               <div className="font-mono text-xs tracking-[0.2em] text-basil-haze">FIND ME · {g ? g.title.toUpperCase() : 'EVENT PHOTOS'}</div>
-              <h1 className="m-0 text-[clamp(36px,5vw,60px)] font-extrabold leading-[1.02]">{g ? <>Were you at {g.title}?</> : <>Were you at an event?<br /><span className="text-basil-sky">Find your photos.</span></>}</h1>
+              <h1 className="m-0 text-[clamp(24px,4vw,46px)] font-bold leading-[1.12] tracking-[-0.02em]">{g ? <>Were you at {g.title}?</> : <>Were you at an event?<br /><span className="text-basil-sky">Find your photos.</span></>}</h1>
               <p className="m-0 max-w-[560px] text-lg text-basil-frost">One selfie, a few seconds, every photo you are in. Your selfie never leaves your phone.</p>
               {g ? (
                 <div className="flex flex-wrap justify-center gap-3">

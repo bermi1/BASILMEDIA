@@ -1,8 +1,9 @@
 // Crossfading, slowly zooming background photos for the hero (team, office, studio — set in the CMS).
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { parseVideo } from '@/lib/video';
 
-export function HeroSlides({ images, interval = 6000 }: { images: string[]; interval?: number }) {
+export function HeroSlides({ images, video, interval = 6000 }: { images: string[]; video?: string; interval?: number }) {
   const [i, setI] = useState(0);
   const reduce = useReducedMotion();
   useEffect(() => {
@@ -15,6 +16,17 @@ export function HeroSlides({ images, interval = 6000 }: { images: string[]; inte
     const next = images[(i + 1) % images.length];
     if (next) new Image().src = next;
   }, [i, images]);
+  const v = parseVideo(video);
+  if (v.kind === 'file') {
+    return <video aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" src={v.src} poster={images[0]} autoPlay muted loop playsInline preload="metadata" />;
+  }
+  if (v.kind === 'youtube') {
+    return (
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+        <iframe title="" tabIndex={-1} src={`https://www.youtube-nocookie.com/embed/${v.id}?autoplay=1&mute=1&loop=1&playlist=${v.id}&controls=0&modestbranding=1&playsinline=1&rel=0`} allow="autoplay; encrypted-media" className="absolute left-1/2 top-1/2 h-[56.25vw] min-h-full w-[177.78vh] min-w-full -translate-x-1/2 -translate-y-1/2 border-0" />
+      </div>
+    );
+  }
   if (!images.length) return null;
   return (
     <div className="absolute inset-0 overflow-hidden" aria-hidden="true">

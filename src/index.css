@@ -17,8 +17,8 @@
 
 @layer components {
   .container-bm { @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6; }
-  .kicker { @apply font-mono text-xs tracking-[0.18em] text-basil; }
-  .h-section { @apply font-display text-[clamp(26px,4vw,48px)] font-extrabold leading-[1.08] tracking-[-0.01em]; }
+  .kicker { @apply font-mono text-[10.5px] tracking-[0.18em] text-basil sm:text-xs; }
+  .h-section { @apply font-display text-[clamp(21px,2.8vw,36px)] font-bold leading-[1.15] tracking-[-0.015em]; }
   .section { @apply py-10 sm:py-14 lg:py-16; }
   .snap-row { @apply scrollbar-none -mx-4 flex snap-x snap-mandatory scroll-pl-4 gap-3 overflow-x-auto px-4 sm:mx-0 sm:px-0; }
   .btn { @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-5 font-bold no-underline transition; }
