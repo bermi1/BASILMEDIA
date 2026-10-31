@@ -33,6 +33,11 @@ export interface SiteSettings {
   about_story: string;
   about_image_url: string;
   mission: string;
+  /** "A word from our CEO" on the landing page. */
+  ceo_name: string;
+  ceo_title: string;
+  ceo_message: string;
+  ceo_photo_url: string;
   vision: string;
   company_profile_url: string;
   contact_email: string;

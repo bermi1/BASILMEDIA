@@ -25,6 +25,10 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   about_story:
     'Basil Media is a youth-driven digital media platform dedicated to health education, innovation, and impactful storytelling. We exist to inform, inspire, and empower young people with reliable health information, creative ideas, and forward-thinking solutions that shape a healthier future.\n\nThrough engaging content, expert conversations, and real-life stories, Basil Media bridges the gap between medical knowledge, innovation, and the everyday lives of young people. Our focus spans health awareness, mental well-being, medical education, technology, entrepreneurship, and youth-led innovation.\n\nWe collaborate with healthcare professionals, institutions, innovators, and young change-makers to deliver content that is educational, relatable, and transformative.\n\nAt Basil Media, we believe the youth are not just the leaders of tomorrow—but the innovators of today. Learn. Innovate. Inspire.',
   about_image_url: '/media/basil-media-studio-btv.webp',
+  ceo_name: 'Emmanuel Basil',
+  ceo_title: 'Founder & CEO, Basil Media',
+  ceo_message: '',
+  ceo_photo_url: '',
   mission:
     'To tell the stories of Tanzanian institutions and people with honesty, craft and care, and to deliver every frame on time.',
   vision: 'To be East Africa’s most trusted media house: the studio institutions call when the moment matters.',

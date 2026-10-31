@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Briefcase, CalendarDays, Camera, ChevronDown, HeartPulse, Lightbulb, Mic, Radio, Sparkles, Star, Users, Video } from 'lucide-react';
@@ -13,6 +13,7 @@ import { Reveal } from '@/components/Reveal';
 import { BookingForm } from '@/components/BookingForm';
 import { Play } from '@/components/icons';
 
+const CEO_MESSAGE = 'We started Basil Media to make health information something people actually want to watch. Every film, photo and podcast we make is built with clinicians and told for the people it is meant to help. Thank you for trusting us with your stories — let us keep telling them, together.';
 const STEPS: [string, string][] = [
   ['Brief', 'We listen and agree the plan and budget.'],
   ['Shoot', 'Our crew films and photographs on location or in studio.'],
@@ -70,20 +71,24 @@ export default function Home() {
         <a href="#trusted" aria-label="Scroll down" className="absolute bottom-[104px] right-5 hidden h-12 w-12 animate-float items-center justify-center rounded-full border border-white/30 text-white no-underline sm:bottom-8 sm:flex"><ChevronDown size={20} /></a>
       </section>
 
-      {/* TRUSTED BY — partner logos added by the admin */}
+      {/* TRUSTED BY — two rows of partner logos scrolling in opposite directions (logos or name badges, set in the CMS) */}
       {partners.length > 0 && (
-        <section id="trusted" aria-label="Trusted by" className="border-b border-[#E3EDF8] bg-white">
-          <div className="container-bm flex items-center gap-4 py-5 sm:gap-8 sm:py-7">
-            <span className="shrink-0 font-mono text-[10.5px] tracking-[0.18em] text-basil-muted">TRUSTED BY</span>
-            <div className="relative min-w-0 flex-1 overflow-hidden [mask-image:linear-gradient(90deg,transparent,#000_8%,#000_92%,transparent)]">
-              <div className="flex w-max animate-marquee items-center gap-10 sm:gap-14">
-                {[...partners, ...partners].map((p, i) => (
-                  <span key={i} className="flex h-9 items-center font-display text-[14px] font-bold text-[#6A7E99] sm:h-11 sm:text-base" aria-hidden={i >= partners.length}>
-                    {p.logo_url ? <img src={p.logo_url} alt={p.name} className="h-8 max-w-[130px] object-contain opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 sm:h-11" loading="lazy" /> : p.name}
-                  </span>
-                ))}
+        <section id="trusted" aria-label="Trusted by" className="border-b border-[#E3EDF8] bg-white py-5 sm:py-7">
+          <div className="container-bm mb-3 font-mono text-[10.5px] tracking-[0.18em] text-basil-muted">TRUSTED BY</div>
+          <div className="flex flex-col gap-3 [mask-image:linear-gradient(90deg,transparent,#000_6%,#000_94%,transparent)]">
+            {[partners.filter((_, i) => i % 2 === 0), partners.filter((_, i) => i % 2 === 1)].filter((row) => row.length).map((row, r) => (
+              <div key={r} className="overflow-hidden">
+                <ul className={`m-0 flex w-max list-none items-center gap-3 p-0 hover:[animation-play-state:paused] ${r ? 'animate-marquee-reverse' : 'animate-marquee'}`}>
+                  {[...row, ...row, ...row, ...row].map((p, i) => (
+                    <li key={i} aria-hidden={i >= row.length} className="flex h-14 shrink-0 items-center justify-center rounded-2xl border border-basil-line bg-white px-5 sm:h-16 sm:px-6">
+                      {p.logo_url
+                        ? <img src={p.logo_url} alt={p.name} loading="lazy" className="h-9 max-w-[150px] object-contain sm:h-10" />
+                        : <span className="whitespace-nowrap font-display text-[14px] font-bold text-basil-deep sm:text-[15px]">{p.name}</span>}
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            ))}
           </div>
         </section>
       )}
@@ -113,7 +118,31 @@ export default function Home() {
         </div>
       </section>
 
-      {/* WORK AT A GLANCE — swipe */}
+      {/* A WORD FROM OUR CEO */}
+      <section className="container-bm section">
+        <Reveal>
+          <figure className="relative m-0 overflow-hidden rounded-[28px] bg-gradient-to-br from-basil-deep to-basil-night p-6 text-white sm:p-12">
+            <div aria-hidden="true" className="aurora -right-16 -top-16 h-64 w-64 bg-basil" />
+            <div className="relative grid items-center gap-6 lg:grid-cols-[auto_1fr] lg:gap-12">
+              <div className="flex items-center gap-4 lg:flex-col lg:items-start">
+                {s.ceo_photo_url
+                  ? <img src={s.ceo_photo_url} alt={s.ceo_name} className="h-20 w-20 rounded-full object-cover object-top ring-4 ring-white/15 sm:h-32 sm:w-32" />
+                  : <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white/10 ring-4 ring-white/15 sm:h-32 sm:w-32"><img src="/logo-reverse.svg" alt="" className="h-12 w-12 sm:h-20 sm:w-20" /></span>}
+                <figcaption className="leading-tight">
+                  <span className="block font-mono text-[10.5px] tracking-[0.18em] text-basil-haze">A WORD FROM OUR CEO</span>
+                  <b className="mt-1 block font-display text-xl sm:text-2xl">{s.ceo_name || 'Emmanuel Basil'}</b>
+                  <span className="text-sm text-basil-haze">{s.ceo_title || 'Founder & CEO, Basil Media'}</span>
+                </figcaption>
+              </div>
+              <blockquote className="m-0 text-[17px] leading-relaxed text-white/90 sm:text-[22px] sm:leading-[1.55]">
+                <span aria-hidden="true" className="mr-1 font-display text-4xl leading-none text-basil-sky">“</span>{s.ceo_message || CEO_MESSAGE}
+              </blockquote>
+            </div>
+          </figure>
+        </Reveal>
+      </section>
+
+      {/* WORK AT A GLANCE — masonry of reels and films */}
       {glance.length > 0 && (
         <section className="section relative overflow-hidden bg-basil-night">
           <div aria-hidden="true" className="bg-dots-dark fade-mask absolute inset-0" />
@@ -126,17 +155,9 @@ export default function Home() {
                 <button key={c} type="button" role="tab" aria-selected={cat === c} onClick={() => setCat(c)} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium transition ${cat === c ? 'border-0 bg-white text-basil-night shadow-[0_0_24px_rgba(124,192,245,0.55)]' : 'border border-white/20 bg-white/[0.06] text-white/80 backdrop-blur hover:bg-white/15'}`}>{c}</button>
               ))}
             </div>
-            {/* Wide films: a swipe row on phones, a grid on desktop. Tall reels: their own swipe row of portrait cards. */}
-            {shown.some((g) => g.shape === 'landscape') && (
-              <div className="snap-row mb-4 pb-1 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible lg:grid-cols-3">
-                {shown.filter((g) => g.shape === 'landscape').map((g, i) => <GlanceCard key={g.id} {...g} index={i} />)}
-              </div>
-            )}
-            {shown.some((g) => g.shape === 'portrait') && (
-              <div className="snap-row pb-1">
-                {shown.filter((g) => g.shape === 'portrait').map((g, i) => <GlanceCard key={g.id} {...g} index={i} />)}
-              </div>
-            )}
+            {/* Justified rows (like a photo library): reels and films share each row at one height, every row
+                is filled edge to edge, nothing is cropped and no row is left half empty. */}
+            <JustifiedRows items={shown} />
           </div>
         </section>
       )}
@@ -158,7 +179,7 @@ export default function Home() {
                   className={`group relative block w-[72vw] max-w-[300px] shrink-0 snap-start overflow-hidden rounded-[22px] text-white no-underline hover:text-white lg:w-auto lg:max-w-none ${lead ? 'lg:col-span-2 lg:row-span-2' : stretch}`}
                   style={{ background: gradient(i) }}>
                   <div className="aspect-[4/5] lg:aspect-auto lg:h-full">
-                    {x.image_url && <img src={x.image_url} alt={x.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />}
+                    {x.image_url && <img src={x.image_url} alt={x.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover object-top" />}
                     <span className="absolute inset-0 bg-gradient-to-t from-basil-night/90 via-basil-night/30 to-transparent" />
                     <span className="absolute left-3 top-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 text-basil backdrop-blur"><Icon size={19} /></span>
                     <span className="absolute inset-x-4 bottom-4 flex flex-col gap-1.5">
@@ -233,15 +254,53 @@ export default function Home() {
   );
 }
 
+type GlanceItem = { id: string; title: string; url: string; poster: string; sub: string; shape: Orientation };
+function JustifiedRows({ items }: { items: GlanceItem[] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([e]) => setW(Math.floor(e.contentRect.width)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const gap = w < 640 ? 12 : 16;
+  const target = w < 640 ? 250 : w < 1024 ? 240 : 280;
+  const ar = (g: GlanceItem) => (g.shape === 'portrait' ? 9 / 16 : 16 / 9);
+  const rows: GlanceItem[][] = [];
+  let row: GlanceItem[] = [];
+  for (const g of items) {
+    row.push(g);
+    const natural = row.reduce((a, x) => a + ar(x), 0) * target + gap * (row.length - 1);
+    if (natural >= w) (rows.push(row), (row = []));
+  }
+  // A short leftover row would either stretch huge or leave a gap — keep it only if it is the only row.
+  if (row.length && (!rows.length || row.reduce((a, x) => a + ar(x), 0) * target + gap * (row.length - 1) >= w * 0.75)) rows.push(row);
+  return (
+    <div ref={ref} className="flex flex-col" style={{ gap }}>
+      {w > 0 && rows.map((r, ri) => {
+        const sum = r.reduce((a, x) => a + ar(x), 0);
+        const h = Math.min((w - gap * (r.length - 1)) / sum, target * 1.6);
+        return (
+          <div key={ri} className="flex justify-center" style={{ gap, height: h }}>
+            {r.map((g, i) => <div key={g.id} style={{ width: ar(g) * h, height: h }}><GlanceCard {...g} index={ri * 4 + i} /></div>)}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function GlanceCard({ title, url, poster, sub, index, shape }: { title: string; url: string; poster: string; sub: string; index: number; shape: Orientation }) {
   const [on, setOn] = useState(false);
   const aspect = shape === 'portrait' ? '9 / 16' : '16 / 9';
   return (
-    <div className={shape === 'portrait' ? 'w-[46vw] max-w-[230px] shrink-0 snap-start' : 'w-[80vw] max-w-[360px] shrink-0 snap-start sm:w-auto sm:max-w-none'}>
+    <div className="h-full w-full">
       {on && url ? (
         <div className="overflow-hidden rounded-[20px] shadow-card"><VideoEmbed url={url} title={title} autoPlay aspect={aspect} /></div>
       ) : (
-        <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} className="group relative block w-full overflow-hidden rounded-[20px] border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:ring-basil-sky/60 hover:shadow-[0_0_40px_-6px_rgba(124,192,245,0.55)]" style={{ aspectRatio: aspect, background: gradient(index) }}>
+        <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} className="group relative block h-full w-full overflow-hidden rounded-[20px] border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:ring-basil-sky/60 hover:shadow-[0_0_40px_-6px_rgba(124,192,245,0.55)]" style={{ background: gradient(index) }}>
           {poster && <img src={poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />}
           <span className="absolute inset-0 bg-gradient-to-t from-basil-night/85 via-transparent to-transparent" />
           {url && <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 transition group-hover:scale-110"><Play size={18} /></span>}

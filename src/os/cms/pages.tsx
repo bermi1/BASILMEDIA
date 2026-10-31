@@ -69,6 +69,10 @@ const GROUPS: { title: string; fields: Field[] }[] = [
   { title: 'About us', fields: [
     { key: 'about_story', label: 'Company story', type: 'textarea' },
     { key: 'about_image_url', label: 'About picture', type: 'image', folder: 'site' },
+    { key: 'ceo_name', label: 'CEO name (landing page)', type: 'text' },
+    { key: 'ceo_title', label: 'CEO title', type: 'text' },
+    { key: 'ceo_message', label: 'A word from the CEO', type: 'textarea', help: 'Leave empty to use the standard message.' },
+    { key: 'ceo_photo_url', label: 'CEO photo', type: 'image', folder: 'site' },
     { key: 'mission', label: 'Mission', type: 'textarea' },
     { key: 'vision', label: 'Vision', type: 'textarea' },
     { key: 'company_profile_url', label: 'Company profile (PDF)', type: 'file', folder: 'documents' },

@@ -35,7 +35,9 @@ export function criticalOf(text, sourceFormat) {
 const decode = (s) =>
   s.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').replace(/<[^>]+>/g, ' ')
     .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;|&#8217;/g, "'")
-    .replace(/&#8211;|&#8212;/g, '–').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n))).replace(/\s+/g, ' ').trim();
+    .replace(/&#8211;|&#8212;/g, '–').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    // feeds that double-encode their HTML: remove the tags that appear after decoding too
+    .replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 const tag = (block, name) => {
   const m = block.match(new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, 'i'));
   return m ? decode(m[1]) : '';
@@ -49,12 +51,36 @@ const linkOf = (block) => {
 export function parseFeed(xml) {
   const blocks = xml.match(/<(item|entry)[\s>][\s\S]*?<\/\1>/gi) ?? [];
   return blocks.map((b) => ({
+    image_url: (b.match(/<media:(?:content|thumbnail)[^>]*url="([^"]+)"/i) ?? b.match(/<enclosure[^>]*url="([^"]+\.(?:jpe?g|png|webp)[^"]*)"/i) ?? b.match(/<img[^>]*src="(https?:[^"]+)"/i) ?? [])[1] ?? '',
     title: tag(b, 'title'),
     url: linkOf(b),
     summary: (tag(b, 'description') || tag(b, 'summary') || tag(b, 'content')).slice(0, 400),
     published_at: tag(b, 'pubDate') || tag(b, 'dc:date') || tag(b, 'published') || tag(b, 'updated'),
   }));
 }
+/** The article's own preview picture and description (og:/twitter: meta tags). */
+const meta = (html, prop) =>
+  (html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]*content=["']([^"']+)["']`, 'i')) ??
+    html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${prop}["']`, 'i')) ?? [])[1] ?? '';
+export async function articleMeta(url) {
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetch(url, { signal: ctrl.signal, redirect: 'follow', headers: { 'User-Agent': 'BasilMediaHealthNews/1.0 (+https://basilmedia.co.tz)', Accept: 'text/html' } });
+    clearTimeout(t);
+    if (!r.ok) return {};
+    const html = (await r.text()).slice(0, 200000);
+    let image = decode(meta(html, 'og:image') || meta(html, 'twitter:image') || meta(html, 'og:image:url'));
+    if (image && image.startsWith('/')) image = new URL(image, url).toString();
+    return { image: /^https?:\/\//.test(image) ? image : '', description: decode(meta(html, 'og:description') || meta(html, 'description')).slice(0, 400) };
+  } catch {
+    return {};
+  }
+}
+async function inBatches(items, size, fn) {
+  for (let i = 0; i < items.length; i += size) await Promise.all(items.slice(i, i + size).map(fn));
+}
+
 /** WHO Disease Outbreak News JSON API. */
 export function parseWhoDon(json) {
   return (json.value ?? []).map((v) => ({
@@ -98,9 +124,18 @@ export async function ingest({ url: base, serviceKey: key, maxAgeDays = 60 }) {
         const at = isNaN(when.getTime()) ? new Date() : when;
         if (at.getTime() < cutoff) continue;
         const why = criticalOf(text, s.format);
-        rows.push({ source_id: s.id, source_name: s.name, title: it.title.slice(0, 300), summary: it.summary, url: it.url, zone: zoneOf(text, s.zone), published_at: at.toISOString(), critical: !!why, critical_reason: why, fetched_at: new Date().toISOString() });
+        rows.push({ source_id: s.id, source_name: s.name, title: it.title.slice(0, 300), summary: it.summary, url: it.url, image_url: it.image_url ?? '', zone: zoneOf(text, s.zone), published_at: at.toISOString(), critical: !!why, critical_reason: why, fetched_at: new Date().toISOString() });
       }
       const unique = [...new Map(rows.map((r) => [r.url, r])).values()];
+      // Picture + description from the article itself, only for stories we do not have a picture for yet.
+      const known = new Map(((await sb(base, key, `health_feed_items?source_id=eq.${s.id}&select=url,image_url,summary`)) ?? []).map((k) => [k.url, k]));
+      const need = unique.filter((r) => !r.image_url && !known.get(r.url)?.image_url).slice(0, 25);
+      await inBatches(need, 6, async (r) => {
+        const m = await articleMeta(r.url);
+        if (m.image) r.image_url = m.image;
+        if (m.description && m.description.length > r.summary.length) r.summary = m.description;
+      });
+      for (const r of unique) if (!r.image_url && known.get(r.url)?.image_url) r.image_url = known.get(r.url).image_url;
       if (unique.length) await sb(base, key, 'health_feed_items?on_conflict=url', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(unique) });
       kept = unique.length;
     } catch (e) {

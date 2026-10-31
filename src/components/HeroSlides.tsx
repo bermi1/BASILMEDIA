@@ -1,4 +1,5 @@
-// Crossfading, slowly zooming background photos for the hero (team, office, studio — set in the CMS).
+// Crossfading hero photos (team, office, studio — set in the CMS). Each photo is shown whole (never cropped or
+// zoomed, so no heads are cut) over a soft blurred copy of itself that fills the rest of the hero.
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { parseVideo } from '@/lib/video';
@@ -31,17 +32,10 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
   return (
     <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
       <AnimatePresence initial={false}>
-        <motion.img
-          key={images[i]}
-          src={images[i]}
-          alt=""
-          fetchPriority={i === 0 ? 'high' : 'auto'}
-          initial={{ opacity: 0, scale: 1.08 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ opacity: { duration: 1.2 }, scale: { duration: interval / 1000 + 1.2, ease: 'linear' } }}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <motion.div key={images[i]} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.2 }}>
+          <img src={images[i]} alt="" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-2xl" />
+          <img src={images[i]} alt="" {...{ fetchpriority: i === 0 ? 'high' : 'auto' }} className="absolute inset-0 h-full w-full object-contain" />
+        </motion.div>
       </AnimatePresence>
       {images.length > 1 && (
         <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5 sm:bottom-5">

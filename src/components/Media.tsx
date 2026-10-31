@@ -16,7 +16,7 @@ export function Media({
 }: { src?: string; alt?: string; index?: number; className?: string; style?: CSSProperties; children?: ReactNode; overlay?: boolean }) {
   return (
     <div className={`relative overflow-hidden ${className}`} style={{ background: gradient(index), ...style }}>
-      {src && <img src={src} alt={alt} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />}
+      {src && <img src={src} alt={alt} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover object-top" />}
       {src && overlay && <div className="absolute inset-0 bg-gradient-to-t from-basil-night/85 via-basil-night/20 to-transparent" />}
       {children}
     </div>

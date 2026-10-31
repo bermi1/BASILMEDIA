@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -930,4 +930,56 @@ update public.site_settings set
   logo_url = case when coalesce(logo_url, '') in ('', '/logo.svg') then '/logo.svg' else logo_url end,
   logo_reverse_url = case when coalesce(logo_reverse_url, '') in ('', '/logo-reverse.svg') then '/logo-reverse.svg' else logo_reverse_url end
 where id = 'site';
+
+-- ===================== 0021_partners_ceo_news_meta.sql =====================
+-- Basil Media OS · 0021 real partners (two-row "Trusted by"), "A word from our CEO", news pictures.
+
+-- CEO message on the landing page (editable in Website CMS → Site settings).
+alter table public.site_settings
+  add column if not exists ceo_name text not null default 'Emmanuel Basil',
+  add column if not exists ceo_title text not null default 'Founder & CEO, Basil Media',
+  add column if not exists ceo_message text not null default '',
+  add column if not exists ceo_photo_url text not null default '';
+
+-- Partners, most important first. The sample partners from 0018 are replaced. Upload each official
+-- logo in Website CMS → Partners; until then the name is shown as a badge.
+delete from public.partners where id::text like 'b5a5e000-%';
+insert into public.partners (name, logo_url, website, sort_order)
+select v.name, v.logo, v.site, v.ord from (values
+  ('Muhimbili National Hospital', '', 'https://www.mnh.or.tz', 1),
+  ('MUHAS', '', 'https://www.muhas.ac.tz', 2),
+  ('Aga Khan Hospital, Dar es Salaam', '', 'https://hospitals.aku.edu/dar-es-salaam', 3),
+  ('CRDB Bank Foundation', '/img/partners/crdb-bank-foundation.png', 'https://crdbbankfoundation.co.tz', 4),
+  ('Amref Health Africa', '', 'https://amref.org', 5),
+  ('Muhimbili Orthopaedic Institute (MOI)', '', 'https://www.moi.ac.tz', 6),
+  ('Kairuki University', '', 'https://hkmu.ac.tz', 7),
+  ('Tanzania Health Summit', '', '', 8),
+  ('CardioTan · JKCI', '', 'https://www.jkci.or.tz', 9),
+  ('SATA', '', 'https://www.sata.or.tz', 10),
+  ('SNOSSA', '', '', 11),
+  ('NEDC', '', '', 12),
+  ('CareHealth Tanzania', '', '', 13),
+  ('Ampola Regency', '', '', 14)
+) as v(name, logo, site, ord)
+where not exists (select 1 from public.partners p where lower(p.name) = lower(v.name));
+
+-- Live health news: the article's own picture and description are fetched and stored.
+alter table public.health_feed_items add column if not exists image_url text not null default '';
+
+-- ===================== 0022_instagram_reels.sql =====================
+-- Basil Media OS · 0022 current work from Instagram (@basilmedia_tz) on the homepage "work at a glance".
+-- Covers are our own photos until a cover is uploaded in Website CMS → Highlights (Instagram does not
+-- allow its thumbnails to be downloaded). The empty sample reels from 0018 are removed.
+delete from public.highlights where id::text like 'b5a5e000-%';
+insert into public.highlights (title, video_url, thumbnail_url, sort_order, published, orientation)
+select v.title, v.url, v.cover, v.ord, true, 'portrait' from (values
+  ('CEO Forum · highlights', 'https://www.instagram.com/reel/Ddb4tAJozCz/', '/img/team/basil-media-team.jpg', 1),
+  ('CRDB Bank Marathon · video coverage', 'https://www.instagram.com/reel/DcJyeE6xOhp/', '/img/services/event-coverage-team.jpg', 2),
+  ('In the edit suite · the team at work', 'https://www.instagram.com/reel/DeHpkoWo32X/', '/img/services/editing-studio.jpg', 3),
+  ('Basil Media · latest reel', 'https://www.instagram.com/reel/DavwqtPRGqU/', '/img/team/crew-on-set.jpg', 4),
+  ('Basil Media · on location', 'https://www.instagram.com/reel/De3V9GHIK1m/', '/img/services/video-crew-conference.jpg', 5),
+  ('Basil Media · behind the camera', 'https://www.instagram.com/reel/DeujlQ2xqsY/', '/img/services/photographer-event.jpg', 6),
+  ('Basil Media · health story', 'https://www.instagram.com/reel/DePq1PqRqCE/', '/img/services/event-coverage-team.jpg', 7)
+) as v(title, url, cover, ord)
+where not exists (select 1 from public.highlights h where h.video_url = v.url);
 
