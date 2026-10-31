@@ -1,10 +1,15 @@
-import { Home } from 'lucide-react';
-import { Empty } from '@/os/ui';
+import { Car, History, Navigation, Route } from 'lucide-react';
 import type { PhoneRoleApp } from '@/os/modules/types';
+import { CurrentTrip, TripHistory, TripsList, VehiclePanel } from '@/os/modules/store/transport';
+import '@/os/modules/store/seed';
 
-// Placeholder — replaced when this role's phone app is built.
 export const app: PhoneRoleApp = {
-  title: 'driver',
-  accent: '#0F6EC2',
-  tabs: [{ key: 'home', label: 'Home', icon: Home, element: <Empty title="Coming soon" /> }],
+  title: 'Driver',
+  accent: '#475569',
+  tabs: [
+    { key: 'trips', label: 'Trips', icon: Route, element: <TripsList /> },
+    { key: 'current', label: 'Current trip', icon: Navigation, element: <CurrentTrip /> },
+    { key: 'vehicle', label: 'Vehicle', icon: Car, element: <VehiclePanel /> },
+    { key: 'history', label: 'History', icon: History, element: <TripHistory /> },
+  ],
 };
