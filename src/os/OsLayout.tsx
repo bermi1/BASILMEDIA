@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
 import {
-  Bell, BookOpen, CalendarDays, CalendarRange, Globe2, Handshake, Image, Images, Inbox, LayoutDashboard, LogOut, Menu,
+  BookOpen, CalendarRange, Globe2, Handshake, Images, Inbox, LayoutDashboard, LogOut, Menu,
   MessageSquareQuote, Newspaper, Settings2, Sparkles, Users, UsersRound, Video, BriefcaseBusiness, X, ExternalLink, Loader2,
 } from 'lucide-react';
 import { useAuth, ROLE_LABEL } from '@/lib/auth';
 import { isDemo } from '@/lib/supabase';
+import { MODULES } from './modules';
+import { useActing } from './lib/session';
+import { Smartphone, ShieldCheck } from 'lucide-react';
 
 const CMS_NAV = [
   { to: '/os/website', label: 'Overview', Icon: LayoutDashboard, end: true },
@@ -26,6 +29,7 @@ const CMS_NAV = [
 
 export function OsLayout() {
   const { user, loading, signOut, canEditWebsite } = useAuth();
+  const { canAny: can } = useActing();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
   if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin text-basil" size={36} /></div>;
@@ -40,11 +44,18 @@ export function OsLayout() {
           {CMS_NAV.map(({ to, label, Icon, end }) => <NavLink key={to} to={to} end={end} className={itemCls} onClick={() => setOpen(false)}><Icon size={18} />{label}</NavLink>)}
         </>
       )}
-      <div className="mb-1 mt-5 px-3 font-mono text-[10px] tracking-[0.18em] text-basil-haze/70">COMING NEXT</div>
-      {[['Finance & approvals', CalendarDays], ['Projects & crew', Image], ['Store', Bell]].map(([l, I]) => {
-        const Ico = I as typeof Bell;
-        return <span key={l as string} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-basil-haze/50"><Ico size={18} />{l as string}</span>;
-      })}
+      {MODULES.filter((m) => m.nav.some((n) => can(...n.roles))).map((m) => (
+        <div key={m.key}>
+          <div className="mb-1 mt-5 px-3 font-mono text-[10px] tracking-[0.18em] text-basil-haze/70">{m.section}</div>
+          {m.nav.filter((n) => can(...n.roles)).map(({ to, label, icon: Icon, badge }) => {
+            const b = badge?.() ?? 0;
+            return <NavLink key={to} to={to} end={to.split('/').length <= 3} className={itemCls} onClick={() => setOpen(false)}><Icon size={18} /><span className="flex-1">{label}</span>{b > 0 && <span className="rounded-full bg-basil px-2 text-xs font-bold text-white">{b}</span>}</NavLink>;
+          })}
+        </div>
+      ))}
+      <div className="mb-1 mt-5 px-3 font-mono text-[10px] tracking-[0.18em] text-basil-haze/70">PLATFORM</div>
+      <a href="/app" className={itemCls({ isActive: false })}><Smartphone size={18} />Phone app</a>
+      {user.roles.includes('super_admin') && <NavLink to="/os/admin/users" className={itemCls}><ShieldCheck size={18} />Users &amp; roles</NavLink>}
     </nav>
   );
 

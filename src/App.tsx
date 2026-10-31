@@ -21,6 +21,7 @@ const Login = lazy(() => import('@/pages/Login'));
 const Privacy = lazy(() => import('@/pages/Privacy').then((m) => ({ default: m.Privacy })));
 const FacePrivacy = lazy(() => import('@/pages/Privacy').then((m) => ({ default: m.FacePrivacy })));
 const OsRoutes = lazy(() => import('@/os/OsRoutes'));
+const PhoneApp = lazy(() => import('@/app/AppShell'));
 
 const Spinner = () => <div className="flex min-h-[50vh] items-center justify-center"><Loader2 className="animate-spin text-basil" size={32} /></div>;
 
@@ -49,6 +50,7 @@ export default function App() {
               <Route path="login" element={<Login />} />
               <Route path="admin/*" element={<OsRoutes />} />
               <Route path="os/*" element={<OsRoutes />} />
+              <Route path="app" element={<PhoneApp />} />
             </Routes>
           </Suspense>
         </BrowserRouter>
