@@ -139,8 +139,10 @@ export function GearForm({ gear, count, onDone }: { gear: Gear | null; count: nu
 }
 
 // ---------- asset detail (QR target) ----------
-export function AssetDetail() {
-  const { id = '' } = useParams();
+/** Asset page. On the phone it is shown in place (gearId + onBack) so the bottom tabs stay put. */
+export function AssetDetail({ gearId, onBack, onCheckout }: { gearId?: string; onBack?: () => void; onCheckout?: (id: string) => void } = {}) {
+  const params = useParams();
+  const id = gearId ?? params.id ?? '';
   const nav = useNavigate();
   const toast = useToast();
   const { userId, canAny } = useActing();
@@ -156,7 +158,7 @@ export function AssetDetail() {
   const [tab, setTab] = useState<'history' | 'maintenance' | 'incidents' | 'reservations'>('history');
   const [sheet, setSheet] = useState<'edit' | 'checkin' | 'damage' | 'maint' | null>(null);
   const g = gear.find((x) => x.id === id);
-  if (!g) return loading ? null : <Empty title="Item not found" sub="The QR label may belong to an item that was removed." action={<Link to="/os/store/gear">Back to register</Link>} />;
+  if (!g) return loading ? null : <Empty title="Item not found" sub="The QR label may belong to an item that was removed." action={onBack ? <button type="button" className="btn-outline" onClick={onBack}>Back</button> : <Link to="/os/store/gear">Back to register</Link>} />;
   const mine = checkouts.filter((c) => c.gear_id === id);
   const open = mine.find((c) => c.status === 'out');
   const days = daysOut(id, checkouts);
@@ -174,7 +176,7 @@ export function AssetDetail() {
   };
   return (
     <div className="flex flex-col gap-4">
-      <button type="button" onClick={() => nav(-1)} className="flex items-center gap-1 self-start border-0 bg-transparent p-0 text-sm font-bold text-basil"><ArrowLeft size={16} />Back</button>
+      <button type="button" onClick={() => (onBack ? onBack() : nav(-1))} className="flex min-h-[44px] items-center gap-1 self-start border-0 bg-transparent p-0 text-sm font-bold text-basil"><ArrowLeft size={16} />Back</button>
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <Card>
           <div className="flex flex-wrap items-start gap-4">
@@ -193,7 +195,7 @@ export function AssetDetail() {
           {open && open.holder_id === userId && !open.acknowledged_at && <button type="button" className="btn-primary mt-3 w-full" onClick={() => acknowledgeCheckouts([open.id]).then(() => toast('Thanks — you are responsible until it is checked in'))}>I have received this item</button>}
           {manage && (
             <div className="mt-4 flex flex-wrap gap-2">
-              {g.status === 'available' || g.status === 'reserved' ? <Link to={`/os/store/checkout?gear=${g.id}`} className="btn-primary inline-flex items-center gap-2"><PackageCheck size={16} />Check out</Link> : null}
+              {g.status === 'available' || g.status === 'reserved' ? (onCheckout ? <button type="button" className="btn-primary inline-flex items-center gap-2" onClick={() => onCheckout(g.id)}><PackageCheck size={16} />Check out</button> : <Link to={`/os/store/checkout?gear=${g.id}`} className="btn-primary inline-flex items-center gap-2"><PackageCheck size={16} />Check out</Link>) : null}
               {open && <button type="button" className="btn-primary inline-flex items-center gap-2" onClick={() => setSheet('checkin')}><ClipboardCheck size={16} />Check in</button>}
               <button type="button" className="btn-outline inline-flex items-center gap-2" onClick={() => setSheet('damage')}><ShieldAlert size={16} />Report damage / loss</button>
               <button type="button" className="btn-outline inline-flex items-center gap-2" onClick={() => setSheet('maint')}><Wrench size={16} />Log maintenance</button>
