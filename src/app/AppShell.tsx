@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, ChevronDown, ChevronRight, Globe2, KeyRound, LayoutDashboard, Loader2, LogOut, MoreHorizontal, RefreshCcw, UserCog } from 'lucide-react';
+import { Bell, CalendarDays, ChevronDown, ChevronRight, Globe2, KeyRound, LayoutDashboard, Loader2, LogOut, MoreHorizontal, RefreshCcw, UserCog } from 'lucide-react';
 import { PortalList, portalMeta } from '@/os/PortalSwitcher';
 import { PortalAccessPanel } from '@/os/AccessAdmin';
+import { CalendarPhone } from '@/os/modules/calendar';
 import { useAuth, ROLE_LABEL } from '@/lib/auth';
 import { isDemo } from '@/lib/supabase';
 import { ActingProvider, useActing } from '@/os/lib/session';
@@ -66,6 +67,9 @@ function Shell() {
             <div className="truncate font-display text-[15px] font-extrabold">{extra ? extra.label : current.key === 'more' ? 'More' : current.label}</div>
             <div className="flex items-center gap-1 truncate text-[11px] text-basil-haze"><span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: accent }} /><span className="truncate">{app?.title ?? ROLE_LABEL[role]} · {first}</span>{roles.length > 1 && <ChevronDown size={13} className="shrink-0" />}</div>
           </button>
+          <button type="button" onClick={() => setExtra(extra?.key === 'calendar' ? null : { key: 'calendar', label: 'Calendar', icon: CalendarDays, element: <CalendarPhone /> })} aria-label="Shared calendar" aria-pressed={extra?.key === 'calendar'} className={`flex h-11 w-11 items-center justify-center rounded-full border-0 text-white ${extra?.key === 'calendar' ? 'bg-white/25' : 'bg-white/10'}`}>
+            <CalendarDays size={20} />
+          </button>
           <button type="button" onClick={() => setAlertsOpen(true)} aria-label={`Alerts, ${unread} unread`} className="relative flex h-11 w-11 items-center justify-center rounded-full border-0 bg-white/10 text-white">
             <Bell size={20} />
             {unread > 0 && <span className="absolute right-1.5 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold">{unread}</span>}
@@ -78,7 +82,7 @@ function Shell() {
           <motion.div key={`${role}-${tab}-${extra?.key ?? ''}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.18 }}>
             {extra ? (
               <>
-                <button type="button" onClick={() => setExtra(null)} className="mb-3 border-0 bg-transparent p-0 text-sm font-bold text-basil">← More</button>
+                <button type="button" onClick={() => setExtra(null)} className="mb-3 min-h-[36px] border-0 bg-transparent p-0 text-sm font-bold text-basil">← {extra.key === 'calendar' ? 'Back' : 'More'}</button>
                 {extra.element}
               </>
             ) : current.key === 'more' ? (
