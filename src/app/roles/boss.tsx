@@ -1,10 +1,9 @@
 import { useSearchParams } from 'react-router-dom';
-import { BookOpen, CheckCircle2, FolderKanban, Gavel, Home, Kanban, ShieldAlert, Target } from 'lucide-react';
+import { BookOpen, CheckCircle2, FolderKanban, Home, Kanban } from 'lucide-react';
 import { ApprovalsInbox } from '@/os/modules/finance/phone';
 import { ProjectsGlance } from '@/os/modules/projects/phone';
-import { DecisionLog, MondayBriefing, ProposalApprovals, Scoreboard, TodayGlance } from '@/os/modules/growth/boss';
+import { MondayBriefing, ProposalApprovals, TodayGlance } from '@/os/modules/growth/boss';
 import { Pipeline } from '@/os/modules/growth/crm';
-import { RetainersAtRisk } from '@/os/modules/growth/retainers';
 import { PhoneStack } from '@/os/modules/growth/phone';
 import type { PhoneRoleApp } from '@/os/modules/types';
 
@@ -27,9 +26,6 @@ export const app: PhoneRoleApp = {
     { key: 'briefing', label: 'Briefing', icon: BookOpen, element: <MondayBriefing /> },
   ],
   more: [
-    { key: 'scoreboard', label: 'Scoreboard', icon: Target, element: <Scoreboard />, sub: 'Yearly targets and progress' },
-    { key: 'decisions', label: 'Decision log', icon: Gavel, element: <DecisionLog />, sub: 'What we decided and why' },
     { key: 'pipeline', label: 'Pipeline', icon: Kanban, element: <PhoneStack><Pipeline compact /></PhoneStack>, sub: 'Leads by stage' },
-    { key: 'risk', label: 'Retainers at risk', icon: ShieldAlert, element: <PhoneStack><RetainersAtRisk /></PhoneStack>, sub: 'Health and renewals' },
   ],
 };

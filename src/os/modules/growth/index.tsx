@@ -6,7 +6,8 @@ import type { AppRole } from '@/lib/types';
 import type { OsModule } from '../types';
 import { BossCockpit, DecisionLog, MondayBriefing, Scoreboard } from './boss';
 import { Organisations, PipelinePage } from './crm';
-import { ContractsPage, EventsPage, ProposalDoc, ProposalsPage, TendersPage } from './docs';
+import { ContractsPage, EventsPage, ProposalDoc, TendersPage } from './docs';
+import { ProposalLog } from './proposal-log';
 import { DealRoomAdmin, DealsPage, ReferenceLibrary, ShowcaseBuilder, ShowcasesPage } from './share';
 import { ConcernsBoard, RequestBoardPage, RetainerDetail, RetainersPage } from './retainers';
 import { GrowthInbox } from './phone';
@@ -45,7 +46,7 @@ export const growthModule: OsModule = {
     { path: 'growth', element: <PipelinePage /> },
     { path: 'growth/inbox', element: <InboxPage /> },
     { path: 'growth/organisations', element: <Organisations /> },
-    { path: 'growth/proposals', element: <ProposalsPage /> },
+    { path: 'growth/proposals', element: <div className="mx-auto max-w-2xl"><PageTitle tag="GROWTH · PROPOSALS" title="Proposals sent" sub="Record each proposal you send and keep its status up to date." /><ProposalLog /></div> },
     { path: 'growth/proposals/:id', element: <ProposalDoc /> },
     { path: 'growth/contracts', element: <ContractsPage /> },
     { path: 'growth/tenders', element: <TendersPage /> },

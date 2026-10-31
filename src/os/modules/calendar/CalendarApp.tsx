@@ -18,16 +18,10 @@ import { DaySheet, draftFrom, draftToRow, EventForm, EventSheet, LayerList, type
 import { EventRow, eventsOn, MiniMonth, MonthView, ScheduleView, SearchResults, TimeGridView, useNow, WeekStrip } from './views';
 
 export type CalView = 'month' | 'week' | 'day' | 'schedule';
-const VIEWS: { value: CalView; label: string; key: string }[] = [
-  { value: 'schedule', label: 'Schedule', key: 'a' },
-  { value: 'day', label: 'Day', key: 'd' },
-  { value: 'week', label: 'Week', key: 'w' },
-  { value: 'month', label: 'Month', key: 'm' },
-];
+const VIEWS: { value: CalView; label: string; key: string }[] = [];
 
 const LS_LAYERS = 'basil-cal-layers-v1';
 const LS_MINE = 'basil-cal-only-mine-v1';
-const LS_VIEW = 'basil-cal-view-v1';
 const lsGet = (k: string) => {
   try {
     return localStorage.getItem(k);
@@ -76,11 +70,8 @@ export function CalendarApp({ variant = 'page', stickyTop }: CalendarAppProps) {
   const { events: all, loading, error, sources } = useCalendarEvents();
   const available = useMemo(() => layersFor(role), [role]);
 
-  const [view, setViewState] = useState<CalView>(() => {
-    const saved = lsGet(LS_VIEW) as CalView | null;
-    if (variant === 'phone' || (typeof matchMedia !== 'undefined' && matchMedia('(max-width: 640px)').matches)) return saved === 'month' || saved === 'day' || saved === 'week' ? saved : 'schedule';
-    return saved && saved !== 'schedule' ? saved : 'month';
-  });
+  // Schedule only (the owner asked to remove month/week/day views).
+  const [view, setViewState] = useState<CalView>('schedule');
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
   const [dir, setDir] = useState(0);
   const [layers, setLayers] = useState<Set<LayerKey>>(() => {
@@ -100,10 +91,9 @@ export function CalendarApp({ variant = 'page', stickyTop }: CalendarAppProps) {
   const [moreDay, setMoreDay] = useState<Date | null>(null);
   const [form, setForm] = useState<{ open: boolean; draft: Draft; editId: string | null }>({ open: false, draft: draftFrom(), editId: null });
 
-  const setView = (v: CalView) => {
+  const setView = (_v: CalView) => {
     setDir(0);
-    setViewState(v);
-    lsSet(LS_VIEW, v);
+    setViewState('schedule');
   };
   const toggleLayer = (k: LayerKey) =>
     setLayers((s) => {
@@ -227,7 +217,7 @@ export function CalendarApp({ variant = 'page', stickyTop }: CalendarAppProps) {
 
   // ---------- pieces
   const iconBtn = 'flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-0 bg-transparent text-basil-deep transition hover:bg-basil-ice active:bg-basil-ice';
-  const segmented = (
+  const segmented = VIEWS.length < 2 ? null : (
     <div role="tablist" aria-label="Calendar view" className={`relative grid grid-cols-4 rounded-full bg-basil-ice/80 p-1 ${compact ? 'min-w-0 flex-1' : 'w-[340px]'}`}>
       {VIEWS.map((v) => (
         <button key={v.value} role="tab" type="button" aria-selected={view === v.value} onClick={() => setView(v.value)}

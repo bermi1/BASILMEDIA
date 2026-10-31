@@ -73,6 +73,7 @@ export interface Project {
   image_url: string;
   description: string;
   video_url: string;
+  orientation?: 'auto' | 'portrait' | 'landscape';
   external_url: string;
   featured: boolean;
   sort_order: number;
@@ -91,6 +92,7 @@ export interface Highlight {
   id: ID;
   title: string;
   video_url: string;
+  orientation?: 'auto' | 'portrait' | 'landscape';
   thumbnail_url: string;
   sort_order: number;
   published: boolean;

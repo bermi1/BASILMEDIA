@@ -3,12 +3,12 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { matchPath } from 'react-router-dom';
-import { Building2, CalendarDays, ChevronLeft, FileSignature, FileText, Gavel, Inbox, Kanban, LifeBuoy, Repeat, Share2, ShieldCheck, Users } from 'lucide-react';
+import { ChevronLeft, FileText, Inbox, Kanban, LifeBuoy, Repeat } from 'lucide-react';
 import type { PhoneRoleApp } from '../types';
 import { BookingsInbox, Organisations, Pipeline } from './crm';
-import { ContractsList, EventsList, ProposalDoc, ProposalsList, SubscribersGlance, TendersList } from './docs';
+import { ContractsList, EventsList, ProposalDoc, ProposalsList, TendersList } from './docs';
 import { ConcernsBoard, RequestBoard, RetainerDetail, RetainersAtRisk, RetainersList, useRetainerData } from './retainers';
-import { DealRoomAdmin, DealsList, ReferenceLibrary, ShareQuick, ShowcaseBuilder, ShowcasesList } from './share';
+import { DealRoomAdmin, DealsList, ReferenceLibrary, ShowcaseBuilder, ShowcasesList } from './share';
 import { DecisionLog, MondayBriefing, Scoreboard } from './boss';
 import { GoLink, PageHead, Section, StackCtx } from './kit';
 
@@ -51,6 +51,7 @@ function resolve(to: string): ReactNode | null {
  * In-app navigation stack for a phone tab: GoLink / useGo push a path here; the screen opens with a back
  * button (the phone's own back gesture works too), and the tab underneath keeps its state.
  */
+import { ProposalLog } from './proposal-log';
 export function PhoneStack({ children }: { children: ReactNode }) {
   const [stack, setStack] = useState<string[]>([]);
   const [, setParams] = useSearchParams();
@@ -130,16 +131,9 @@ export const growthPhone = (title: string): PhoneRoleApp => ({
     { key: 'pipeline', label: 'Pipeline', icon: Kanban, element: stacked(<Pipeline compact />) },
     { key: 'inbox', label: 'Inbox', icon: Inbox, element: stacked(<GrowthInbox />) },
     { key: 'retainers', label: 'Retainers', icon: Repeat, element: stacked(<RetainersList compact />) },
-    { key: 'share', label: 'Share', icon: Share2, element: stacked(<ShareQuick />) },
+    { key: 'proposals', label: 'Proposals', icon: FileText, element: stacked(<ProposalLog />) },
   ],
   more: [
-    { key: 'proposals', label: 'Proposals', icon: FileText, element: stacked(<ProposalsList compact />), sub: 'Basil Media structure, printable' },
-    { key: 'contracts', label: 'Contracts', icon: FileSignature, element: stacked(<ContractsList />), sub: 'Instalments and renewals' },
     { key: 'concerns', label: 'Client concerns', icon: LifeBuoy, element: stacked(<ConcernsBoard />), sub: 'Answer and resolve client tickets' },
-    { key: 'organisations', label: 'Organisations', icon: Building2, element: stacked(<Organisations />), sub: 'Hospitals, banks, NGOs and contacts' },
-    { key: 'library', label: 'Reference library', icon: ShieldCheck, element: stacked(<ReferenceLibrary />), sub: 'Cleared work for showcases' },
-    { key: 'tenders', label: 'Tenders', icon: Gavel, element: stacked(<TendersList />), sub: 'Closing dates and outcomes' },
-    { key: 'events', label: 'Events', icon: CalendarDays, element: stacked(<EventsList />), sub: 'Where we meet buyers' },
-    { key: 'subscribers', label: 'Subscribers', icon: Users, element: <SubscribersGlance />, sub: 'Website health-news subscribers' },
   ],
 });

@@ -5,7 +5,7 @@ import { ArrowRight, Briefcase, Camera, ChevronDown, HeartPulse, Lightbulb, Mic,
 import { useRows, useSettings } from '@/hooks/useData';
 import { useSeo } from '@/hooks/useSeo';
 import { useI18n } from '@/lib/i18n';
-import { videoLabel, youtubeThumb } from '@/lib/video';
+import { videoLabel, videoOrientation, youtubeThumb, type Orientation } from '@/lib/video';
 import { HeroSlides } from '@/components/HeroSlides';
 import { gradient } from '@/components/Media';
 import { VideoEmbed } from '@/components/VideoEmbed';
@@ -37,8 +37,8 @@ export default function Home() {
   const photos = s.hero_images?.length ? s.hero_images : s.hero_image_url ? [s.hero_image_url] : [];
   // Work at a glance: the reels first, then featured projects.
   const glance = [
-    ...highlights.map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels' })),
-    ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string })),
+    ...highlights.map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels', shape: videoOrientation(h.video_url, h.orientation) })),
+    ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string, shape: videoOrientation(p.video_url, p.orientation) })),
   ];
   const [cat, setCat] = useState('All');
   const cats = ['All', ...Array.from(new Set(glance.map((g) => g.cat)))];
@@ -120,9 +120,17 @@ export default function Home() {
                 <button key={c} type="button" role="tab" aria-selected={cat === c} onClick={() => setCat(c)} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium transition ${cat === c ? 'border-0 bg-white text-basil-night shadow-[0_0_24px_rgba(124,192,245,0.55)]' : 'border border-white/20 bg-white/[0.06] text-white/80 backdrop-blur hover:bg-white/15'}`}>{c}</button>
               ))}
             </div>
-            <div className="snap-row pb-1">
-              {shown.map((g, i) => <GlanceCard key={g.id} {...g} index={i} />)}
-            </div>
+            {/* Wide films: a swipe row on phones, a grid on desktop. Tall reels: their own swipe row of portrait cards. */}
+            {shown.some((g) => g.shape === 'landscape') && (
+              <div className="snap-row mb-4 pb-1 sm:grid sm:grid-cols-2 sm:gap-4 sm:overflow-visible lg:grid-cols-3">
+                {shown.filter((g) => g.shape === 'landscape').map((g, i) => <GlanceCard key={g.id} {...g} index={i} />)}
+              </div>
+            )}
+            {shown.some((g) => g.shape === 'portrait') && (
+              <div className="snap-row pb-1">
+                {shown.filter((g) => g.shape === 'portrait').map((g, i) => <GlanceCard key={g.id} {...g} index={i} />)}
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -187,14 +195,15 @@ export default function Home() {
   );
 }
 
-function GlanceCard({ title, url, poster, sub, index }: { title: string; url: string; poster: string; sub: string; index: number }) {
+function GlanceCard({ title, url, poster, sub, index, shape }: { title: string; url: string; poster: string; sub: string; index: number; shape: Orientation }) {
   const [on, setOn] = useState(false);
+  const aspect = shape === 'portrait' ? '9 / 16' : '16 / 9';
   return (
-    <div className="w-[46vw] max-w-[230px] shrink-0 snap-start">
+    <div className={shape === 'portrait' ? 'w-[46vw] max-w-[230px] shrink-0 snap-start' : 'w-[80vw] max-w-[360px] shrink-0 snap-start sm:w-auto sm:max-w-none'}>
       {on && url ? (
-        <div className="overflow-hidden rounded-[20px] shadow-card"><VideoEmbed url={url} title={title} autoPlay aspect="9 / 16" /></div>
+        <div className="overflow-hidden rounded-[20px] shadow-card"><VideoEmbed url={url} title={title} autoPlay aspect={aspect} /></div>
       ) : (
-        <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} className="group relative block w-full overflow-hidden rounded-[20px] border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:ring-basil-sky/60 hover:shadow-[0_0_40px_-6px_rgba(124,192,245,0.55)]" style={{ aspectRatio: '9 / 16', background: gradient(index) }}>
+        <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} className="group relative block w-full overflow-hidden rounded-[20px] border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:ring-basil-sky/60 hover:shadow-[0_0_40px_-6px_rgba(124,192,245,0.55)]" style={{ aspectRatio: aspect, background: gradient(index) }}>
           {poster && <img src={poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />}
           <span className="absolute inset-0 bg-gradient-to-t from-basil-night/85 via-transparent to-transparent" />
           {url && <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 transition group-hover:scale-110"><Play size={18} /></span>}

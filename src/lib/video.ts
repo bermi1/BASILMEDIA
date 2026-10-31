@@ -28,3 +28,13 @@ export function youtubeThumb(url?: string | null) {
   const v = parseVideo(url);
   return v.kind === 'youtube' ? `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg` : '';
 }
+
+export type Orientation = 'portrait' | 'landscape';
+/** Portrait for Instagram reels/posts and YouTube Shorts; landscape for normal YouTube, Vimeo and files.
+ *  A CMS editor can override it per item (column `orientation`: 'auto' | 'portrait' | 'landscape'). */
+export function videoOrientation(url?: string | null, override?: string | null): Orientation {
+  if (override === 'portrait' || override === 'landscape') return override;
+  const u = (url ?? '').toLowerCase();
+  if (u.includes('instagram.com') || u.includes('/shorts/') || u.includes('tiktok.com')) return 'portrait';
+  return 'landscape';
+}

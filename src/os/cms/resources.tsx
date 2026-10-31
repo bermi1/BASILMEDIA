@@ -17,12 +17,13 @@ export const ProjectsCms = () => (
       { key: 'featured', label: 'Featured on home page', type: 'boolean' },
       { key: 'image_url', label: 'Cover picture', type: 'image', folder: 'projects' },
       { key: 'video_url', label: 'Video', type: 'video', folder: 'projects', help: 'Upload a file or paste a YouTube, Vimeo or Instagram link — it plays inside the page.' },
+      { key: 'orientation', label: 'Video shape', type: 'select', options: ['auto', 'landscape', 'portrait'], help: 'Auto: Instagram reels and YouTube Shorts are tall, other links are wide.' },
       { key: 'description', label: 'Description', type: 'textarea' },
       { key: 'external_url', label: 'External link', type: 'url' },
       { key: 'published', label: 'Published', type: 'boolean' },
     ]}
-    blank={() => ({ title: '', client: '', category: 'Corporate' as const, image_url: '', video_url: '', description: '', external_url: '', featured: false, published: true })}
-    summary={(r) => [r.title, `${r.category} · ${r.client}${r.featured ? ' · ★ featured' : ''}${r.video_url ? ' · ▶ video' : ''}`]}
+    blank={() => ({ title: '', client: '', category: 'Corporate' as const, image_url: '', video_url: '', description: '', external_url: '', orientation: 'auto' as const, featured: false, published: true })}
+    summary={(r) => [r.title, `${r.category} · ${r.client}${r.featured ? ' · featured' : ''}${r.video_url ? ' · video' : ''}`]}
     thumb={(r) => r.image_url || youtubeThumb(r.video_url)}
   />
 );
@@ -54,6 +55,7 @@ export const HighlightsCms = () => (
       { key: 'title', label: 'Title', type: 'text', required: true },
       { key: 'published', label: 'Published', type: 'boolean' },
       { key: 'video_url', label: 'Reel', type: 'video', folder: 'highlights' },
+      { key: 'orientation', label: 'Video shape', type: 'select', options: ['auto', 'landscape', 'portrait'], help: 'Auto: Instagram reels and YouTube Shorts are tall, other links are wide.' },
       { key: 'thumbnail_url', label: 'Thumbnail (optional)', type: 'image', folder: 'highlights' },
     ]}
     blank={() => ({ title: '', video_url: '', thumbnail_url: '', published: true })}
