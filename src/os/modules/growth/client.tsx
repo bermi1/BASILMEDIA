@@ -2,7 +2,6 @@
 // with Supabase, RLS (client_users + my_client_ids()) guarantees a client only ever sees their own rows.
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Images, MessageCircle, Phone, Plus, Star } from 'lucide-react';
-import { isDemo } from '@/lib/supabase';
 import { useActing } from '@/os/lib/session';
 import { docTotals, invoicePaid, invoiceStatus, type Invoice, type Payment } from '@/os/modules/finance/lib';
 import { fetchRows, insertRow, updateRow, usePeople } from '@/os/lib/store';
@@ -16,7 +15,7 @@ import { AllowanceRings, KIND_LABEL, WhoIsComing, YearCalendar, shootPill, signO
 function useClientCtx() {
   const { userId } = useActing();
   const { clientId, clientRole, loading } = useMyClient(userId);
-  const data = useRetainerData(clientId ?? '__none__');
+  const data = useRetainerData(clientId ?? '00000000-0000-0000-0000-000000000000');
   const client = useClients().find((c) => c.id === clientId);
   const retainer = data.retainers.find((r) => r.status === 'active') ?? data.retainers[0];
   return { userId, clientId, clientRole, loading, client, retainer, ...data };
@@ -145,7 +144,6 @@ export function ClientRequests() {
         status: impact?.over ? 'Quote needed' : 'New', units: type.units, over_allowance: !!impact?.over, quote_amount: impact?.quote ?? 0, quote_status: impact?.over ? 'sent' : 'none', requested_by: c.userId, note: impact?.over ? 'Over allowance — estimated extra charge from the rate card; your account manager confirms.' : '',
       });
       // With Supabase the notify_client_request trigger tells the account manager.
-      if (isDemo) await notify(c.retainer.account_manager_id, 'New client request', `${c.client?.name} · ${form.title}`, '/os/retainers/requests', 'task');
       toast(impact?.over ? 'Sent — this is over your allowance, so it comes back as a quote' : 'Request sent');
       setForm(null);
     } catch (e) {
@@ -155,7 +153,7 @@ export function ClientRequests() {
   const decide = async (q: ClientRequest, ok: boolean) => {
     try {
       await updateRow('client_requests', q.id, { quote_status: ok ? 'accepted' : 'declined', status: ok ? 'Reviewing' : 'Declined' });
-      if (isDemo && c.retainer) await notify(c.retainer.account_manager_id, ok ? 'Quote accepted' : 'Quote declined', `${c.client?.name} · ${q.title}`, '/os/retainers/requests', 'task');
+      if (c.retainer) await notify(c.retainer.account_manager_id, ok ? 'Quote accepted' : 'Quote declined', `${c.client?.name} · ${q.title}`, '/os/retainers/requests', 'task');
       toast(ok ? 'Quote accepted — we will schedule it' : 'Quote declined');
     } catch (e) {
       toast((e as Error).message, 'error');
@@ -279,11 +277,7 @@ export function RaiseConcern() {
     try {
       if (!f.subject || !f.body) throw new Error('Add a subject and a few words');
       await insertRow('client_concerns', { client_id: c.clientId, subject: f.subject, body: f.body, severity: f.severity, status: 'Open', raised_by: c.userId, response: '' });
-      // With Supabase the notify_client_concern trigger tells the account managers and the Boss.
-      if (isDemo) {
-        await notify(c.retainer?.account_manager_id ?? 'u-growth', 'Client raised a concern', `${c.client?.name} · ${f.subject}`, '/os/retainers/concerns', 'alert');
-        await notify('u-boss', 'Client raised a concern', `${c.client?.name} · ${f.subject}`, '/os/retainers/concerns', 'alert');
-      }
+      // The notify_client_concern trigger tells the account managers and the Boss.
       setF({ subject: '', body: '', severity: 'Medium' });
       toast('Sent — your account manager will respond within one working day');
     } catch (e) {
@@ -310,13 +304,14 @@ export function TeamContacts() {
   const c = useClientCtx();
   const people = usePeople();
   const crewIds = [...new Set(c.items.flatMap((i) => i.crew.map((x) => x.user_id)))];
-  const team = [c.retainer?.account_manager_id, 'u-boss', ...crewIds].filter((x, i, a) => x && a.indexOf(x) === i) as string[];
+  const bossId = people.find((p) => p.roles.includes('boss'))?.id;
+  const team = [c.retainer?.account_manager_id, bossId, ...crewIds].filter((x, i, a) => x && a.indexOf(x) === i) as string[];
   return (
     <div className="flex flex-col gap-2">
       {team.map((id) => {
         const p = people.find((x) => x.id === id);
         if (!p) return null;
-        const role = id === c.retainer?.account_manager_id ? 'Account Manager' : id === 'u-boss' ? 'CEO, Basil Media' : c.items.flatMap((i) => i.crew).find((x) => x.user_id === id)?.role ?? 'Crew';
+        const role = id === c.retainer?.account_manager_id ? 'Account Manager' : id === bossId ? 'CEO, Basil Media' : c.items.flatMap((i) => i.crew).find((x) => x.user_id === id)?.role ?? 'Crew';
         return (
           <div key={id} className="flex items-center gap-3 rounded-2xl bg-white p-4">
             <Avatar name={p.full_name} size={44} /><span className="min-w-0 flex-1"><b className="block">{p.full_name}</b><span className="text-sm text-basil-muted">{role}</span></span>

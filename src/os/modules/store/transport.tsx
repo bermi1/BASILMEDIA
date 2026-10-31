@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Car, Fuel, MapPin, Navigation, Plus } from 'lucide-react';
 import { insertRow, usePeople, useTable } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { notify, notifyRole } from '@/os/lib/notify';
 import { useActing } from '@/os/lib/session';
 import { useToast } from '@/os/cms/toast';
 import { Card, Field, Pill, Sheet, StageTracker, Stat, inputCls, tsh, tshShort } from '@/os/ui';
@@ -86,7 +86,7 @@ export function CurrentTrip() {
       <Card title="Problem on the road?">
         <div className="flex flex-col gap-2">
           <textarea className={`${inputCls} h-20 py-2`} value={issue} onChange={(e) => setIssue(e.target.value)} placeholder="Traffic at Selander bridge, flat tyre, client late…" aria-label="Describe the problem" />
-          <button type="button" className="btn-outline w-full" onClick={() => issue.trim() && notify('u-gm', `Trip delay · ${t.destination}`, issue, '/os/transport', 'alert').then(() => notify(t.project_id ? 'u-enock' : 'u-gm', `Driver update · ${t.purpose}`, issue, '', 'alert')).then(() => (setIssue(''), toast('Office and project lead told')))}><AlertTriangle size={16} />Send update</button>
+          <button type="button" className="btn-outline w-full" onClick={() => issue.trim() && notifyRole('gm_cfo', `Trip delay · ${t.destination}`, issue, '/os/transport', 'alert').then(() => notify(t.project_id ? 'u-enock' : 'u-gm', `Driver update · ${t.purpose}`, issue, '', 'alert')).then(() => (setIssue(''), toast('Office and project lead told')))}><AlertTriangle size={16} />Send update</button>
         </div>
       </Card>
     </div>
@@ -97,7 +97,7 @@ function NewTripSheet({ open, onClose }: { open: boolean; onClose: () => void })
   const { rows: vehicles } = useTable<Vehicle>('vehicles');
   const { userId } = useActing();
   const toast = useToast();
-  const [f, setF] = useState({ vehicle_id: '', driver_id: 'u-driver', project_id: '', purpose: '', origin: 'Basil Media, Mikocheni', destination: '', depart_at: new Date(Date.now() + 864e5).toISOString(), passengers: '', cargo: '' });
+  const [f, setF] = useState({ vehicle_id: '', driver_id: '', project_id: '', purpose: '', origin: 'Basil Media, Mikocheni', destination: '', depart_at: new Date(Date.now() + 864e5).toISOString(), passengers: '', cargo: '' });
   const save = async () => {
     if (!f.vehicle_id || !f.destination || !f.driver_id) return toast('Vehicle, driver and destination required', 'error');
     await insertRow('trips', { ...f, project_id: f.project_id || null, return_at: null, stage: 'Scheduled', stage_log: [{ stage: 'Scheduled', at: new Date().toISOString(), by: userId }], issue_note: '' });
@@ -151,7 +151,7 @@ export function VehiclePanel() {
   const saveIssue = async () => {
     if (!iss.description.trim()) return toast('Describe the issue', 'error');
     await insertRow('vehicle_issues', { vehicle_id: issueFor!.id, reported_by: userId, description: iss.description, severity: iss.severity, status: 'open' });
-    await notify('u-gm', `Vehicle issue · ${issueFor!.registration}`, iss.description, '/os/transport', 'alert');
+    await notifyRole('gm_cfo', `Vehicle issue · ${issueFor!.registration}`, iss.description, '/os/transport', 'alert');
     toast('Reported to Saul (GM/CFO)');
     setIssueFor(null);
   };

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { FileText, HandCoins, Plus, Printer, Undo2 } from 'lucide-react';
 import { insertRow, nowIso, updateRow, useTable } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { notifyRole } from '@/os/lib/notify';
 import { useActing } from '@/os/lib/session';
 import { useToast } from '@/os/cms/toast';
 import { PageTitle } from '@/os/OsLayout';
@@ -134,7 +134,7 @@ function ReturnSheet({ r, onClose }: { r: Rental; onClose: () => void }) {
   const save = async () => {
     await updateRow('gear_rentals', r.id, { status: 'returned', returned_at: nowIso(), inspection_note: note || 'Inspected — all items present.', damage_charge: damage, deposit_refunded: refund });
     for (const id of r.gear_ids) await updateRow('gear_items', id, { status: damaged ? 'in_repair' : 'available', holder_id: null });
-    if (preview.late + damage > 0) await notify('u-fin', `Rental ${r.agreement_no} charges`, `${r.renter_company || r.renter_name}: late ${tsh(preview.late)} + damage ${tsh(damage)}`, '/os/store/rentals', 'money');
+    if (preview.late + damage > 0) await notifyRole('finance', `Rental ${r.agreement_no} charges`, `${r.renter_company || r.renter_name}: late ${tsh(preview.late)} + damage ${tsh(damage)}`, '/os/store/rentals', 'money');
     toast(`Returned · refund ${tsh(refund)} of deposit`);
     onClose();
   };

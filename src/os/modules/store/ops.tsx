@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { AlertTriangle, CalendarDays, CheckCircle2, ClipboardList, Minus, PackagePlus, Plus, ShieldAlert, Trash2, Wrench } from 'lucide-react';
 import { insertRow, nowIso, updateRow, usePeople, useTable } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { notify, notifyRole } from '@/os/lib/notify';
 import { useActing } from '@/os/lib/session';
 import { useToast } from '@/os/cms/toast';
 import { Card, Field, Pill, Progress, Sheet, Stat, Tabs, inputCls, tsh, tshShort } from '@/os/ui';
@@ -77,7 +77,7 @@ export function IncidentSheet({ open, onClose, gear, holder, checkoutId }: { ope
     try {
       await insertRow('gear_incidents', { gear_id: g.id, checkout_id: checkoutId, kind, description: desc, photo_url: photo, holder_id: who || null, reported_by: userId, estimated_cost: cost, decision: 'pending', decision_note: '', decided_by: null, status: 'open' });
       if (g.status !== 'out') await updateRow('gear_items', g.id, { status: kind === 'loss' ? 'out_of_service' : 'in_repair', condition: kind === 'damage' ? 'Damaged' : g.condition });
-      await notify('u-gm', `${kind === 'loss' ? 'Loss' : 'Damage'} reported · ${g.name}`, `${desc.slice(0, 80)} · est. ${tsh(cost)}`, '/os/store/maintenance', 'alert');
+      await notifyRole('gm_cfo', `${kind === 'loss' ? 'Loss' : 'Damage'} reported · ${g.name}`, `${desc.slice(0, 80)} · est. ${tsh(cost)}`, '/os/store/maintenance', 'alert');
       toast('Report sent to Saul (GM/CFO) for a decision');
       onClose();
       setDesc('');
@@ -125,8 +125,8 @@ export function IncidentsPanel() {
       }
       if (decision === 'write_off' && g) await updateRow('gear_items', g.id, { status: 'out_of_service', holder_id: null });
       if (decision === 'staff_liable' && i.holder_id) await notify(i.holder_id, 'Gear incident decision', `${g?.name}: you are asked to cover ${tsh(i.estimated_cost)}. ${note}`, '', 'alert');
-      if (decision === 'staff_liable' || decision === 'client_liable') await notify('u-fin', 'Recover gear cost', `${g?.name} · ${tsh(i.estimated_cost)} · ${INCIDENT_DECISIONS[decision]}`, '', 'money');
-      await notify('u-store', `Decision · ${g?.name}`, INCIDENT_DECISIONS[decision], '/os/store/maintenance', 'info');
+      if (decision === 'staff_liable' || decision === 'client_liable') await notifyRole('finance', 'Recover gear cost', `${g?.name} · ${tsh(i.estimated_cost)} · ${INCIDENT_DECISIONS[decision]}`, '', 'money');
+      await notifyRole('storekeeper', `Decision · ${g?.name}`, INCIDENT_DECISIONS[decision], '/os/store/maintenance', 'info');
       toast('Decision recorded');
       setDeciding(null);
       setNote('');
@@ -372,8 +372,8 @@ export function StockTakePanel() {
     if (!open) return;
     const missing = shelf.filter((g) => !open.found_ids.includes(g.id)).map((g) => g.id);
     await updateRow('stock_takes', open.id, { status: 'completed', completed_at: nowIso(), missing_ids: missing });
-    if (missing.length) await notify('u-gm', `Stock-take: ${missing.length} missing`, missing.map((m) => gear.find((g) => g.id === m)?.name).join(', '), '/os/store/stocktake', 'alert');
-    else await notify('u-gm', 'Stock-take complete', `All ${gear.length} items accounted for`, '/os/store/stocktake', 'info');
+    if (missing.length) await notifyRole('gm_cfo', `Stock-take: ${missing.length} missing`, missing.map((m) => gear.find((g) => g.id === m)?.name).join(', '), '/os/store/stocktake', 'alert');
+    else await notifyRole('gm_cfo', 'Stock-take complete', `All ${gear.length} items accounted for`, '/os/store/stocktake', 'info');
     toast(missing.length ? `${missing.length} missing — report sent to Saul` : `All ${gear.length} accounted for · report sent to Saul`);
   };
   if (!open) {

@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { ArrowRight, Building2, CalendarClock, Flame, Inbox, Phone, Plus, Search, UserPlus } from 'lucide-react';
 import { useActing } from '@/os/lib/session';
-import { demoTable, insertRow, newId, nowIso, rpc, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
+import { insertRow, nowIso, rpc, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Field, Pill, Sheet, Stat, StageTracker, Tabs, inputCls, tshShort } from '@/os/ui';
 import type { Booking } from '@/lib/types';
@@ -27,7 +27,7 @@ export function useLeadHeat() {
   };
 }
 
-export async function moveLead(lead: Lead, stage: LeadStage, actor: string, lostReason = '') {
+export async function moveLead(lead: Lead, stage: LeadStage, _actor: string, lostReason = '') {
   await rpc('move_lead', { _lead: lead.id, _stage: stage, _lost_reason: lostReason || null });
 }
 

@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Boxes, CalendarRange, Camera, ClipboardList, ConciergeBell, Droplets, HandCoins, PackageCheck, Plus, QrCode, TrendingUp, Truck, Warehouse, Wrench } from 'lucide-react';
-import { demoTable } from '@/os/lib/store';
-import { isDemo } from '@/lib/supabase';
+import { fetchRows } from '@/os/lib/store';
 import { PageTitle } from '@/os/OsLayout';
 import { Card, Stat, Tabs, tshShort } from '@/os/ui';
 import type { OsModule } from '../types';
@@ -79,14 +78,7 @@ function TransportPage() {
   ), TRANSPORT_ROLES);
 }
 
-const overdueBadge = () => {
-  if (!isDemo) return 0;
-  try {
-    return (demoTable('gear_checkouts') as unknown as Checkout[]).filter(isOverdue).length;
-  } catch {
-    return 0;
-  }
-};
+const overdueBadge = async () => (await fetchRows<Checkout>('gear_checkouts', { eq: { status: 'out' } })).filter(isOverdue).length;
 
 export const storeModule: OsModule = {
   key: 'store',

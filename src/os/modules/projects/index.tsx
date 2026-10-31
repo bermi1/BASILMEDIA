@@ -1,6 +1,5 @@
 import { Briefcase, Clapperboard, Clock, Contact, FileText, Film, HardDrive, Leaf, Lightbulb, ListChecks, Megaphone, Users } from 'lucide-react';
-import { isDemo } from '@/lib/supabase';
-import { demoTable } from '@/os/lib/store';
+import { countRows, fetchRows } from '@/os/lib/store';
 import type { AppRole } from '@/lib/types';
 import type { OsModule } from '../types';
 import { footageAtRisk, type FootageCopy, type MediaCard, type Shoot } from './lib';
@@ -12,8 +11,11 @@ const WORK: AppRole[] = ['boss', 'gm_cfo', 'project_lead', 'staff'];
 const CREW: AppRole[] = ['project_lead', 'staff'];
 const ALL_STAFF: AppRole[] = ['boss', 'gm_cfo', 'finance', 'project_lead', 'staff', 'storekeeper', 'growth', 'account_manager', 'receptionist', 'driver'];
 
-const atRisk = () => (isDemo ? footageAtRisk(demoTable('media_cards') as unknown as MediaCard[], demoTable('shoots') as unknown as Shoot[], demoTable('footage_copies') as unknown as FootageCopy[]).length : 0);
-const pendingLeave = () => (isDemo ? demoTable('leave_requests').filter((l) => l.status === 'Pending').length : 0);
+const atRisk = async () => {
+  const [cards, shoots, copies] = await Promise.all([fetchRows<MediaCard>('media_cards'), fetchRows<Shoot>('shoots'), fetchRows<FootageCopy>('footage_copies')]);
+  return footageAtRisk(cards, shoots, copies).length;
+};
+const pendingLeave = () => countRows('leave_requests', { eq: { status: 'Pending' } });
 
 export const projectsModule: OsModule = {
   key: 'projects',
@@ -27,7 +29,7 @@ export const projectsModule: OsModule = {
     { to: '/os/people', label: 'Staff portal', icon: Users, roles: ALL_STAFF },
     { to: '/os/people/reports', label: 'Weekly reports', icon: FileText, roles: ALL_STAFF },
     { to: '/os/people/suggestions', label: 'Suggestion box', icon: Lightbulb, roles: ALL_STAFF },
-    { to: '/os/people/leave', label: 'Leave', icon: Leaf, roles: ALL_STAFF, badge: () => pendingLeave() },
+    { to: '/os/people/leave', label: 'Leave', icon: Leaf, roles: ALL_STAFF, badge: pendingLeave },
     { to: '/os/people/attendance', label: 'Attendance', icon: Clock, roles: ALL_STAFF },
     { to: '/os/people/announcements', label: 'Announcements', icon: Megaphone, roles: ALL_STAFF },
     { to: '/os/people/directory', label: 'Directory', icon: Contact, roles: ALL_STAFF },

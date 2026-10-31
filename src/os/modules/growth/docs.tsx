@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, CalendarDays, FileSignature, FileText, Gavel, Plus, Users } from 'lucide-react';
 import { useActing } from '@/os/lib/session';
-import { fetchRows, insertRow, rpc, demoTable, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { fetchRows, insertRow, rpc, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
+import { notify, notifyRole } from '@/os/lib/notify';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Field, Pill, Sheet, Stat, StageTracker, Tabs, inputCls, tsh, tshShort, type Tone } from '@/os/ui';
 import { TENDER_STATUS, daysBetween, dmy, isoPlus, monthKey, monthLabel, renewalBand, todayIso, type Contract, type GrowthEvent, type Instalment, type Proposal, type Tender } from './lib';
@@ -97,7 +97,7 @@ export function ProposalDoc({ id: idArg }: { id?: string } = {}) {
   const { orgs } = useCrm();
   const { rows } = useTable<Proposal>('proposals', { eq: { id } });
   const p = rows[0];
-  const { can, userId } = useActing();
+  const { can } = useActing();
   const toast = useToast();
   const [draft, setDraft] = useState<Proposal | null>(null);
   useEffect(() => void (p && setDraft((d) => (d?.id === p.id ? d : structuredClone(p)))), [p]);
@@ -116,7 +116,7 @@ export function ProposalDoc({ id: idArg }: { id?: string } = {}) {
   const submit = async () => {
     if (draft.discount_pct > DISCOUNT_APPROVAL_PCT) {
       await save({ status: 'awaiting_approval' });
-      await notify('u-boss', 'Proposal needs your approval', `${draft.title} · ${draft.discount_pct}% discount · ${tsh(t.total)}`, `/os/growth/proposals/${p.id}`, 'approval');
+      await notifyRole('boss', 'Proposal needs your approval', `${draft.title} · ${draft.discount_pct}% discount · ${tsh(t.total)}`, `/os/growth/proposals/${p.id}`, 'approval');
       toast('Sent to the boss for approval (discount above 10%)');
     } else await save({ status: 'sent', sent_at: new Date().toISOString() });
   };

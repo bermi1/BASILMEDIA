@@ -4,10 +4,8 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Printer } from 'lucide-react';
 import { PageTitle } from '@/os/OsLayout';
 import { list, save, subscribe } from '@/lib/db';
-import { isDemo } from '@/lib/supabase';
 import type { Booking, Gallery, Subscriber } from '@/lib/types';
 import { useTable } from '@/os/lib/store';
-import { isoPlus } from './lib';
 
 // ---------- in-app navigation ----------
 // On the phone app, growth screens open details (a proposal, a retainer, a showcase…) inside the app
@@ -87,38 +85,13 @@ export function Section({ title, children, action }: { title: string; children: 
 }
 
 // ---------- website tables (owned by the public site; read/updated through src/lib/db.ts) ----------
-const DEMO_FLAG = 'basil-growth-web-seeded-v1';
-async function seedWebsiteDemo() {
-  if (!isDemo) return;
-  try {
-    if (localStorage.getItem(DEMO_FLAG)) return;
-    localStorage.setItem(DEMO_FLAG, '1');
-  } catch {
-    return;
-  }
-  const existing = await list('bookings');
-  if (!existing.length) {
-    const now = Date.now();
-    const b = (h: number, name: string, contact: string, service: string, days: number | null, message: string, source: Booking['source'] = 'booking') =>
-      save('bookings', { name, contact, service, preferred_date: days === null ? null : isoPlus(days), message, source, status: 'new', created_at: new Date(now - h * 36e5).toISOString() } as Partial<Booking>);
-    await b(3, 'Dr Salome Kimaro · Aga Clinic Mwanza', '+255754 331 220 · salome@agaclinic.co.tz', 'Brand Storytelling', 20, 'We are opening a new cancer wing and need a short film and photos for the launch.');
-    await b(20, 'Hassan Mwinyi · Pwani Microfinance', 'hassan@pwanimf.co.tz', 'Corporate Content', null, 'Looking for monthly social media content for our 12 branches. Can you share your retainer tiers?');
-    await b(46, 'Rose Ndege · Wildlife Trust', '+255 688 120 554', 'Films & Documentaries', 45, 'Documentary on community rangers in Ruaha, 10–15 minutes.', 'contact');
-    await b(70, 'Peter Laizer', '+255 715 990 001', 'Photography', 8, 'Wedding photos in Arusha.');
-  }
-  const gals = await list('galleries');
-  if (!gals.some((g) => g.slug === 'hospital-care-stories')) {
-    await save('galleries', { slug: 'hospital-care-stories', title: 'Hospital care stories', client_name: 'National Referral Hospital', event_date: isoPlus(-21), location: 'Upanga, Dar es Salaam', cover_url: '', collections: ['Wards', 'Portraits'], access_mode: 'link', pin: '', expires_on: isoPlus(120), allow_downloads: true, selection_limit: 0, face_search_enabled: false, published: true } as Partial<Gallery>);
-  }
-}
-
 function useWeb<T>(load: () => Promise<T[]>) {
   const [rows, setRows] = useState<T[]>([]);
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
     const go = () => load().then((r) => alive && setRows(r)).catch((e) => alive && setError(String(e.message ?? e)));
-    seedWebsiteDemo().finally(go);
+    go();
     const off = subscribe(go);
     return () => void ((alive = false), off());
     // eslint-disable-next-line react-hooks/exhaustive-deps

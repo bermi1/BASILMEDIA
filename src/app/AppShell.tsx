@@ -3,14 +3,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, CalendarDays, ChevronDown, ChevronRight, Globe2, KeyRound, LayoutDashboard, Loader2, LogOut, MoreHorizontal, RefreshCcw, UserCog } from 'lucide-react';
+import { Bell, CalendarDays, ChevronDown, ChevronRight, Globe2, KeyRound, LayoutDashboard, Loader2, LogOut, MoreHorizontal, UserCog } from 'lucide-react';
 import { PortalList, portalMeta } from '@/os/PortalSwitcher';
 import { PortalAccessPanel } from '@/os/AccessAdmin';
 import { CalendarPhone } from '@/os/modules/calendar';
 import { useAuth, ROLE_LABEL } from '@/lib/auth';
-import { isDemo } from '@/lib/supabase';
 import { ActingProvider, useActing } from '@/os/lib/session';
-import { resetOsDemo, useTable } from '@/os/lib/store';
+import { useTable } from '@/os/lib/store';
 import { ToastProvider } from '@/os/cms/toast';
 import { Sheet } from '@/os/ui';
 import { PHONE_APPS } from './roles';
@@ -137,7 +136,7 @@ function More({ extras, onOpen, roles, role, setRole, signOut }: { extras: Phone
       )}
       {roles.length > 1 && (
         <section>
-          <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-basil-muted"><UserCog size={16} />Switch portal{isDemo && ' (demo: view as any role)'}</h2>
+          <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-basil-muted"><UserCog size={16} />Switch portal</h2>
           <div className="grid grid-cols-2 gap-2">
             {roles.filter((r) => PHONE_APPS[r]).map((r) => {
               const m = portalMeta(r);
@@ -153,7 +152,6 @@ function More({ extras, onOpen, roles, role, setRole, signOut }: { extras: Phone
       <div className="flex flex-col gap-2">
         <a href="/os" className={row}><LayoutDashboard size={20} className="text-basil" /><b className="flex-1">Open desktop OS</b><ChevronRight size={18} className="text-basil-muted" /></a>
         <a href="/" className={row}><Globe2 size={20} className="text-basil" /><b className="flex-1">Basil Media website</b><ChevronRight size={18} className="text-basil-muted" /></a>
-        {isDemo && <button type="button" onClick={() => confirm('Reset all OS demo data?') && resetOsDemo()} className={row}><RefreshCcw size={20} className="text-amber-700" /><b className="flex-1">Reset demo data</b></button>}
         <button type="button" onClick={signOut} className={row}><LogOut size={20} className="text-red-700" /><b className="flex-1 text-red-700">Sign out</b><span className="text-xs text-basil-muted">{user?.email}</span></button>
       </div>
     </div>

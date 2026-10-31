@@ -27,27 +27,13 @@ interface AuthCtx {
 
 const Ctx = createContext<AuthCtx | null>(null);
 
-// ---- demo-mode accounts (browser only; never used when Supabase is configured) ----
-const DEMO_USERS = 'basil-demo-users-v1';
-const DEMO_SESSION = 'basil-demo-session-v1';
-type DemoUser = Omit<AuthUser, 'access'> & { password: string };
-const readUsers = (): DemoUser[] => {
-  try {
-    return JSON.parse(localStorage.getItem(DEMO_USERS) ?? '[]');
-  } catch {
-    return [];
-  }
-};
-
 async function loadRoles(userId: string): Promise<{ roles: AppRole[]; access: PortalAccess[] }> {
-  if (!supabase) return { roles: [], access: [] };
   const { data } = await supabase.from('user_roles').select('role').eq('user_id', userId);
   const roles = (data ?? []).map((r: { role: AppRole }) => r.role);
   const { data: portals, error } = await supabase.rpc('my_portals');
   const access = !error && Array.isArray(portals) && portals.length ? (portals as PortalAccess[]) : accessFromRoles(roles);
   return { roles, access };
 }
-const demoUser = (u: { id: string; email: string; name: string; roles: AppRole[] }): AuthUser => ({ id: u.id, email: u.email, name: u.name, roles: u.roles, access: accessFromRoles(u.roles) });
 /** Roles the person effectively holds company-wide (base + implied + company-wide grants). */
 export const effectiveRoles = (u: AuthUser | null): AppRole[] =>
   u ? sortPortals([...u.roles, ...u.access.filter((a) => a.project_id === null).map((a) => a.role)]) : [];
@@ -57,13 +43,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase) {
-      const email = localStorage.getItem(DEMO_SESSION);
-      const u = readUsers().find((x) => x.email === email);
-      setUser(u ? demoUser(u) : null);
-      setLoading(false);
-      return;
-    }
     const apply = async (s: { user: { id: string; email?: string; user_metadata?: { full_name?: string } } } | null) => {
       if (!s) {
         setUser(null);
@@ -80,44 +59,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    if (supabase) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      return;
-    }
-    const u = readUsers().find((x) => x.email.toLowerCase() === email.toLowerCase());
-    if (!u || u.password !== password) throw new Error('Email or password is not correct.');
-    localStorage.setItem(DEMO_SESSION, u.email);
-    setUser(demoUser(u));
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Email or password is not correct.' : error.message);
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, name: string) => {
     if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
-    if (supabase) {
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-      if (error) throw error;
-      return { needsConfirm: !data.session };
-    }
-    const users = readUsers();
-    if (users.some((x) => x.email.toLowerCase() === email.toLowerCase())) throw new Error('That email already has an account.');
-    // Same rule as the database trigger: the very first account becomes Super Admin.
-    const roles: AppRole[] = users.length === 0 ? ['super_admin'] : [];
-    const u: DemoUser = { id: crypto.randomUUID(), email, name: name || email, roles, password };
-    localStorage.setItem(DEMO_USERS, JSON.stringify([...users, u]));
-    localStorage.setItem(DEMO_SESSION, email);
-    setUser(demoUser(u));
-    return { needsConfirm: false };
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
+    if (error) throw error;
+    return { needsConfirm: !data.session };
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
-    if (!supabase) return;
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/login` });
     if (error) throw error;
   }, []);
 
   const signOut = useCallback(async () => {
-    if (supabase) await supabase.auth.signOut();
-    localStorage.removeItem(DEMO_SESSION);
+    await supabase.auth.signOut();
     setUser(null);
   }, []);
 

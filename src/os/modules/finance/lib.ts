@@ -1,11 +1,9 @@
 // Finance & Approvals: types, settings, calculations and workflow calls.
-// Each workflow call goes through `rpc(name, args, demo)`: with Supabase the SQL function in
-// supabase/migrations/0006_finance.sql runs (and enforces roles + segregation of duties);
-// in demo mode the JS twin below mirrors the same rules against the browser store.
+// Each workflow call is an SQL function in supabase/migrations/0006_finance.sql, which enforces
+// roles and segregation of duties (requester ≠ reviewer ≠ approver ≠ payer).
 import { useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
-import { demoTable, insertRow, newId, nowIso, persistDemo, rpc, updateRow, useTable, type Row } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { emitChange, insertRow, nowIso, rpc, updateRow, useTable } from '@/os/lib/store';
 import type { AppRole } from '@/lib/types';
 
 // ---------------------------------------------------------------- types
@@ -108,27 +106,10 @@ export function useFinSettings(): FinSettings {
   const { rows } = useTable<{ key: string; value: unknown }>('app_settings');
   return useMemo(() => mergeSettings(rows), [rows]);
 }
-const settingsNow = () => mergeSettings(demoTable('app_settings') as unknown as { key: string; value: unknown }[]);
 export async function saveSetting(key: string, value: unknown) {
-  if (supabase) {
-    const { error } = await supabase.from('app_settings').upsert({ key, value, updated_at: nowIso() });
-    if (error) throw error;
-    return;
-  }
-  const rows = demoTable('app_settings');
-  const i = rows.findIndex((r) => r.key === key);
-  if (i >= 0) rows[i] = { ...rows[i], value };
-  else rows.push({ id: key, key, value });
-  persistDemo();
-}
-
-// ---------------------------------------------------------------- numbering (demo)
-export function nextNumber(kind: 'invoice' | 'quotation' | 'proforma' | 'request' | 'receipt', existing: string[], fmtOverride?: string) {
-  const fmt = fmtOverride ?? settingsNow().numbering[kind] ?? DEFAULT_SETTINGS.numbering[kind];
-  const yr = String(new Date().getFullYear());
-  const prefix = fmt.split('{0000}')[0].replace('{YYYY}', yr);
-  const max = existing.filter((n) => n?.startsWith(prefix)).map((n) => parseInt(n.slice(prefix.length), 10) || 0).reduce((a, b) => Math.max(a, b), 0);
-  return fmt.replace('{YYYY}', yr).replace('{0000}', String(max + 1).padStart(4, '0'));
+  const { error } = await supabase.from('app_settings').upsert({ key, value, updated_at: nowIso() });
+  if (error) throw error;
+  emitChange();
 }
 
 // ---------------------------------------------------------------- calculations
@@ -337,104 +318,80 @@ export function requestStage(r: MoneyRequest, steps: Step[], name: (id?: string 
 
 // ---------------------------------------------------------------- workflow calls
 export interface Actor { userId: string; role: AppRole }
-const reqTable = () => demoTable('money_requests') as unknown as MoneyRequest[];
-const findReq = (id: string) => {
-  const r = reqTable().find((x) => x.id === id);
-  if (!r) throw new Error('Request not found');
-  return r;
-};
-const pushStep = (s: Omit<Step, 'id' | 'at' | 'device' | 'verified_by' | 'amount'> & Partial<Step>) =>
-  demoTable('approval_steps').push({ id: newId(), at: nowIso(), created_at: nowIso(), device: '', verified_by: null, amount: null, ...s } as Row);
-const tshTxt = (n: number) => `TSH ${Math.round(n).toLocaleString('en-GB')}`;
-const ROLE_PEOPLE: Partial<Record<AppRole, string[]>> = { boss: ['u-boss'], gm_cfo: ['u-gm'], finance: ['u-fin'] };
-const notifyRole = (role: AppRole, title: string, body: string, link: string, kind: 'money' | 'approval' = 'money') => (ROLE_PEOPLE[role] ?? []).forEach((u) => void notify(u, title, body, link, kind));
-const need = (cond: boolean, msg: string) => { if (!cond) throw new Error(msg); };
 
 export interface RequestDraft {
   project_id: string | null; budget_line_id: string | null; amount: number; purpose: string; category: string; needed_by: string | null;
   payee: string; payee_phone: string; method: Method; urgency: Urgency; attachment_url: string; comment?: string;
 }
 
-export function submitRequest(data: RequestDraft, id: string | null, actor: Actor) {
+export function submitRequest(data: RequestDraft, id: string | null, _actor: Actor) {
   return rpc<string>('submit_money_request', { _data: data, _id: id });
 }
 
 export async function saveDraft(data: RequestDraft, id: string | null, actor: Actor) {
   // Drafts are plain rows (RLS lets the requester edit their own draft); numbering is assigned on submit in SQL.
   if (id) return updateRow('money_requests', id, { ...data });
-  const reqs = reqTable();
-  return insertRow('money_requests', { ...data, number: supabase ? `DRAFT-${Date.now().toString(36).toUpperCase()}` : nextNumber('request', reqs.map((x) => x.number)), requester_id: actor.userId, status: 'draft', change_returned: 0, approved_alone: false, over_budget: false, recommendation: '' });
+  return insertRow('money_requests', { ...data, number: `DRAFT-${Date.now().toString(36).toUpperCase()}`, requester_id: actor.userId, status: 'draft', change_returned: 0, approved_alone: false, over_budget: false, recommendation: '' });
 }
 
-export function reviewRequest(id: string, decision: 'recommend' | 'return' | 'reject', comment: string, actor: Actor) {
+export function reviewRequest(id: string, decision: 'recommend' | 'return' | 'reject', comment: string, _actor: Actor) {
   return rpc<string>('review_money_request', { _id: id, _decision: decision, _comment: comment });
 }
 
 export type BossDecision = 'approve' | 'approve_changed' | 'reject' | 'question';
-export function bossDecide(id: string, decision: BossDecision, opts: { amount?: number; comment?: string; verified_by?: 'pin' | 'passkey' | null }, actor: Actor) {
+export function bossDecide(id: string, decision: BossDecision, opts: { amount?: number; comment?: string; verified_by?: 'pin' | 'passkey' | null }, _actor: Actor) {
   const comment = opts.comment ?? '';
   const device = typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 120) : '';
   return rpc<string>('approve_money_request', { _id: id, _decision: decision, _amount: opts.amount ?? null, _comment: comment, _verified_by: opts.verified_by ?? null, _device: device });
 }
 
-export function answerQuestion(id: string, answer: string, actor: Actor) {
+export function answerQuestion(id: string, answer: string, _actor: Actor) {
   return rpc('answer_money_request', { _id: id, _answer: answer });
 }
 
-export function payRequest(id: string, p: { method: string; reference: string; proof_url: string; account_id: string | null }, actor: Actor) {
+export function payRequest(id: string, p: { method: string; reference: string; proof_url: string; account_id: string | null }, _actor: Actor) {
   return rpc('pay_money_request', { _id: id, _method: p.method, _reference: p.reference, _proof_url: p.proof_url, _account_id: p.account_id });
 }
 
-export function retireRequest(id: string, receipts: { url: string; amount: number; note: string }[], change: number, note: string, actor: Actor) {
+export function retireRequest(id: string, receipts: { url: string; amount: number; note: string }[], change: number, note: string, _actor: Actor) {
   return rpc('retire_money_request', { _id: id, _receipts: receipts, _change: change, _note: note });
 }
 
-export function reconcileRequest(id: string, decision: 'ok' | 'query', comment: string, actor: Actor) {
+export function reconcileRequest(id: string, decision: 'ok' | 'query', comment: string, _actor: Actor) {
   return rpc('reconcile_money_request', { _id: id, _decision: decision, _comment: comment });
 }
 
 // ---------------------------------------------------------------- invoices (demo twins of the SQL triggers)
-export async function recordPayment(inv: Invoice, p: { amount: number; paid_on: string; method: string; reference: string; account_id: string | null; is_deposit: boolean }, actor: Actor) {
-  if (supabase) return insertRow('invoice_payments', { invoice_id: inv.id, ...p });
-  if (!PAYMENT_ROLES.includes(actor.role)) throw new Error('Only Finance or the GM/CFO records payments');
-  const pays = demoTable('invoice_payments') as unknown as Payment[];
-  const receipt_no = nextNumber('receipt', pays.map((x) => x.receipt_no));
-  const row = await insertRow<Payment>('invoice_payments', { invoice_id: inv.id, ...p, receipt_no, recorded_by: actor.userId });
-  await insertRow('income', { date: p.paid_on, amount: p.amount, account_id: p.account_id, client_id: inv.client_id, project_id: inv.project_id, invoice_id: inv.id, payment_id: row.id, category: 'Client payment', description: `Payment · ${inv.number}`, reference: p.reference, recorded_by: actor.userId });
-  const paid = invoicePaid(inv, demoTable('invoice_payments') as unknown as Payment[]);
-  const total = docTotals(inv).total;
-  await updateRow('invoices', inv.id, { status: paid >= total ? 'paid' : 'partially_paid', paid_at: paid >= total ? nowIso() : null });
-  return row;
+export async function recordPayment(inv: Invoice, p: { amount: number; paid_on: string; method: string; reference: string; account_id: string | null; is_deposit: boolean }, _actor: Actor) {
+  // Receipt number, income line and invoice status are set by SQL triggers (0006).
+  return insertRow('invoice_payments', { invoice_id: inv.id, ...p });
 }
 
 // ---------------------------------------------------------------- proformas (demo twins of 0013_proforma.sql)
-const proTable = () => demoTable('proformas') as unknown as Proforma[];
 export const PROFORMA_TERMS = 'Payment by bank transfer or mobile money. Quote the proforma number as reference.';
 
 /** Quotation → proforma: copies client, lines and VAT, marks the quotation accepted. Returns the proforma id. */
-export function convertQuotationToProforma(quotationId: string, actor: Actor, validUntil?: string) {
+export function convertQuotationToProforma(quotationId: string, _actor: Actor, validUntil?: string) {
   return rpc<string>('convert_quotation_to_proforma', { _quotation_id: quotationId, _valid_until: validUntil ?? null });
 }
 
 /** Proforma → tax invoice (draft, 50/50 schedule, proforma and quotation linked). Returns the invoice id. */
-export function convertProformaToInvoice(id: string, actor: Actor, dueDate?: string) {
+export function convertProformaToInvoice(id: string, _actor: Actor, dueDate?: string) {
   return rpc<string>('convert_proforma_to_invoice', { _id: id, _due_date: dueDate ?? null });
 }
 
 // ---------------------------------------------------------------- payroll workflow
-const runsTable = () => demoTable('payroll_runs') as unknown as PayrollRun[];
-const findRun = (id: string) => { const r = runsTable().find((x) => x.id === id); if (!r) throw new Error('Payroll run not found'); return r; };
 
-export function preparePayroll(period: string, payDay: string, actor: Actor) {
+export function preparePayroll(period: string, payDay: string, _actor: Actor) {
   return rpc<string>('prepare_payroll_run', { _period: period, _pay_day: payDay });
 }
-export function reviewPayroll(id: string, decision: 'ok' | 'return', comment: string, actor: Actor) {
+export function reviewPayroll(id: string, decision: 'ok' | 'return', comment: string, _actor: Actor) {
   return rpc('review_payroll_run', { _id: id, _decision: decision, _comment: comment });
 }
-export function approvePayroll(id: string, decision: 'approve' | 'return', comment: string, verified_by: 'pin' | 'passkey' | null, actor: Actor) {
+export function approvePayroll(id: string, decision: 'approve' | 'return', comment: string, verified_by: 'pin' | 'passkey' | null, _actor: Actor) {
   return rpc('approve_payroll_run', { _id: id, _decision: decision, _comment: comment, _verified_by: verified_by });
 }
-export function payPayroll(id: string, reference: string, account_id: string | null, actor: Actor) {
+export function payPayroll(id: string, reference: string, account_id: string | null, _actor: Actor) {
   return rpc('pay_payroll_run', { _id: id, _reference: reference, _account_id: account_id });
 }
 export const RUN_STAGES = ['Prepared', 'GM/CFO reviewed', 'Boss approved', 'Paid', 'Payslips released'];

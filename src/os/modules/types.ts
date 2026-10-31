@@ -6,7 +6,8 @@ import type { AppRole } from '@/lib/types';
 export interface OsModule {
   key: string;
   section: string;
-  nav: { to: string; label: string; icon: LucideIcon; roles: AppRole[]; badge?: () => number }[];
+  nav: { to: string; label: string; icon: LucideIcon; roles: AppRole[]; /** Live count shown next to the item (asked from the database). */
+  badge?: () => Promise<number> }[];
   routes: { path: string; element: ReactNode }[];
 }
 

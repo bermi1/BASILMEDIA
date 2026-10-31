@@ -2,28 +2,21 @@
 // (e.g. a crew member who leads a project, or drives for it). Supabase: grant_portal / revoke_portal.
 import { useState } from 'react';
 import { CalendarClock, KeyRound, Plus, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { GRANTABLE, IMPLIED_ROLES } from '@/lib/roles';
 import type { AppRole } from '@/lib/types';
 import { PageTitle } from './OsLayout';
 import { useToast } from './cms/toast';
 import { Avatar, Card, Empty, Field, Pill, Sheet, inputCls } from './ui';
-import { deleteRow, insertRow, personName, registerSeed, rpc, useTable, usePeople } from './lib/store';
+import { personName, rpc, useTable, usePeople } from './lib/store';
 import { useActing } from './lib/session';
 import { portalMeta } from './PortalSwitcher';
 
 export interface PortalGrant { id: string; user_id: string; role: AppRole; project_id: string | null; note: string; expires_at: string | null; granted_by: string; created_at: string }
 
-const inDays = (n: number) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
-registerSeed('portal_grants', () => [
-  { id: 'pg1', user_id: 'u-jonathan', role: 'project_lead', project_id: 'p-summit', note: 'Leads the Summit coverage while Enock is on leave', expires_at: inDays(21), granted_by: 'u-gm', created_at: new Date().toISOString() },
-  { id: 'pg2', user_id: 'u-benedicto', role: 'driver', project_id: null, note: 'Licensed driver — covers trips when Hamisi is off', expires_at: null, granted_by: 'u-gm', created_at: new Date().toISOString() },
-]);
-
-export async function grantPortal(g: { user_id: string; role: AppRole; project_id: string | null; expires_at: string | null; note: string }, by: string) {
+export async function grantPortal(g: { user_id: string; role: AppRole; project_id: string | null; expires_at: string | null; note: string }) {
   return rpc('grant_portal', { _user: g.user_id, _role: g.role, _project: g.project_id, _expires: g.expires_at, _note: g.note });
 }
-export const revokePortal = (id: string) => (supabase ? rpc('revoke_portal', { _id: id }) : deleteRow('portal_grants', id));
+export const revokePortal = (id: string) => rpc('revoke_portal', { _id: id });
 
 export function PortalAccessPanel() {
   const { userId, canAny } = useActing();
@@ -42,7 +35,7 @@ export function PortalAccessPanel() {
   const save = async () => {
     if (!f.user_id) return toast('Choose a person', 'error');
     try {
-      await grantPortal({ user_id: f.user_id, role: f.role, project_id: f.project_id || null, expires_at: f.expires_at || null, note: f.note }, userId);
+      await grantPortal({ user_id: f.user_id, role: f.role, project_id: f.project_id || null, expires_at: f.expires_at || null, note: f.note });
       toast(`${personName(people, f.user_id)} can now open ${portalMeta(f.role).label}${f.project_id ? ` for ${projects.find((p) => p.id === f.project_id)?.name}` : ''}`);
       setOpen(false);
       setF(blank);
@@ -68,19 +61,19 @@ export function PortalAccessPanel() {
       </div>
 
       {grants.length === 0 && <Empty icon={<KeyRound />} title="No extra portals yet" sub="Give a crew member the Project Lead portal for one project, or the Driver portal for trips." />}
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-3 lg:grid-cols-2">
         {grants.map((g) => {
           const m = portalMeta(g.role);
           const proj = projects.find((p) => p.id === g.project_id);
           const expired = !!g.expires_at && g.expires_at < today;
           return (
-            <div key={g.id} className="flex items-start gap-3 rounded-2xl border border-basil-line bg-white p-4">
+            <div key={g.id} className="flex min-w-0 items-start gap-3 rounded-2xl border border-basil-line bg-white p-4">
               <Avatar name={personName(people, g.user_id)} size={42} />
               <div className="min-w-0 flex-1">
                 <b className="block truncate">{personName(people, g.user_id)}</b>
                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
                   <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold text-white" style={{ background: m.accent }}><m.Icon size={12} />{m.label}</span>
-                  <Pill tone={g.project_id ? 'gold' : 'grey'}>{g.project_id ? `Only ${proj?.name ?? 'one project'}` : 'Whole company'}</Pill>
+                  <span className="max-w-full truncate"><Pill tone={g.project_id ? 'gold' : 'grey'}>{g.project_id ? `Only ${proj?.name ?? 'one project'}` : 'Whole company'}</Pill></span>
                   {g.expires_at && <Pill tone={expired ? 'red' : 'amber'}><CalendarClock size={12} />{expired ? 'Expired' : 'Until'} {g.expires_at}</Pill>}
                 </div>
                 {g.note && <p className="m-0 mt-1.5 text-sm text-basil-muted">{g.note}</p>}

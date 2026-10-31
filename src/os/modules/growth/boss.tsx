@@ -1,10 +1,8 @@
 // Boss cockpit: today at a glance, Monday briefing (printable), company scoreboard and decision log.
 import { useEffect, useState, type ReactNode } from 'react';
 import { AlertTriangle, ArrowRight, Briefcase, CalendarClock, Check, ChevronRight, CircleDollarSign, Gavel, Inbox, Lightbulb, Plus, Target as TargetIcon, TrendingUp, Undo2, Users } from 'lucide-react';
-import { isDemo } from '@/lib/supabase';
 import { useActing } from '@/os/lib/session';
-import { demoTable, fetchRows, insertRow, onChange, rpc, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { fetchRows, insertRow, onChange, rpc, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
 import { useFinance } from '@/os/modules/finance/lib';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Field, Pill, Sheet, inputCls, tsh, tshShort, type Tone } from '@/os/ui';
@@ -64,6 +62,8 @@ export function useBoss() {
   const { rows: bookings } = useBookings();
   const heat = useLeadHeat();
   const today = todayIso();
+  const leaveRows = useTable<{ user_id: string; leave_type: string; start_date: string; end_date: string; status: string }>('leave_requests').rows;
+  const reportRows = useTable<{ author_id: string; week_start: string }>('weekly_reports').rows;
 
   const approvals: ApprovalItem[] = [
     ...fin.waitingBoss.map((m) => ({ id: m.id, title: m.purpose || 'Money request', sub: `${personName(people, m.requester_id)} · recommended by GM/CFO`, amount: Number(m.amount), at: String(m.stage_at ?? m.submitted_at ?? m.created_at ?? ''), kind: 'money' as const })),
@@ -87,7 +87,12 @@ export function useBoss() {
     ...ret.items.filter((i) => i.date === today && (i.kind === 'shoot' || i.kind === 'podcast')).map((i: CalItem) => ({ who: i.crew.map((c) => personName(people, c.user_id).split(' ')[0]).join(', '), where: `${clients.find((c) => c.id === i.client_id)?.name ?? ''} · ${i.title}`, live: i.status !== 'Completed' && i.status !== 'Wrapped' })),
   ];
   // Leave and daily reports come from the people module when it exists; demo shows a sample.
-  const pulse = isDemo ? { leave: ['Rehema Juma (annual leave, back Mon)'], reportsMissing: ['Benedicto Ngowi', 'Hamisi Omary'] } : { leave: [] as string[], reportsMissing: [] as string[] };
+  // Team pulse: who is on approved leave today, and who has not filed last week's report.
+  const monday = (() => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 7); return d.toISOString().slice(0, 10); })();
+  const pulse = {
+    leave: leaveRows.filter((l) => l.status === 'Approved' && l.start_date <= today && l.end_date >= today).map((l) => `${personName(people, l.user_id)} (${l.leave_type.toLowerCase()}, back ${l.end_date})`),
+    reportsMissing: people.filter((p) => p.roles.some((r) => r !== 'client' && r !== 'boss')).filter((p) => !reportRows.some((w) => w.author_id === p.id && w.week_start >= monday)).map((p) => p.full_name),
+  };
   const pipe = pipelineTotals(crm.leads);
   const atRisk = ret.retainers.filter((r) => ret.health(r).tone !== 'green');
   const newBookings = bookings.filter((b) => b.status === 'new');
@@ -243,7 +248,7 @@ export function BossCockpit() {
 /** Proposal discounts waiting for the boss, decided in place. Money approvals live in ApprovalsInbox. */
 export function ProposalApprovals() {
   const { rows } = useTable<Proposal>('proposals', { order: 'created_at' });
-  const { userId, can } = useActing();
+  const { can } = useActing();
   const people = usePeople();
   const toast = useToast();
   const items = rows.filter((p) => p.status === 'awaiting_approval');
@@ -251,7 +256,6 @@ export function ProposalApprovals() {
   const decide = async (p: Proposal, ok: boolean) => {
     try {
       await rpc('approve_proposal', { _id: p.id, _approve: ok });
-      if (isDemo) await notify(p.created_by, ok ? 'Proposal approved' : 'Proposal sent back', p.title, `/os/growth/proposals/${p.id}`, 'approval');
       toast(ok ? `Discount approved · ${p.client_name}` : 'Sent back to draft');
     } catch (e) {
       toast((e as Error).message, 'error');

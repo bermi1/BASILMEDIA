@@ -5,7 +5,6 @@ import { Check, Globe2, Loader2, type LucideIcon } from 'lucide-react';
 import { PORTAL_BLURB, sortPortals } from '@/lib/roles';
 import { portalMeta } from '@/os/PortalSwitcher';
 import { useAuth } from '@/lib/auth';
-import { isDemo } from '@/lib/supabase';
 import { useSeo } from '@/hooks/useSeo';
 import { Fingerprint } from '@/components/icons';
 import type { AppRole } from '@/lib/types';
@@ -108,7 +107,7 @@ export default function Login() {
               <label className="flex flex-col gap-1.5 text-sm font-bold text-[#33465F]">Password<input type="password" required minLength={mode === 'signup' ? 8 : undefined} className="h-[52px] rounded-[14px] border border-basil-edge px-3.5 text-base font-normal" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" autoComplete={mode === 'signin' ? 'current-password' : 'new-password'} /></label>
               {mode === 'signin' && (
                 <div className="flex justify-end">
-                  <button type="button" onClick={async () => { if (!email) return setErr('Enter your email first.'); try { await resetPassword(email); setToast(isDemo ? 'Demo mode: password reset is not available.' : 'Reset link sent · check your email'); } catch (e) { setErr((e as Error).message); } }} className="min-h-[44px] border-0 bg-transparent p-0 text-sm font-bold text-basil">Forgot password?</button>
+                  <button type="button" onClick={async () => { if (!email) return setErr('Enter your email first.'); try { await resetPassword(email); setToast('Reset link sent · check your email'); } catch (e) { setErr((e as Error).message); } }} className="min-h-[44px] border-0 bg-transparent p-0 text-sm font-bold text-basil">Forgot password?</button>
                 </div>
               )}
               {err && <div role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-800">{err}</div>}
@@ -118,7 +117,6 @@ export default function Login() {
               <div className="text-center text-sm text-basil-muted">
                 {mode === 'signin' ? <>First time setting up Basil Media OS? <button type="button" className="border-0 bg-transparent p-0 font-bold text-basil" onClick={() => setMode('signup')}>Create the first account</button></> : <>Already have an account? <button type="button" className="border-0 bg-transparent p-0 font-bold text-basil" onClick={() => setMode('signin')}>Sign in</button></>}
               </div>
-              {isDemo && <div className="rounded-xl bg-amber-50 px-4 py-3 text-[13px] text-amber-900"><b>Demo mode:</b> no Supabase project is connected, so accounts and content live in this browser only.</div>}
             </motion.form>
           ) : (
             <motion.div key="portal" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex w-full max-w-[760px] flex-col gap-5">

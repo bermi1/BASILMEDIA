@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { Copy, ExternalLink, Eye, Flame, Handshake, Heart, Lock, Plus, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import { useActing } from '@/os/lib/session';
-import { demoTable, insertRow, newId, rpc, updateRow, useTable, usePeople } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { insertRow, newId, rpc, updateRow, useTable, usePeople } from '@/os/lib/store';
+import { notifyRole } from '@/os/lib/notify';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Field, Pill, Sheet, Stat, Tabs, inputCls, tshShort } from '@/os/ui';
 import { DEAL_STEPS, dmy, isoPlus, leadScore, slugify, type Cta, type DealRoom, type Lead, type Proposal, type ReferenceItem, type ShareEvent, type Showcase } from './lib';
@@ -22,7 +22,7 @@ const copy = (text: string, toast: (m: string) => void) => navigator.clipboard?.
 export function ReferenceLibrary() {
   const { rows } = useTable<ReferenceItem>('reference_items', { order: 'year', ascending: false });
   const { rows: projects } = useTable<{ id: string; name: string; client_id: string; service: string }>('projects');
-  const { can, userId } = useActing();
+  const { can } = useActing();
   const toast = useToast();
   const [tab, setTab] = useState<'cleared' | 'pending'>('cleared');
   const [edit, setEdit] = useState<Partial<ReferenceItem> | null>(null);
@@ -42,7 +42,7 @@ export function ReferenceLibrary() {
       if (edit.id) await updateRow('reference_items', edit.id, row);
       else {
         await insertRow('reference_items', { ...row, cleared: false, cleared_by: null, cleared_at: null });
-        await notify('u-boss', 'Reference waiting to be cleared', row.title, '/os/share', 'approval');
+        await notifyRole('boss', 'Reference waiting to be cleared', row.title, '/os/share', 'approval');
       }
       setEdit(null);
       toast(edit.id ? 'Saved' : 'Added — waiting for boss or GM/CFO to clear it');
@@ -334,7 +334,7 @@ export function DealRoomAdmin({ id: idArg }: { id?: string } = {}) {
     await patch({ kickoff_at: new Date(kick).toISOString(), step: 6 }, 'Kick-off booked');
     const l = leads.find((x) => x.id === d.lead_id) as Lead | undefined;
     if (l && l.stage !== 'Won') await moveLead(l, 'Won', userId).catch(() => undefined);
-    await notify('u-boss', 'Deal won', `${d.client_name} · ${d.title} · ${tshShort(d.value)}`, `/os/share/deals/${d.id}`, 'info');
+    await notifyRole('boss', 'Deal won', `${d.client_name} · ${d.title} · ${tshShort(d.value)}`, `/os/share/deals/${d.id}`, 'info');
   };
   return (
     <div>

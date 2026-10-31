@@ -113,6 +113,7 @@ export function TodayVisitors() {
 
 // ---------- storekeeper phone ----------
 export function StorePhoneHome() {
+  const { userId } = useActing();
   const [, setParams] = useSearchParams();
   const [detail, setDetail] = useState<string | null>(null);
   const go = (tab: string) => setParams((p) => (p.set('tab', tab), p), { replace: true });
@@ -134,7 +135,7 @@ export function StorePhoneHome() {
     <div className="flex flex-col gap-4">
       <div className="rounded-3xl bg-gradient-to-br from-amber-600 to-amber-800 p-4 text-white">
         <span className="font-mono text-[11px] tracking-widest opacity-80">{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Dar_es_Salaam' }).toUpperCase()}</span>
-        <b className="mt-1 block font-display text-2xl">Habari, {nameOf(people, 'u-store').split(' ')[0] === '—' ? 'Juma' : nameOf(people, 'u-store').split(' ')[0]}</b>
+        <b className="mt-1 block font-display text-2xl">Habari{nameOf(people, userId) !== '—' ? `, ${nameOf(people, userId).split(' ')[0]}` : ''}</b>
         <span className="text-sm opacity-90">{gear.length} items tracked · Media store, Mikocheni</span>
         <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
           {([['In store', count('available')], ['Out', count('out')], ['Repair', count('in_repair')], ['Reserved', count('reserved')]] as const).map(([l, n]) => <div key={l} className="rounded-xl bg-white/15 py-2"><b className="block font-display text-xl">{n}</b><span className="text-[11px]">{l}</span></div>)}

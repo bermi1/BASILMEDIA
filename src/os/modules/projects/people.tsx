@@ -6,7 +6,7 @@ import { PageTitle } from '@/os/OsLayout';
 import type { AppRole } from '@/lib/types';
 import { useActing } from '@/os/lib/session';
 import { insertRow, updateRow, usePeople } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { notify, notifyRole } from '@/os/lib/notify';
 import { useToast } from '@/os/cms/toast';
 import { Avatar, Card, Empty, Field, inputCls, Pill, Progress, StageTracker, Stat, Tabs } from '@/os/ui';
 import {
@@ -43,7 +43,7 @@ export function WeeklyReportForm({ onDone }: { onDone?: () => void }) {
     if (existing) await updateRow('weekly_reports', existing.id, row);
     else {
       await insertRow('weekly_reports', row);
-      await notify('u-gm', 'Weekly report submitted', `${week} · ${row.hours} h`, '/os/people/reports', 'info');
+      await notifyRole('gm_cfo', 'Weekly report submitted', `${week} · ${row.hours} h`, '/os/people/reports', 'info');
     }
     toast(existing ? 'Report updated' : 'Report sent to Saul');
     onDone?.();

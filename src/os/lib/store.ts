@@ -62,6 +62,17 @@ export async function rpc<T = unknown>(name: string, args: Record<string, unknow
   return data as T;
 }
 
+/** Number of rows matching simple filters (head request — no rows are downloaded). */
+export async function countRows(table: string, q: { eq?: Record<string, unknown>; in?: Record<string, unknown[]>; neq?: Record<string, unknown> } = {}): Promise<number> {
+  let r = supabase.from(table).select('id', { count: 'exact', head: true });
+  for (const [k, v] of Object.entries(q.eq ?? {})) r = r.eq(k, v as never);
+  for (const [k, v] of Object.entries(q.in ?? {})) r = r.in(k, v as never[]);
+  for (const [k, v] of Object.entries(q.neq ?? {})) r = r.neq(k, v as never);
+  const { count, error } = await r;
+  if (error) return 0;
+  return count ?? 0;
+}
+
 /** React hook: rows of a table, re-fetched whenever anything changes. */
 export function useTable<T = Row>(table: string, q: Query = {}) {
   const [rows, setRows] = useState<T[]>([]);

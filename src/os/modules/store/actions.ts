@@ -1,21 +1,9 @@
-// Workflow steps. Each calls a SECURITY DEFINER SQL function (0007_store_ops.sql) when Supabase is
-// configured; in demo mode the JS twin below mimics it against the browser store.
-import { demoTable, newId, nowIso, rpc, insertRow, updateRow, type Row } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
-import { supabase } from '@/lib/supabase';
-import type { Checkout, Consumable, Gear, KitCheckout, KitLine, Kit, Reservation, RoomBooking, Trip, TripStage, Visitor } from './data';
-import { TRIP_STAGES, overlaps, dayKey, fmtDateTime } from './data';
+// Workflow steps. Each calls a SECURITY DEFINER SQL function (0007_store_ops.sql) that holds the rules.
+import { rpc, insertRow, nowIso, updateRow, type Row } from '@/os/lib/store';
+import { notify, notifyRole } from '@/os/lib/notify';
+import type { Checkout, Consumable, KitCheckout, KitLine, Kit, Reservation, RoomBooking, Trip, TripStage, Visitor } from './data';
+import { overlaps, dayKey } from './data';
 
-const STORE_KEEPER = 'u-store';
-const GM = 'u-gm';
-const dnote = (user: string, title: string, body = '', link = '', kind: 'info' | 'alert' | 'task' | 'approval' = 'info') =>
-  demoTable('notifications').push({ id: newId(), user_id: user, title, body, link, kind, read_at: null, created_at: nowIso() });
-const find = <T,>(table: string, id: string) => demoTable(table).find((r) => r.id === id) as unknown as T | undefined;
-const patch = (table: string, id: string, p: Record<string, unknown>) => {
-  const rows = demoTable(table);
-  const i = rows.findIndex((r) => r.id === id);
-  if (i >= 0) rows[i] = { ...rows[i], ...p };
-};
 
 // ---------- check-out / check-in ----------
 export interface CheckoutInput {
@@ -28,7 +16,7 @@ export interface CheckoutInput {
   photo_url: string;
   kit_checkout_id?: string | null;
 }
-export function checkoutGear(i: CheckoutInput, actor: string) {
+export function checkoutGear(i: CheckoutInput, _actor: string) {
   return rpc<string[]>('gear_checkout', {
     _gear_ids: i.gear_ids, _holder: i.holder_id, _project: i.project_id, _due: i.due_at, _condition: i.condition, _note: i.note, _photo: i.photo_url, _kit_checkout: i.kit_checkout_id ?? null,
   });
@@ -38,7 +26,7 @@ export function acknowledgeCheckouts(ids: string[]) {
   return rpc('gear_acknowledge', { _ids: ids });
 }
 
-export function checkinGear(checkoutId: string, condition: string, note: string, photo: string, actor: string) {
+export function checkinGear(checkoutId: string, condition: string, note: string, photo: string, _actor: string) {
   return rpc('gear_checkin', { _checkout: checkoutId, _condition: condition, _note: note, _photo: photo });
 }
 
@@ -88,25 +76,20 @@ export async function reserveGear(r: Omit<Reservation, 'id' | 'status'>, reserva
   if (r.end_date < r.start_date) throw new Error('End date is before start date');
   const { res } = reservationConflicts(r.gear_id, r.start_date, r.end_date, reservations, checkouts);
   if (res.length) throw new Error(`Clashes with an existing reservation ${res[0].start_date} → ${res[0].end_date}`);
-  const row = await insertRow('gear_reservations', { ...r, status: 'reserved' });
-  if (!supabase) {
-    const g = find<Gear>('gear_items', r.gear_id);
-    if (g?.status === 'available' && r.start_date <= dayKey()) patch('gear_items', r.gear_id, { status: 'reserved' });
-  }
-  return row;
+  return insertRow('gear_reservations', { ...r, status: 'reserved' });
 }
 
 // ---------- consumables ----------
-export function moveStock(c: Consumable, kind: 'issue' | 'receive' | 'adjust', qty: number, person: string | null, project: string | null, note: string, actor: string) {
+export function moveStock(c: Consumable, kind: 'issue' | 'receive' | 'adjust', qty: number, person: string | null, project: string | null, note: string, _actor: string) {
   return rpc('stock_move', { _consumable: c.id, _kind: kind, _qty: qty, _person: person, _project: project, _note: note });
 }
 export function requestRestock(c: Consumable, qty: number) {
-  return notify(GM, `Restock request · ${c.name}`, `${qty} ${c.unit} · est. TSH ${(qty * c.unit_cost).toLocaleString('en-GB')} · ${c.quantity} left (min ${c.min_level})`, '/os/store/consumables', 'approval');
+  return notifyRole('gm_cfo', `Restock request · ${c.name}`, `${qty} ${c.unit} · est. TSH ${(qty * c.unit_cost).toLocaleString('en-GB')} · ${c.quantity} left (min ${c.min_level})`, '/os/store/consumables', 'approval');
 }
 
 // ---------- reception ----------
 const code = () => `BMV-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
-export function signInVisitor(v: Partial<Visitor> & { name: string }, actor: string) {
+export function signInVisitor(v: Partial<Visitor> & { name: string }, _actor: string) {
   return rpc<string>('visitor_sign_in', { _visitor: v.id ?? null, _name: v.name, _company: v.company ?? '', _phone: v.phone ?? '', _purpose: v.purpose ?? '', _host: v.host_id ?? null });
 }
 export function preRegister(v: Pick<Visitor, 'name' | 'company' | 'phone' | 'purpose' | 'host_id' | 'expected_at'>, actor: string) {
@@ -131,7 +114,7 @@ export async function bookRoom(b: Omit<RoomBooking, 'id' | 'status'>, existing: 
 export const cancelRoom = (id: string) => updateRow('room_bookings', id, { status: 'cancelled' });
 
 // ---------- transport ----------
-export function advanceTrip(t: Trip, to: TripStage, actor: string, note = '') {
+export function advanceTrip(t: Trip, to: TripStage, _actor: string, note = '') {
   return rpc('trip_advance', { _trip: t.id, _stage: to, _note: note });
 }
 

@@ -2,15 +2,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ArrowRightLeft, Bell, FilePlus2, FileText, Plus, Printer, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
 import { useSettings } from '@/hooks/useData';
 import { useActing } from '@/os/lib/session';
-import { demoTable, insertRow, nowIso, updateRow, useTable } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { insertRow, nowIso, updateRow, useTable } from '@/os/lib/store';
+import { notifyRole } from '@/os/lib/notify';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Field, Pill, Sheet, StageTracker, Tabs, inputCls, tsh, tshShort } from '@/os/ui';
 import {
-  METHODS, MONEY_DOC_ROLES, PAYMENT_ROLES, STATUS_LABEL, addDays, convertQuotationToProforma, docTotals, fmtDate, fmtShort, invoicePaid, invoiceStatus, nextNumber, proformaStatus, quotationStatus, recordPayment, statusTone, today, useFinance,
+  METHODS, MONEY_DOC_ROLES, PAYMENT_ROLES, STATUS_LABEL, addDays, convertQuotationToProforma, docTotals, fmtDate, fmtShort, invoicePaid, invoiceStatus, proformaStatus, quotationStatus, recordPayment, statusTone, today, useFinance,
   type Category, type Fin, type Instalment, type Invoice, type LineItem, type Payment, type PriceItem, type Proforma, type Quotation,
 } from './lib';
 import { StatusPill, errMsg } from './components';
@@ -142,7 +141,7 @@ export function InvoiceDetail({ id, fin, onEdit }: { id: string; fin: Fin; onEdi
         {st === 'draft' && <button type="button" className="btn-primary col-span-2 min-h-[44px]" onClick={() => set({ status: 'sent', sent_at: nowIso() }, 'Marked as sent')}>Mark sent</button>}
         {st === 'sent' && <button type="button" className="btn-outline min-h-[44px]" onClick={() => set({ status: 'viewed', viewed_at: nowIso() }, 'Marked as viewed')}>Client viewed</button>}
         {['sent', 'viewed', 'partially_paid', 'overdue'].includes(st) && PAYMENT_ROLES.includes(role) && <button type="button" className="btn-primary min-h-[44px] !bg-emerald-600" onClick={() => setPay(true)}>Record payment</button>}
-        {st === 'overdue' && <button type="button" className="btn-outline min-h-[44px]" onClick={() => { void notify('u-growth', `Chase ${inv.number}`, `${fin.client(inv.client_id)?.name} · ${tsh(total - paid)} overdue`, '', 'alert'); toast('Reminder sent to the client and account manager'); }}><Bell size={16} />Send reminder</button>}
+        {st === 'overdue' && <button type="button" className="btn-outline min-h-[44px]" onClick={() => { void notifyRole('account_manager', `Chase ${inv.number}`, `${fin.client(inv.client_id)?.name} · ${tsh(total - paid)} overdue`, '', 'alert'); toast('Reminder sent to the client and account manager'); }}><Bell size={16} />Send reminder</button>}
         {!['paid', 'cancelled'].includes(st) && paid === 0 && <button type="button" className="btn-outline min-h-[44px] !text-red-700" onClick={() => confirm('Cancel this invoice?') && set({ status: 'cancelled', cancelled_at: nowIso() }, 'Invoice cancelled')}>Cancel</button>}
       </div>
       {!PAYMENT_ROLES.includes(role) && ['sent', 'viewed', 'partially_paid', 'overdue'].includes(st) && <p className="m-0 text-xs text-basil-muted">Only Finance or the GM/CFO records payments.</p>}
@@ -190,7 +189,6 @@ export function QuotationDetail({ q, fin, onEdit, onClose, onProforma }: { q: Qu
       const sched: Instalment[] = [{ label: 'Deposit', pct: 50, due: addDays(today(), 14) }, { label: 'On delivery', pct: 50, due: addDays(today(), 45) }];
       const total = docTotals(q).total;
       const inv = await insertRow<Invoice>('invoices', {
-        ...(supabase ? {} : { number: nextNumber('invoice', (demoTable('invoices') as unknown as Invoice[]).map((x) => x.number)) }),
         client_id: q.client_id, project_id: q.project_id, quotation_id: q.id, title: q.title, po_ref: '', items: q.items, discount: q.discount, vat_on: q.vat_on, vat_rate: q.vat_rate,
         deposit: Math.round(total / 2), schedule: sched, issue_date: today(), due_date: addDays(today(), 14), status: 'draft', notes: '', terms: '',
       });
@@ -239,7 +237,7 @@ function DocEditor({ kind, fin, existing, onDone }: { kind: Kind; fin: Fin; exis
         ? { ...common, po_ref: d.po_ref, due_date: d.due_date, schedule: d.schedule, deposit: d.schedule[0] ? Math.round((t.total * d.schedule[0].pct) / 100) : 0 }
         : { ...common, prospect: d.prospect, valid_until: d.valid_until };
       if (existing) await updateRow(TABLE[kind], existing.id, row);
-      else await insertRow(TABLE[kind], { ...row, status: 'draft', ...(supabase ? {} : { number: nextNumber(kind, demoTable(TABLE[kind]).map((x) => String(x.number))) }) });
+      else await insertRow(TABLE[kind], { ...row, status: 'draft' });
       toast(`${kind === 'invoice' ? 'Invoice' : 'Quotation'} saved as draft`); onDone();
     } catch (e) { toast(errMsg(e), 'error'); }
   };

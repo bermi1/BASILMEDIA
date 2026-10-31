@@ -1,10 +1,7 @@
-// Data hooks and workflow actions for the projects module. Every action works in demo mode and,
-// with Supabase, calls the matching SQL function in 0005_projects.sql.
-import { demoTable, insertRow, nowIso, rpc, updateRow, useTable, type Person } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
-import { supabase } from '@/lib/supabase';
+// Data hooks and workflow actions for the projects module; rules live in the SQL functions of 0005_projects.sql.
+import { insertRow, nowIso, rpc, updateRow, useTable, type Person } from '@/os/lib/store';
 import {
-  addDays, checkMove, fmtDate, PROJECT_STAGES, taskSms, today, TEMPLATES,
+  addDays, checkMove, PROJECT_STAGES, today, TEMPLATES,
   type AnnouncementAck, type Announcement, type Attendance, type Client, type Crew, type Deliverable, type FootageCopy,
   type GateCtx, type LeaveBalance, type LeaveRequest, type MediaCard, type Project, type Shoot, type ShootCrew,
   type StaffDetail, type Suggestion, type Task, type TaskComment, type WeeklyReport,
@@ -52,7 +49,7 @@ export function visibleProjects(projects: Project[], crew: Crew[], userId: strin
 export async function createProjectFromTemplate(input: {
   templateKey: string; name: string; client_id: string; lead_id: string; start_date: string; end_date: string;
   budget: number; contract_value: number; priority: string; location: string; description: string;
-}, actor: string) {
+}, _actor: string) {
   const tpl = TEMPLATES.find((t) => t.key === input.templateKey)!;
   return rpc<string>('create_project_from_template', {
     _template: tpl.key, _name: input.name, _client: input.client_id, _lead: input.lead_id, _start: input.start_date, _end: input.end_date,
@@ -75,11 +72,7 @@ export async function saveTask(t: Partial<Task> & { project_id: string; title: s
   let saved: Task;
   if (prev) saved = await updateRow<Task>('tasks', prev.id, row);
   else saved = await insertRow<Task>('tasks', { ...row, created_by: ctx.actor });
-  if (saved.assignee_id && saved.assignee_id !== prev?.assignee_id && saved.assignee_id !== ctx.actor) {
-    // With Supabase the tasks_notify trigger sends this; in demo the client does it.
-    if (!supabase)
-      await notify(saved.assignee_id, `New task: ${saved.title}`, taskSms(saved, ctx.projectName, ctx.actorName), '/app?tab=tasks', 'task');
-  }
+  // The tasks_notify SQL trigger tells a newly assigned person.
   return saved;
 }
 export const setTaskStatus = (t: Task, status: string) => updateRow('tasks', t.id, { status, completed_at: status === 'Done' ? nowIso() : null });
@@ -91,10 +84,9 @@ export const addComment = (task_id: string, author_id: string, body: string) => 
 export async function confirmCallSheet(sc: ShootCrew) {
   return rpc('confirm_call_sheet', { _id: sc.id });
 }
-export async function addShootCrew(shoot: Shoot, user_id: string, role: string, projectName: string) {
+export async function addShootCrew(shoot: Shoot, user_id: string, role: string, _projectName: string) {
   await insertRow('shoot_crew', { shoot_id: shoot.id, user_id, role, call_time: shoot.call_time, confirmed_at: null });
-  if (!supabase)
-    await notify(user_id, `New shoot: ${projectName}`, `${shoot.title} · ${fmtDate(shoot.shoot_date)} · call ${shoot.call_time} · ${shoot.location}. Read and confirm the call sheet.`, '/app?tab=shoots', 'task');
+  // shoot_crew_notify (SQL trigger) sends the call sheet notice.
 }
 export const wrapShoot = (s: Shoot) => updateRow('shoots', s.id, { status: 'Wrapped', wrapped_at: nowIso() });
 
@@ -118,13 +110,13 @@ export async function decideLeave(l: LeaveRequest, approve: boolean, note: strin
 }
 export async function submitLeave(row: Omit<LeaveRequest, 'id' | 'created_at' | 'status' | 'decided_by' | 'decided_at' | 'decision_note'>) {
   const r = await insertRow<LeaveRequest>('leave_requests', { ...row, status: 'Pending', decided_by: null, decided_at: null, decision_note: '' });
-  if (!supabase) await notify('u-gm', 'Leave request to approve', `${row.leave_type} · ${row.days} day(s) from ${fmtDate(row.start_date)}`, '/os/people/leave', 'approval');
+  // leave_requested_notify (SQL trigger) tells the GM/CFO.
   return r;
 }
 /** Anonymous suggestions never store the author (SQL trigger also nulls it). */
 export const submitSuggestion = (author: string, anonymous: boolean, category: string, body: string) =>
   insertRow('suggestions', { author_id: anonymous ? null : author, anonymous, category, body, status: 'Under review', reply: '', replied_by: null, replied_at: null });
-export async function replySuggestion(s: Suggestion, status: string, reply: string, actor: string) {
+export async function replySuggestion(s: Suggestion, status: string, reply: string, _actor: string) {
   return rpc('reply_suggestion', { _id: s.id, _status: status, _reply: reply });
 }
 

@@ -2,9 +2,8 @@
 import { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { AlertTriangle, CalendarDays, CalendarPlus, LifeBuoy, MapPin, Phone, Plus, Repeat, SlidersHorizontal, Star } from 'lucide-react';
-import { isDemo } from '@/lib/supabase';
 import { useActing } from '@/os/lib/session';
-import { demoTable, fetchRows, insertRow, newId, nowIso, rpc, updateRow, usePeople, useTable, type Person } from '@/os/lib/store';
+import { fetchRows, insertRow, rpc, updateRow, usePeople, useTable, type Person } from '@/os/lib/store';
 import { notify } from '@/os/lib/notify';
 import { useToast } from '@/os/cms/toast';
 import { Avatar, Card, Empty, Field, Pill, Progress, Sheet, StageTracker, Stat, Tabs, inputCls, tsh, tshShort, type Tone } from '@/os/ui';
@@ -37,9 +36,8 @@ export function AllowanceRings({ balance, size = 70 }: { balance: Balance[]; siz
 const STONE: Record<string, Tone> = { Scheduled: 'grey', 'Crew confirmed': 'blue', 'On the way': 'amber', Arrived: 'amber', 'In progress': 'amber', Wrapped: 'gold', Completed: 'green' };
 export const shootPill = (s: string) => <Pill tone={STONE[s] ?? 'blue'}>{s}</Pill>;
 
-/** Notify every portal user of a client company. `always` = also with Supabase (no SQL trigger covers it). */
-export async function notifyClient(clientId: string, title: string, body: string, link: string, always = false) {
-  if (!isDemo && !always) return;
+/** Notify every portal user of a client company (only where no SQL trigger already does it). */
+export async function notifyClient(clientId: string, title: string, body: string, link: string) {
   const users = await fetchRows<{ user_id: string }>('client_users', { eq: { client_id: clientId } }).catch(() => []);
   for (const u of users) await notify(u.user_id, title, body, link, 'info');
 }
@@ -129,14 +127,13 @@ export function YearCalendar({ items, onPick }: { items: CalItem[]; onPick?: (i:
 
 /** Advance a shoot's live status (crew / AM). Clients get notified at key moments. */
 export async function setShootStatus(item: CalItem, status: string) {
+  // set_shoot_status tells the client's portal users when the crew is on the way, arrives or wraps.
   await rpc('set_shoot_status', { _item: item.id, _status: status });
-  if (['On the way', 'Arrived', 'Wrapped'].includes(status)) await notifyClient(item.client_id, `Crew ${status.toLowerCase()}`, `${item.title} · ${item.time}`, '/app?tab=home');
 }
 
 /** Client sign-off: confirm completed (consumes allowance) or report an issue, with a 1–5 star rating. */
-export async function signOffShoot(item: CalItem, outcome: 'completed' | 'issue', rating: number, comment: string, userId: string) {
+export async function signOffShoot(item: CalItem, outcome: 'completed' | 'issue', rating: number, comment: string, _userId: string) {
   await rpc('client_signoff_shoot', { _item: item.id, _completed: outcome === 'completed', _rating: rating, _comment: comment });
-  if (isDemo) await notify(String(demoTable('retainers').find((x) => x.id === item.retainer_id)?.account_manager_id ?? 'u-growth'), outcome === 'issue' ? 'Client reported an issue' : 'Shoot signed off', `${item.title} · ${'★'.repeat(rating)}${comment ? ` · ${comment}` : ''}`, `/os/retainers/${item.retainer_id}`, outcome === 'issue' ? 'alert' : 'info');
 }
 
 export function RetainersList({ compact = false }: { compact?: boolean }) {
@@ -276,11 +273,12 @@ export function RequestBoard({ compact = false }: { compact?: boolean }) {
         const day = date || q.preferred_dates[0];
         if (!day) throw new Error('Choose a date');
         if (q.over_allowance && q.quote_status !== 'accepted') throw new Error('Over allowance — the client must accept the quote first');
-        const it = await insertRow<CalItem>('retainer_calendar', { retainer_id: q.retainer_id, client_id: q.client_id, date: day, time: '09:00', kind: q.type === 'podcast' ? 'podcast' : q.type === 'shoot' ? 'shoot' : 'delivery', title: q.title, location: q.location, map_url: q.location ? `https://maps.google.com/?q=${encodeURIComponent(q.location)}` : '', status: 'Scheduled', crew: q.type === 'shoot' ? [{ user_id: 'u-jonathan', role: 'Lead camera' }, { user_id: 'u-benedicto', role: 'Photographer' }] : [], call_time: q.type === 'shoot' ? '08:00' : '', checklist: [], units: q.units, signoff: null, gallery_slug: '', link: '' });
+        const it = await insertRow<CalItem>('retainer_calendar', { retainer_id: q.retainer_id, client_id: q.client_id, date: day, time: '09:00', kind: q.type === 'podcast' ? 'podcast' : q.type === 'shoot' ? 'shoot' : 'delivery', title: q.title, location: q.location, map_url: q.location ? `https://maps.google.com/?q=${encodeURIComponent(q.location)}` : '', status: 'Scheduled', crew: [], call_time: q.type === 'shoot' ? '08:00' : '', checklist: [], units: q.units, signoff: null, gallery_slug: '', link: '' });
         itemId = it.id;
       }
       await rpc('set_request_status', { _id: q.id, _status: status, _quote: quote ? Number(quote) : null, _note: note || null });
-      await notifyClient(q.client_id, `Request ${status.toLowerCase()}`, q.title, '/app?tab=requests');
+      // set_request_status notifies the client; link the visit so the request shows where it was scheduled.
+      if (itemId) await updateRow('client_requests', q.id, { scheduled_item_id: itemId });
       toast(`Moved to ${status}`);
       setOpen(null);
     } catch (e) {
@@ -344,7 +342,7 @@ export function ConcernsBoard() {
       const response = (resp[c.id] ?? c.response).trim();
       if (status === 'Resolved' && !response) throw new Error('Write a response to the client before resolving');
       await updateRow('client_concerns', c.id, { status, response });
-      await notifyClient(c.client_id, `Your concern: ${status}`, `${c.subject}${response ? ` — ${response}` : ''}`, '/app?tab=more', true);
+      await notifyClient(c.client_id, `Your concern: ${status}`, `${c.subject}${response ? ` — ${response}` : ''}`, '/app?tab=more');
       toast(`Marked ${status}`);
     } catch (e) {
       toast((e as Error).message, 'error');
@@ -482,7 +480,7 @@ export function VisitForm({ open, onClose, retainer }: { open: boolean; onClose:
         map_url: f.location ? `https://maps.google.com/?q=${encodeURIComponent(f.location)}` : '', status: 'Scheduled', crew: live ? f.crew : [], call_time: live ? f.call_time : '',
         checklist: live ? [{ label: 'Location access confirmed', done: false }, { label: 'Consent forms ready', done: false }] : [], units: f.units, signoff: null, gallery_slug: '', link: '',
       });
-      await notifyClient(retainer.client_id, `${KIND_LABEL[f.kind]} scheduled`, `${f.title.trim()} · ${dmy(f.date)} ${f.time}`, '/app?tab=calendar', true);
+      await notifyClient(retainer.client_id, `${KIND_LABEL[f.kind]} scheduled`, `${f.title.trim()} · ${dmy(f.date)} ${f.time}`, '/app?tab=calendar');
       toast(`${KIND_LABEL[f.kind]} scheduled — it is on the client's calendar`);
       onClose();
     } catch (e) {

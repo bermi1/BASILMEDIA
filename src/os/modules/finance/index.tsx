@@ -1,13 +1,12 @@
 import { Banknote, FileBadge2, FileSpreadsheet, FileText, HandCoins, LayoutDashboard, PiggyBank, Settings2, Stamp, Users, Wallet, ArrowLeftRight, ClipboardCheck } from 'lucide-react';
-import { isDemo } from '@/lib/supabase';
-import { demoTable } from '@/os/lib/store';
+import { countRows } from '@/os/lib/store';
 import type { OsModule } from '../types';
 import { InvoicesList, MoneyInOut, PrintDoc, QuotationsList } from './docs';
 import { ProformasList } from './proformas';
 import { ApprovalsPage, BudgetsPage, FinanceOverview, FinanceSettingsPage, MyRequestsPage, PayPage, PayrollPage, ReconcilePage, RegisterPage } from './pages';
 import { PageTitle } from '@/os/OsLayout';
 
-const count = (statuses: string[]) => () => (isDemo ? demoTable('money_requests').filter((r) => statuses.includes(String(r.status))).length : 0);
+const count = (statuses: string[]) => () => countRows('money_requests', { in: { status: statuses } });
 const wrap = (title: string, el: JSX.Element) => <div className="mx-auto max-w-3xl"><PageTitle tag="MONEY" title={title} />{el}</div>;
 
 export const financeModule: OsModule = {

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Loader2, ShieldCheck } from 'lucide-react';
-import { supabase, isDemo } from '@/lib/supabase';
+import { Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 import { ROLE_LABEL } from '@/lib/auth';
 import type { AppRole } from '@/lib/types';
 import { PageTitle } from './OsLayout';
 import { useToast } from './cms/toast';
-import { Avatar, Card, Empty, Pill } from './ui';
+import { Avatar, Card, Pill } from './ui';
 
 const ROLES = Object.keys(ROLE_LABEL) as AppRole[];
 interface U { id: string; email: string; full_name: string; phone: string; roles: AppRole[] }
@@ -14,10 +14,9 @@ export default function UsersAdmin() {
   const [users, setUsers] = useState<U[] | null>(null);
   const [busy, setBusy] = useState('');
   const toast = useToast();
-  const load = () => supabase?.rpc('admin_list_users').then(({ data, error }) => (error ? toast(error.message, 'error') : setUsers(data as U[])));
+  const load = () => supabase.rpc('admin_list_users').then(({ data, error }) => (error ? toast(error.message, 'error') : setUsers(data as U[])));
   useEffect(() => void load(), []);
   const toggle = async (u: U, r: AppRole) => {
-    if (!supabase) return;
     const grant = !u.roles.includes(r);
     setBusy(u.id + r);
     const { error } = await supabase.rpc('admin_set_role', { _email: u.email, _role: r, _grant: grant });
@@ -29,9 +28,7 @@ export default function UsersAdmin() {
   return (
     <>
       <PageTitle tag="PLATFORM · SECURITY" title="Users & roles" sub="People sign up at /login; the Super Admin then gives them roles. Every change is written to the audit log." />
-      {isDemo ? (
-        <Empty icon={<ShieldCheck />} title="Connect Supabase to manage real users" sub="In demo mode the Super Admin can try every role from the phone app (More → Switch portal)." action={<a className="btn-primary" href="/app">Open phone app</a>} />
-      ) : !users ? (
+      {!users ? (
         <Loader2 className="animate-spin text-basil" />
       ) : (
         <div className="flex flex-col gap-3">

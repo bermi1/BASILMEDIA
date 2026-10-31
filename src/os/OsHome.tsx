@@ -4,7 +4,7 @@ import { ArrowRight, Globe2, Inbox, Smartphone, Users } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { PORTAL_BLURB } from '@/lib/roles';
 import { useRows } from '@/hooks/useData';
-import { PageTitle, usePortalNav } from './OsLayout';
+import { NavBadge, PageTitle, usePortalNav } from './OsLayout';
 import { useActing } from './lib/session';
 import { portalMeta } from './PortalSwitcher';
 import type { AppRole } from '@/lib/types';
@@ -35,7 +35,7 @@ export default function OsHome() {
             <Link to={n.to} className="group flex h-full items-center gap-4 rounded-2xl border border-basil-line bg-white p-4 text-basil-ink no-underline transition hover:-translate-y-0.5 hover:border-basil-soft hover:shadow-card">
               <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: meta.accent }}><n.icon size={20} /></span>
               <b className="min-w-0 flex-1 truncate">{n.label}</b>
-              {(n.badge?.() ?? 0) > 0 && <span className="rounded-full bg-basil px-2 text-xs font-bold text-white">{n.badge!()}</span>}
+              {n.badge && <NavBadge get={n.badge} />}
               <ArrowRight size={16} className="text-basil-muted transition group-hover:translate-x-0.5" />
             </Link>
           </motion.div>

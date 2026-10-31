@@ -1,15 +1,9 @@
-// Who is acting, and as which role. In demo mode the Super Admin can "view as" any role
-// (and as a named demo person) to try every portal and phone app; with Supabase the real user is used.
+// Who is acting, and in which portal. The signed-in person always acts as themselves;
+// the portal (role) only decides which menu and screens they see. The Super Admin may open every portal.
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useAuth } from '@/lib/auth';
-import { isDemo } from '@/lib/supabase';
 import type { AppRole } from '@/lib/types';
 import { expandRoles, projectScope, sortPortals } from '@/lib/roles';
-
-const DEMO_PERSON: Partial<Record<AppRole, string>> = {
-  boss: 'u-boss', gm_cfo: 'u-gm', finance: 'u-fin', project_lead: 'u-enock', staff: 'u-jonathan', storekeeper: 'u-store',
-  growth: 'u-growth', account_manager: 'u-growth', receptionist: 'u-rehema', driver: 'u-driver', client: 'u-client', super_admin: 'u-boss',
-};
 
 interface Acting {
   role: AppRole;
@@ -43,7 +37,7 @@ export function ActingProvider({ children }: { children: ReactNode }) {
     return {
       role: r,
       roles,
-      userId: isDemo ? DEMO_PERSON[r] ?? user?.id ?? '' : user?.id ?? '',
+      userId: user?.id ?? '',
       setRole: (x) => {
         setRoleState(x);
         try {

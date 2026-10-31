@@ -2,11 +2,10 @@
 // big tap targets, line items as cards with a quantity stepper, a VAT switch and a sticky live total.
 import { useEffect, useState } from 'react';
 import { Minus, Plus, Trash2 } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
-import { demoTable, insertRow, updateRow, useTable } from '@/os/lib/store';
+import { insertRow, updateRow, useTable } from '@/os/lib/store';
 import { useToast } from '@/os/cms/toast';
 import { Field, inputCls, tsh } from '@/os/ui';
-import { PROFORMA_TERMS, addDays, docTotals, nextNumber, today, type Fin, type Instalment, type Invoice, type LineItem, type PriceItem, type Proforma, type Quotation } from './lib';
+import { PROFORMA_TERMS, addDays, docTotals, today, type Fin, type Instalment, type Invoice, type LineItem, type PriceItem, type Proforma, type Quotation } from './lib';
 import { errMsg } from './components';
 
 export type DocKind = 'invoice' | 'proforma' | 'quotation';
@@ -66,7 +65,7 @@ export function DocForm({ kind, fin, existing, onDone }: { kind: DocKind; fin: F
       let id = existing?.id;
       if (existing) await updateRow(DOC_TABLE[kind], existing.id, row);
       else {
-        const made = await insertRow<{ id: string; number?: string }>(DOC_TABLE[kind], { ...row, status: 'draft', ...(supabase ? {} : { number: nextNumber(kind, demoTable(DOC_TABLE[kind]).map((x) => String(x.number))) }) });
+        const made = await insertRow<{ id: string; number?: string }>(DOC_TABLE[kind], { ...row, status: 'draft' });
         id = made.id;
       }
       toast(existing ? `${DOC_LABEL[kind]} updated` : `${DOC_LABEL[kind]} saved as draft`);

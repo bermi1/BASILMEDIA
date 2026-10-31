@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { onChange } from './lib/store';
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpen, CalendarRange, Globe2, Handshake, Images, Inbox, LayoutDashboard, LogOut, Menu,
   MessageSquareQuote, Newspaper, Settings2, Sparkles, Users, UsersRound, Video, BriefcaseBusiness, X, ExternalLink, Loader2,
 } from 'lucide-react';
 import { useAuth, ROLE_LABEL } from '@/lib/auth';
-import { isDemo } from '@/lib/supabase';
 import { MODULES } from './modules';
 import { useActing } from './lib/session';
 import { Smartphone, ShieldCheck, KeyRound } from 'lucide-react';
@@ -63,10 +63,9 @@ export function OsLayout() {
         portalNav.map((m) => (
           <div key={m.key}>
             <div className="mb-1 mt-5 px-3 font-mono text-[10px] tracking-[0.18em] text-basil-haze/70">{m.section}</div>
-            {m.nav.map(({ to, label, icon: Icon, badge }) => {
-              const b = badge?.() ?? 0;
-              return <NavLink key={to} to={to} end={to.split('/').length <= 3} className={itemCls} onClick={() => setOpen(false)}><Icon size={18} /><span className="flex-1">{label}</span>{b > 0 && <span className="rounded-full bg-basil px-2 text-xs font-bold text-white">{b}</span>}</NavLink>;
-            })}
+            {m.nav.map(({ to, label, icon: Icon, badge }) => (
+              <NavLink key={to} to={to} end={to.split('/').length <= 3} className={itemCls} onClick={() => setOpen(false)}><Icon size={18} /><span className="flex-1">{label}</span>{badge && <NavBadge get={badge} />}</NavLink>
+            ))}
           </div>
         ))
       )}
@@ -97,7 +96,6 @@ export function OsLayout() {
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-basil-line bg-white/90 px-4 backdrop-blur-xl sm:px-6">
           <button type="button" aria-label="Open menu" onClick={() => setOpen(true)} className="flex h-10 w-10 items-center justify-center rounded-xl border border-basil-edge bg-white text-basil-deep lg:hidden"><Menu size={20} /></button>
           <div className="min-w-0 flex-1 truncate font-display font-extrabold">Basil Media OS</div>
-          {isDemo && <span className="hidden rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900 sm:inline">Demo mode · browser storage</span>}
           <a href="/" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm font-bold no-underline"><Globe2 size={16} />View site <ExternalLink size={14} /></a>
         </header>
         <main className="min-w-0 flex-1 p-4 sm:p-6"><Outlet /></main>
@@ -108,6 +106,19 @@ export function OsLayout() {
 
 const itemCls = ({ isActive }: { isActive: boolean }) =>
   `flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm no-underline transition ${isActive ? 'bg-white/[0.12] font-bold text-white' : 'text-basil-haze hover:bg-white/[0.06] hover:text-white'}`;
+
+/** Live count next to a menu item; refreshed whenever data changes. */
+export function NavBadge({ get, className = 'rounded-full bg-basil px-2 text-xs font-bold text-white' }: { get: () => Promise<number>; className?: string }) {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const load = () => void get().then((x) => alive && setN(x)).catch(() => {});
+    load();
+    const off = onChange(load);
+    return () => ((alive = false), off());
+  }, [get]);
+  return n > 0 ? <span className={className}>{n}</span> : null;
+}
 
 export function RequireCms({ children }: { children: React.ReactNode }) {
   const { canEditWebsite } = useAuth();

@@ -1,4 +1,4 @@
-// Starter content shown on first load (demo mode) and mirrored by
+// Default site settings, and the starter public content mirrored by
 // supabase/migrations/0003_seed_public_content.sql. Everything here is editable in the CMS.
 import type {
   EventItem, Gallery, Highlight, MediaItem, NewsStory, Opportunity, Partner, Project,

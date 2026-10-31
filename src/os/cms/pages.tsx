@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, ExternalLink, ImagePlus, Images, Inbox, Loader2, QrCode, RotateCcw, Users, Video } from 'lucide-react';
+import { Download, ExternalLink, ImagePlus, Images, Inbox, Loader2, QrCode, Users, Video } from 'lucide-react';
 import { useRows, useSettings } from '@/hooks/useData';
-import { resetDemo, save, saveSettings, remove } from '@/lib/db';
+import { save, saveSettings, remove } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
-import { isDemo } from '@/lib/supabase';
 import { fmtDate } from '@/lib/format';
 import type { Booking, Gallery, SiteSettings, Stat, Subscriber } from '@/lib/types';
 import { FieldInput, type Field } from './fields';
@@ -22,7 +21,6 @@ export function CmsOverview() {
     news: useRows('news_stories').rows.length,
   };
   const { rows: bookings } = useRows('bookings');
-  const toast = useToast();
   const cards: [string, number, string][] = [
     ['Projects', counts.projects, '/os/website/projects'], ['Partners', counts.partners, '/os/website/partners'], ['Highlights', counts.highlights, '/os/website/highlights'],
     ['Team', counts.team, '/os/website/team'], ['Galleries', counts.galleries, '/os/website/galleries'], ['News stories', counts.news, '/os/website/news'],
@@ -45,12 +43,6 @@ export function CmsOverview() {
           {!bookings.length && <li className="py-3 text-sm text-basil-muted">No bookings yet. They appear here as soon as someone sends the form.</li>}
         </ul>
       </div>
-      {isDemo && (
-        <div className="mt-6 rounded-2xl bg-amber-50 p-5 text-sm text-amber-900">
-          <b>Demo mode.</b> Content is saved in this browser only. Connect Supabase (see README) so edits go live for every visitor.
-          <button type="button" onClick={() => { if (confirm('Reset all demo content to the starter set?')) { resetDemo(); toast('Demo content reset'); } }} className="ml-3 inline-flex items-center gap-1 border-0 bg-transparent font-bold text-amber-900 underline"><RotateCcw size={14} />Reset demo content</button>
-        </div>
-      )}
     </>
   );
 }
@@ -323,7 +315,6 @@ function GalleryMedia({ g, onBack }: { g: Gallery; onBack: () => void }) {
           <input ref={ref} type="file" multiple accept="image/*,video/*" className="hidden" onChange={(e) => uploadAll(e.target.files)} />
           <button type="button" className="btn-primary" onClick={() => ref.current?.click()}>Choose files</button>
         </div>
-        {isDemo && <span className="text-xs text-amber-800">Demo mode: files under 1.5 MB only. Connect storage for full-size uploads.</span>}
       </div>
       {queue.length > 0 && (
         <ul className="mb-5 grid list-none gap-1.5 p-0 sm:grid-cols-2">
