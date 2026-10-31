@@ -1,4 +1,4 @@
--- Basil Media OS · complete database setup (generated from 29 migrations).
+-- Basil Media OS · complete database setup (generated from 30 migrations).
 -- Paste into Supabase → SQL Editor on an EMPTY project and press Run.
 
 -- ===================== 0001_foundation.sql =====================
@@ -4368,4 +4368,9 @@ delete from public.health_feed_items where coalesce(image_url, '') = '';
 -- The starter opportunities were sample text, not real openings: hide them (editable in the CMS).
 update public.opportunities set published = false where title in
   ('Consultant Paediatrician', 'Clinical research fellowship (12 months)', 'Masters scholarship in public health', 'Call for abstracts: community nursing');
+
+-- ===================== 0032_more_partner_logos.sql =====================
+-- Basil Media OS · 0032 SNOSSA and Ampola Regency Hospital logos (from their own websites).
+update public.partners set logo_url = '/img/partners/snossa.png' where name in ('SNOSSA Conference 2026', 'SNOSSA') and coalesce(logo_url, '') = '';
+update public.partners set logo_url = '/img/partners/ampola-regency-hospital.png' where name in ('Ampola Regency Hospital', 'Ampola Regency') and coalesce(logo_url, '') = '';
 
