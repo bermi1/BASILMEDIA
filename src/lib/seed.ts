@@ -16,9 +16,11 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   hero_video_url: '',
   logo_url: '/logo.svg',
   logo_reverse_url: '/logo-reverse.svg',
+  // Published text: the "About" description of the Basil Media Tz YouTube channel
+  // (https://www.youtube.com/@basilmediatz/about). See docs/CONTENT_SOURCES.md.
   about_story:
-    'Basil Media is a Dar es Salaam production house telling Tanzania’s stories on film, in photographs and on air. We cover summits, graduations and launches, make documentaries and brand films, and run podcasts and live streams for hospitals, banks, universities and companies. One crew takes every project from brief to final cut, and every client follows the work in our own studio platform.',
-  about_image_url: '',
+    'Basil Media is a youth-driven digital media platform dedicated to health education, innovation, and impactful storytelling. We exist to inform, inspire, and empower young people with reliable health information, creative ideas, and forward-thinking solutions that shape a healthier future.\n\nThrough engaging content, expert conversations, and real-life stories, Basil Media bridges the gap between medical knowledge, innovation, and the everyday lives of young people. Our focus spans health awareness, mental well-being, medical education, technology, entrepreneurship, and youth-led innovation.\n\nWe collaborate with healthcare professionals, institutions, innovators, and young change-makers to deliver content that is educational, relatable, and transformative.\n\nAt Basil Media, we believe the youth are not just the leaders of tomorrow—but the innovators of today. Learn. Innovate. Inspire.',
+  about_image_url: '/media/basil-media-studio-btv.webp',
   mission:
     'To tell the stories of Tanzanian institutions and people with honesty, craft and care, and to deliver every frame on time.',
   vision: 'To be East Africa’s most trusted media house: the studio institutions call when the moment matters.',
@@ -32,7 +34,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
     'Video, photography, podcasts and live streaming from Dar es Salaam — delivered through our own studio platform.',
   socials: {
     instagram: 'https://instagram.com/',
-    youtube: 'https://youtube.com/',
+    youtube: 'https://www.youtube.com/@basilmediatz',
     facebook: 'https://facebook.com/',
     linkedin: 'https://linkedin.com/',
     tiktok: 'https://tiktok.com/',
@@ -66,30 +68,68 @@ export const SEED_SERVICES: Service[] = SV.map(([title, short, description, deli
   icon: ICONS[i], image_url: '', video_url: '', sort_order: i + 1, published: true,
 }));
 
-const PJ: [string, Project['category'], string, boolean][] = [
-  ['Hospital care stories', 'Films & Documentaries', 'National Referral Hospital', true],
-  ['Health Summit 2026 — live', 'Corporate', 'Tanzania Health Summit', true],
-  ['Graduation day', 'Photo Stories', 'University of Health Sciences', false],
-  ['Health talk — episode 4', 'Podcasts', 'Basil Media', true],
-  ['Scholarship launch film', 'Films & Documentaries', 'Bank Foundation', true],
-  ['Plant safety film', 'Corporate', 'Cement Co.', true],
-  ['Delegates of the summit', 'Photo Stories', 'Tanzania Health Summit', false],
-  ['Product launch reel', 'Corporate', 'Beverage Co.', true],
-  ['Voices of nurses', 'Podcasts', 'National Referral Hospital', true],
+// Real work published on the Basil Media Tz YouTube channel (https://www.youtube.com/@basilmediatz).
+// Titles are the published video titles; "client" is the organisation or event named in the video
+// title or thumbnail (the subject of the production), not a confirmed commercial contract.
+// Sources and evidence: docs/CONTENT_SOURCES.md.
+const yt = (v: string) => `https://www.youtube.com/watch?v=${v}`;
+const PJ: [string, Project['category'], string, string, string, string][] = [
+  ['#LIVE: The 2026 PAT Scientific Conference — Mwanza', 'Corporate', 'Paediatric Association of Tanzania (PAT)', 'em1S7s6k7BI', 'pat-scientific-conference-2026-live',
+    'Live stream of the 2026 PAT Scientific Conference, 15 July 2026, Malaika Beach Resort, Mwanza. Theme: “Resilient Health Systems for Every Child: Innovation, Equity and Quality of Care”.'],
+  ['#LIVE: National Medical Congress 2026 — UDSM', 'Corporate', 'Medical Association of Tanzania (MAT)', '3T0PnVtU2Bo', 'national-medical-congress-2026-live',
+    'Live stream of the National Medical Congress 2026 presented by the Medical Association of Tanzania, 17 June 2026, UDSM, Dar es Salaam. Theme: “Tanzania Vision 2050: The Healthcare We Want”.'],
+  ['Kutoka kilo 145 ➝ 75: safari ya Said Shukuru', 'Films & Documentaries', 'Aga Khan Hospital, Dar es Salaam', 'tAXCUSfM5u4', 'said-shukuru-145-to-75-kilo-journey',
+    'Said Shukuru’s journey from 145 kg to 75 kg — a real-life health story connected to Aga Khan Hospital, Dar es Salaam.'],
+  ['Sikiliza historia ya Tanzania Health Summit — Dr Omary Chillo', 'Podcasts', 'Tanzania Health Summit', 'T_vtw0pTr-g', 'tanzania-health-summit-dr-omary-chillo',
+    'Dr Omary Chillo on the history of the Tanzania Health Summit, its achievements and its challenges.'],
+  ['Inasisimua: Mama Sabrina na mwanae mwenye sickle cell', 'Films & Documentaries', 'Basil Media', 'EWZAkKlRjXs', 'mama-sabrina-sickle-cell',
+    'The story of Mama Sabrina and how she fights for her child living with sickle cell disease.'],
+  ['Fahamu kuhusu tiba asili — Chuo Kikuu cha Muhimbili', 'Films & Documentaries', 'Muhimbili University of Health and Allied Sciences (MUHAS)', '6PaY6FeT9nQ', 'muhas-tiba-asili',
+    'Traditional medicine explained, from Muhimbili University of Health and Allied Sciences.'],
+  ['The Pharmacist — Ep 03: Afya Fiesta 2025 with TAMSA', 'Podcasts', 'TAMSA', 'TCKvCDgxR_o', 'the-pharmacist-ep03-afya-fiesta-tamsa',
+    'Episode 3 of The Pharmacist, recorded in the Basil Media (BTV) studio: Afya Fiesta 2025 with TAMSA.'],
+  ['Prof Karim Manji — niko MUHAS kwa mwaka wa 37', 'Films & Documentaries', 'Muhimbili University of Health and Allied Sciences (MUHAS)', 'cKksPy5U6-8', 'prof-karim-manji-muhas',
+    'Prof Karim Manji on 37 years at MUHAS.'],
+  ['Uzinduzi wa kongamano la kwanza la wanataaluma wa famasi Tanzania', 'Corporate', 'Basil Media', '0d5FagVEtdQ', 'pharmacy-professionals-congress-launch',
+    'The launch of the first congress of pharmacy professionals in Tanzania.'],
+  ['The Medics — Ep 05: Vifo vyenye utata', 'Podcasts', 'Basil Media', 'ctyRynHmDuo', 'the-medics-ep05',
+    'Episode 5 of The Medics, a Basil Media health talk show.'],
+  ['Sip & Talk — Ep 04: Namna ya kuondokana na msongo wa mawazo', 'Podcasts', 'Basil Media', '2Y-j-_JU-6s', 'sip-and-talk-ep04',
+    'Episode 4 of Sip & Talk: how to overcome stress.'],
+  ['Unistar Talk — Ep 02', 'Podcasts', 'Basil Media', '_1EyWRBbb30', 'unistar-talk-ep02',
+    'Episode 2 of Unistar Talk, recorded in the Basil Media (BTV) studio.'],
+  ['Fahamu kuhusu uwekezaji wa hisa', 'Films & Documentaries', 'Basil Media', 'dU3h7hwNt8Q', 'uwekezaji-wa-hisa',
+    'An explainer on investing in shares — one of the most-watched videos on the Basil Media Tz channel.'],
+  ['Mambo usiyoyafahamu kuhusu safari ya kwenda mwezini', 'Films & Documentaries', 'Basil Media', 'CqO0Z2ee144', 'safari-ya-kwenda-mwezini',
+    'What you did not know about the journey to the moon — a science explainer.'],
 ];
-export const SEED_PROJECTS: Project[] = PJ.map(([title, category, client], i) => ({
-  id: id('prj'), title, category, client, image_url: '', video_url: '', external_url: '',
-  description: 'Project summary written in the admin: the brief, what we made, and the result for the client.',
-  featured: i < 6, sort_order: i + 1, published: true,
-}));
+export const SEED_PROJECTS: Project[] = [
+  ...PJ.map(([title, category, client, v, img, description], i): Project => ({
+    id: id('prj'), title, category, client, image_url: `/media/${img}.webp`, video_url: yt(v), external_url: '',
+    description, featured: i < 6, sort_order: i + 1, published: true,
+  })),
+  // Placeholders kept until real photo stories are published (no public photo work found yet).
+  ...([['Graduation day', 'University of Health Sciences'], ['Delegates of the summit', 'Tanzania Health Summit']] as const).map(
+    ([title, client], i): Project => ({
+      id: id('prj'), title, category: 'Photo Stories', client, image_url: '', video_url: '', external_url: '',
+      description: 'Project summary written in the admin: the brief, what we made, and the result for the client.',
+      featured: false, sort_order: PJ.length + i + 1, published: true,
+    }),
+  ),
+];
 
 export const SEED_PARTNERS: Partner[] = [
   'National Referral Hospital', 'Bank Foundation', 'University of Health Sciences', 'Tanzania Health Summit', 'Cement Co.', 'Beverage Co.',
 ].map((name, i) => ({ id: id('ptn'), name, logo_url: '', website: '', sort_order: i + 1 }));
 
-export const SEED_HIGHLIGHTS: Highlight[] = [
-  'Summit opening — highlight reel', 'Behind the scenes · graduation', 'Podcast clip · health talk', 'Campaign teaser',
-].map((title, i) => ({ id: id('hl'), title, video_url: '', thumbnail_url: '', sort_order: i + 1, published: true }));
+export const SEED_HIGHLIGHTS: Highlight[] = ([
+  ['Basil Media studio · short', 'https://www.youtube.com/shorts/Z_Am6jJOZrc', 'basil-media-studio-btv'],
+  ['Mainjinia wanaofanya kazi hospitalini', yt('UA6Ip24aIRo'), 'hospital-engineers'],
+  ['Mtambo wa kisasa wa matibabu ya moyo', yt('vmlEFNrpl0g'), 'modern-heart-treatment-machine'],
+  ['The Tranquility', yt('WkFwnOZ89e0'), 'the-tranquility'],
+] as const).map(([title, video_url, img], i) => ({
+  id: id('hl'), title, video_url, thumbnail_url: `/media/${img}.webp`, sort_order: i + 1, published: true,
+}));
 
 export const SEED_TEAM: TeamMember[] = [
   ['Emmanuel', 'Chief Executive Officer'], ['Saul', 'General Manager & CFO'], ['Benedicto', 'Head of Production'],
