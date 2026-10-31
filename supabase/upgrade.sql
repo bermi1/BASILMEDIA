@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -919,4 +919,15 @@ from (values
   ('health-communication', '/img/services/event-coverage-team.jpg')
 ) as v(slug, img)
 where s.slug = v.slug and coalesce(s.image_url, '') = '';
+
+-- ===================== 0020_brand_and_team_photos.sql =====================
+-- Basil Media OS · 0020 official logo and team photos (only where nothing has been set yet).
+update public.site_settings set
+  about_image_url = case when coalesce(about_image_url, '') = '' then '/img/team/basil-media-team.jpg' else about_image_url end,
+  hero_images = case when coalesce(array_length(hero_images, 1), 0) = 0 then array[
+    '/img/team/basil-media-team.jpg', '/img/team/crew-on-set.jpg', '/img/services/video-crew-conference.jpg',
+    '/img/services/event-coverage-team.jpg', '/img/services/photographer-event.jpg'] else hero_images end,
+  logo_url = case when coalesce(logo_url, '') in ('', '/logo.svg') then '/logo.svg' else logo_url end,
+  logo_reverse_url = case when coalesce(logo_reverse_url, '') in ('', '/logo-reverse.svg') then '/logo-reverse.svg' else logo_reverse_url end
+where id = 'site';
 

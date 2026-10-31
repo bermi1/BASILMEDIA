@@ -326,8 +326,8 @@ export function PrintDoc() {
       <article className="print-area mx-auto max-w-[210mm] overflow-x-auto bg-white p-6 text-[12px] text-basil-ink shadow-card sm:p-10" style={{ minHeight: '297mm' }}>
         <header className="flex flex-wrap items-start justify-between gap-4 border-b-4 border-basil pb-5">
           <div className="flex items-center gap-3">
-            <img src="/logo.svg" alt="" className="h-14 w-14" onError={(e) => (e.currentTarget.style.display = 'none')} />
-            <div><div className="font-display text-2xl font-extrabold">Basil <span className="text-basil">Media</span></div><div className="text-basil-muted">{s.address || 'Mikocheni, Dar es Salaam, Tanzania'}</div><div className="text-basil-muted">{[s.phone, s.contact_email].filter(Boolean).join(' · ')}</div></div>
+            <img src="/brand/basil-media-logo.svg" alt="Basil Media" className="h-20 w-auto" onError={(e) => (e.currentTarget.style.display = 'none')} />
+            <div><div className="text-basil-muted">{s.address || 'Mikocheni, Dar es Salaam, Tanzania'}</div><div className="text-basil-muted">{[s.phone, s.contact_email].filter(Boolean).join(' · ')}</div></div>
           </div>
           <div className="text-right"><div className="font-display text-xl font-extrabold tracking-wide text-basil-deep">{title}</div><div className="font-mono text-sm font-bold">{number}</div>
             {kind === 'invoice' && inv && <div className="mt-1"><Pill tone={statusTone(invoiceStatus(inv, fin.payments)) as never}>{STATUS_LABEL[invoiceStatus(inv, fin.payments)]}</Pill></div>}

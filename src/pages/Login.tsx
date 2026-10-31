@@ -71,7 +71,7 @@ export default function Login() {
         <div aria-hidden="true" className="absolute -bottom-[240px] -right-[220px] h-[560px] w-[560px] animate-glow rounded-full [animation-delay:-3s]" style={{ background: 'radial-gradient(circle, rgba(15,110,194,0.6), rgba(15,110,194,0) 70%)' }} />
         <Link to="/" className="relative font-display text-sm font-extrabold tracking-[0.16em] text-basil-haze no-underline hover:text-white">← BASIL MEDIA · OS</Link>
         <div className="relative flex items-center gap-4 py-4 sm:flex-col sm:items-start sm:gap-7 sm:py-8">
-          <img src="/logo-reverse.svg" alt="Basil Media" className="h-16 w-16 animate-float sm:h-[168px] sm:w-[168px]" style={{ filter: 'drop-shadow(0 24px 50px rgba(0,0,0,0.45))' }} />
+          <img src="/brand/basil-media-logo-white.svg" alt="Basil Media — Health Education Innovation" className="h-20 w-auto animate-float sm:h-[190px]" style={{ filter: 'drop-shadow(0 24px 50px rgba(0,0,0,0.45))' }} />
           <h1 className="m-0 max-w-[560px] text-[clamp(22px,4vw,58px)] font-extrabold leading-[1.08] tracking-[-0.02em]">Run the office.<br /><span className="text-basil-sky">Reach the audience.</span><br />Tell the story.</h1>
         </div>
         <div className="relative hidden flex-wrap gap-2.5 sm:flex">

@@ -63,10 +63,7 @@ export function Footer() {
       </div>
       <div className="container-bm grid grid-cols-2 gap-x-6 gap-y-7 pb-5 pt-8 sm:pt-12 lg:grid-cols-[1.6fr_1fr_1fr_1.6fr] lg:gap-10">
         <div className="col-span-2 flex flex-col gap-3.5 lg:col-span-1">
-          <div className="flex items-center gap-3">
-            <img src={s.logo_url || '/logo.svg'} alt="Basil Media" className="h-12 w-12 sm:h-16 sm:w-16" />
-            <span className="font-display text-xl font-extrabold text-white sm:text-2xl">Basil <span className="text-basil-sky">Media</span></span>
-          </div>
+          <img src={s.logo_reverse_url && !s.logo_reverse_url.endsWith('/logo-reverse.svg') ? s.logo_reverse_url : '/brand/basil-media-logo-white.svg'} alt="Basil Media — Health Education Innovation" className="h-24 w-auto self-start sm:h-28" />
           <p className="m-0 max-w-[380px] text-sm leading-relaxed">{s.footer_about}</p>
           <SocialRow />
         </div>

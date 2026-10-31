@@ -41,7 +41,7 @@ export function ShowcaseView({ showcase: s, items, onReact, onCta, reacted = {} 
   if (s.mode === 'linktree') {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 px-4 py-10 text-center">
-        <img src="/logo.svg" alt="Basil Media" className="h-16 w-16" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
+        <img src="/brand/basil-media-logo.svg" alt="Basil Media" className="h-24 w-auto" onError={(e) => ((e.target as HTMLImageElement).style.display = 'none')} />
         <h1 className="m-0 font-display text-2xl font-extrabold text-[#0A2F5C]">{s.title}</h1>
         {s.welcome && <p className="m-0 text-[#4A5D78]">{s.welcome}</p>}
         <div className="flex w-full flex-col gap-2">

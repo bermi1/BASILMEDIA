@@ -170,7 +170,7 @@ export function RentalAgreement() {
       <div className="no-print"><PageTitle tag="OUTSIDE RENTAL" title={`Agreement ${r.agreement_no}`}><button type="button" className="btn-primary" onClick={() => print()}><Printer size={16} />Print</button></PageTitle></div>
       <article className="mx-auto max-w-3xl rounded-2xl border border-basil-line bg-white p-6 text-sm leading-relaxed sm:p-10 print:border-0 print:p-0">
         <header className="flex items-start justify-between gap-4 border-b border-basil-line pb-4">
-          <div><img src="/logo.svg" alt="" className="h-10" onError={(e) => (e.currentTarget.style.display = 'none')} /><b className="block font-display text-lg">Basil Media</b><span className="text-basil-muted">Mikocheni, Dar es Salaam · store@basilmedia.co.tz</span></div>
+          <div><img src="/brand/basil-media-logo.svg" alt="Basil Media" className="h-16 w-auto" onError={(e) => (e.currentTarget.style.display = 'none')} /><span className="text-basil-muted">Mikocheni, Dar es Salaam · store@basilmedia.co.tz</span></div>
           <div className="text-right"><b className="block font-display text-lg">Equipment Rental Agreement</b><span className="font-mono">{r.agreement_no}</span><br /><span>Date {fmtDate(r.created_at ?? r.start_date)}</span></div>
         </header>
         <section className="mt-4 grid gap-4 sm:grid-cols-2">

@@ -11,7 +11,7 @@ export default function SetupNeeded() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-basil-mist px-4 py-10 text-basil-ink">
       <div className="w-full max-w-lg rounded-[28px] border border-basil-line bg-white p-6 shadow-[0_20px_50px_rgba(10,47,92,0.12)] sm:p-9">
-        <img src="/logo.svg" alt="Basil Media" className="h-12 w-12" />
+        <img src="/brand/basil-media-logo.svg" alt="Basil Media" className="h-20 w-auto" />
         <h1 className="m-0 mt-4 text-2xl font-extrabold">Connect the database</h1>
         <p className="m-0 mt-1.5 text-basil-muted">Basil Media OS runs on Supabase. This copy of the site has not been connected yet.</p>
         <ol className="m-0 mt-6 flex list-none flex-col gap-4 p-0">

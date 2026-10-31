@@ -24,6 +24,13 @@ export default function About() {
       <section className="section bg-basil-mist">
         <div className="container-bm">
           <h2 className="h-section m-0 mb-5">{t('team')}</h2>
+          <div className="mb-5 grid gap-2.5 sm:mb-8 sm:gap-4 lg:grid-cols-[2fr_1fr]">
+            <figure className="relative m-0 overflow-hidden rounded-[22px]">
+              <img src="/img/team/basil-media-team.jpg" alt="The Basil Media team" loading="lazy" className="aspect-[16/10] w-full object-cover lg:h-full lg:aspect-auto" />
+              <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-basil-night/85 to-transparent p-4 pt-12 text-white sm:p-6"><b className="font-display text-lg sm:text-2xl">One crew, from brief to final cut</b><span className="block text-sm text-white/85">Filmmakers, photographers, editors and producers in Dar es Salaam.</span></figcaption>
+            </figure>
+            <img src="/img/team/crew-on-set.jpg" alt="Basil Media crew filming at a conference" loading="lazy" className="hidden w-full rounded-[22px] object-cover lg:block lg:aspect-[3/4]" />
+          </div>
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {team.map((m, i) => (
               <Reveal key={m.id} delay={i * 0.05}>
