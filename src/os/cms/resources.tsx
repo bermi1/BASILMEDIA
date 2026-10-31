@@ -16,10 +16,10 @@ export const ProjectsCms = () => (
       { key: 'category', label: 'Category', type: 'select', options: WORK_CATEGORIES },
       { key: 'featured', label: 'Featured on home page', type: 'boolean' },
       { key: 'image_url', label: 'Cover picture', type: 'image', folder: 'projects' },
-      { key: 'video_url', label: 'Video', type: 'video', folder: 'projects', help: 'Upload a file or paste a YouTube, Vimeo or Instagram link — it plays inside the page.' },
+      { key: 'video_url', label: 'Video', type: 'video', folder: 'projects', help: 'Paste the YouTube link — it plays inside the page.' },
       { key: 'orientation', label: 'Video shape', type: 'select', options: ['auto', 'landscape', 'portrait'], help: 'Auto: Instagram reels and YouTube Shorts are tall, other links are wide.' },
       { key: 'description', label: 'Description', type: 'textarea' },
-      { key: 'external_url', label: 'External link', type: 'url' },
+      { key: 'external_url', label: 'Photo gallery link (Pixieset) or other link', type: 'url', help: 'For photo work, paste the Pixieset gallery link — the card opens the gallery.' },
       { key: 'published', label: 'Published', type: 'boolean' },
     ]}
     blank={() => ({ title: '', client: '', category: 'Corporate' as const, image_url: '', video_url: '', description: '', external_url: '', orientation: 'auto' as const, featured: false, published: true })}

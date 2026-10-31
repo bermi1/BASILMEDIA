@@ -15,14 +15,13 @@ export function CmsOverview() {
   const counts = {
     projects: useRows('projects_public').rows.length,
     partners: useRows('partners').rows.length,
-    highlights: useRows('highlights').rows.length,
     team: useRows('team').rows.length,
     galleries: useRows('galleries').rows.length,
     news: useRows('news_stories').rows.length,
   };
   const { rows: bookings } = useRows('bookings');
   const cards: [string, number, string][] = [
-    ['Projects', counts.projects, '/os/website/projects'], ['Partners', counts.partners, '/os/website/partners'], ['Highlights', counts.highlights, '/os/website/highlights'],
+    ['Projects', counts.projects, '/os/website/projects'], ['Partners', counts.partners, '/os/website/partners'],
     ['Team', counts.team, '/os/website/team'], ['Galleries', counts.galleries, '/os/website/galleries'], ['News stories', counts.news, '/os/website/news'],
     ['Bookings', bookings.length, '/os/website/bookings'],
   ];

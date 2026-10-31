@@ -120,7 +120,7 @@ export function UploadInput({ kind, folder, value, onChange }: { kind: 'image' |
       </div>
       <label className="flex items-center gap-2 text-sm text-basil-muted">
         <Link2 size={16} className="shrink-0" />
-        <input className={`${input} h-10 text-sm`} value={value} onChange={(e) => onChange(e.target.value)} placeholder={kind === 'video' ? 'or paste a YouTube, Vimeo or Instagram link' : 'or paste a link'} />
+        <input className={`${input} h-10 text-sm`} value={value} onChange={(e) => onChange(e.target.value)} placeholder={kind === 'video' ? 'or paste a YouTube link' : 'or paste a link'} />
       </label>
       {err && <span role="alert" className="text-sm font-bold text-red-700">{err}</span>}
     </div>

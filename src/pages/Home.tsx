@@ -8,7 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { parseVideo, videoLabel, videoOrientation, youtubeThumb, type Orientation } from '@/lib/video';
 import { HeroSlides } from '@/components/HeroSlides';
 import { gradient } from '@/components/Media';
-import { InstagramEmbed, VideoEmbed } from '@/components/VideoEmbed';
+import { VideoEmbed } from '@/components/VideoEmbed';
 import { Reveal } from '@/components/Reveal';
 import { BookingForm } from '@/components/BookingForm';
 import { Play } from '@/components/icons';
@@ -47,7 +47,6 @@ export default function Home() {
     ...highlights.filter((h) => parseVideo(h.video_url).kind !== 'instagram').map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels', shape: videoOrientation(h.video_url, h.orientation) })),
     ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string, shape: videoOrientation(p.video_url, p.orientation) })),
   ];
-  const reels = highlights.filter((h) => parseVideo(h.video_url).kind === 'instagram');
   const [cat, setCat] = useState('All');
   const cats = ['All', ...Array.from(new Set(glance.map((g) => g.cat)))];
   const shown = glance.filter((g) => cat === 'All' || g.cat === cat).slice(0, 12);
@@ -58,7 +57,7 @@ export default function Home() {
       {/* HERO — the picture/video speaks; few words */}
       <section className="relative isolate flex min-h-[60svh] items-end justify-center overflow-hidden text-center text-white sm:min-h-[80vh]" style={{ background: 'radial-gradient(ellipse at 15% 20%, rgba(124,192,245,0.35), transparent 50%), radial-gradient(ellipse at 90% 85%, rgba(245,185,66,0.2), transparent 45%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
         <HeroSlides images={photos} video={s.hero_video_url} />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,30,61,0.45) 0%, rgba(6,30,61,0.1) 35%, rgba(6,30,61,0.85) 78%, rgba(6,30,61,0.98) 100%)' }} />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,30,61,0.35) 0%, rgba(6,30,61,0) 35%, rgba(6,30,61,0.6) 72%, rgba(6,30,61,0.92) 100%)' }} />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="container-bm relative flex flex-col items-center pb-8 pt-24 sm:pb-16">
           <h1 className="m-0 max-w-[640px] text-[clamp(22px,3.6vw,44px)] font-bold leading-[1.15] tracking-[-0.02em]">
             {s.tagline} <span className="text-glow">{s.tagline_highlight}</span>
@@ -82,9 +81,7 @@ export default function Home() {
                 <ul className={`m-0 flex w-max list-none items-center gap-3 p-0 hover:[animation-play-state:paused] ${r ? 'animate-marquee-reverse' : 'animate-marquee'}`}>
                   {[...row, ...row, ...row, ...row].map((p, i) => (
                     <li key={i} aria-hidden={i >= row.length} className="flex h-16 shrink-0 items-center justify-center rounded-2xl border border-basil-line bg-white px-5 sm:h-[76px] sm:px-6">
-                      {p.logo_url
-                        ? <img src={p.logo_url} alt={p.name} loading="lazy" className="h-11 max-w-[160px] object-contain sm:h-[54px]" />
-                        : <span className="whitespace-nowrap font-display text-[14px] font-bold text-basil-deep sm:text-[15px]">{p.name}</span>}
+                      <PartnerMark name={p.name} logo={p.logo_url} />
                     </li>
                   ))}
                 </ul>
@@ -159,14 +156,6 @@ export default function Home() {
             {/* Justified rows (like a photo library): reels and films share each row at one height, every row
                 is filled edge to edge, nothing is cropped and no row is left half empty. */}
             <JustifiedRows items={shown} />
-            {reels.length > 0 && (
-              <div className="mt-8">
-                <div className="mb-3 flex items-center justify-between"><b className="text-[15px] text-white">From Instagram</b><a href="https://www.instagram.com/basilmedia_tz/" target="_blank" rel="noreferrer" className="text-sm font-bold text-basil-sky no-underline hover:text-white">@basilmedia_tz</a></div>
-                <div className="snap-row items-start pb-1">
-                  {reels.map((r) => <div key={r.id} className="w-[78vw] max-w-[326px] shrink-0 snap-start"><InstagramEmbed src={(parseVideo(r.video_url) as { embed: string }).embed} title={r.title} /></div>)}
-                </div>
-              </div>
-            )}
           </div>
         </section>
       )}
@@ -261,6 +250,14 @@ export default function Home() {
       </section>
     </>
   );
+}
+
+/** Partner logo, or the name as a badge if there is no logo or it fails to load (never a broken image). */
+function PartnerMark({ name, logo }: { name: string; logo: string }) {
+  const [failed, setFailed] = useState(false);
+  return logo && !failed
+    ? <img src={logo} alt={name} loading="lazy" onError={() => setFailed(true)} className="h-11 max-w-[160px] object-contain sm:h-[54px]" />
+    : <span className="whitespace-nowrap font-display text-[14px] font-bold text-basil-deep sm:text-[15px]">{name}</span>;
 }
 
 type GlanceItem = { id: string; title: string; url: string; poster: string; sub: string; shape: Orientation };

@@ -1,7 +1,8 @@
 // Crossfading hero photos (team, office, studio — set in the CMS). Each photo is shown whole (never cropped or
 // zoomed, so no heads are cut) over a soft blurred copy of itself that fills the rest of the hero.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { Volume2, VolumeX } from 'lucide-react';
 import { parseVideo } from '@/lib/video';
 
 export function HeroSlides({ images, video, interval = 6000 }: { images: string[]; video?: string; interval?: number }) {
@@ -25,13 +26,7 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
     const src = builtIn && tall ? v.src.replace(/\.mp4$/, '-portrait.mp4') : v.src;
     const poster = builtIn ? src.replace(/\.mp4$/, '-poster.jpg') : images[0];
     if (reduce) return <img aria-hidden="true" src={poster} alt="" className="absolute inset-0 h-full w-full object-cover" />;
-    return (
-      <>
-        <video key={src} aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" src={src} poster={poster} autoPlay muted loop playsInline preload="auto" />
-        {/* transparent Basil-blue coating: keeps the footage on brand and the text readable */}
-        <div aria-hidden="true" className="absolute inset-0 mix-blend-multiply" style={{ background: 'linear-gradient(135deg, rgba(15,110,194,0.55), rgba(10,47,92,0.35) 55%, rgba(43,134,218,0.45))' }} />
-      </>
-    );
+    return <HeroVideo src={src} poster={poster} />;
   }
   if (v.kind === 'youtube') {
     return (
@@ -55,5 +50,29 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
         </div>
       )}
     </div>
+  );
+}
+
+/** Background video: starts silent (browsers only autoplay muted video); a small button turns the music on. */
+function HeroVideo({ src, poster }: { src: string; poster: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [muted, setMuted] = useState(true);
+  const toggle = () => {
+    const v = ref.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    if (!v.muted) void v.play();
+    setMuted(v.muted);
+  };
+  return (
+    <>
+      <video ref={ref} key={src} aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" src={src} poster={poster} autoPlay muted loop playsInline preload="auto" />
+      {/* light Basil-blue coating: on brand, but the footage keeps its colour */}
+      <div aria-hidden="true" className="absolute inset-0 mix-blend-multiply" style={{ background: 'linear-gradient(135deg, rgba(15,110,194,0.28), rgba(10,47,92,0.12) 55%, rgba(43,134,218,0.22))' }} />
+      <button type="button" onClick={toggle} aria-pressed={!muted} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
+        className="absolute bottom-4 left-4 z-20 flex h-10 items-center gap-1.5 rounded-full border border-white/30 bg-black/30 px-3.5 text-[13px] font-semibold text-white backdrop-blur-md transition hover:bg-black/50 sm:bottom-6 sm:left-6">
+        {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}{muted ? 'Sound on' : 'Sound off'}
+      </button>
+    </>
   );
 }

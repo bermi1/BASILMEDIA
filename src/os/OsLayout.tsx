@@ -3,7 +3,7 @@ import { onChange } from './lib/store';
 import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpen, CalendarRange, Globe2, Handshake, Images, Inbox, LayoutDashboard, LogOut, Menu,
-  MessageSquareQuote, Newspaper, Settings2, Sparkles, Users, UsersRound, Video, BriefcaseBusiness, X, ExternalLink, Loader2,
+  MessageSquareQuote, Newspaper, Settings2, Users, UsersRound, Video, BriefcaseBusiness, X, ExternalLink, Loader2,
 } from 'lucide-react';
 import { useAuth, ROLE_LABEL } from '@/lib/auth';
 import { MODULES } from './modules';
@@ -18,7 +18,6 @@ const CMS_NAV = [
   { to: '/os/website/settings', label: 'Site settings', Icon: Settings2 },
   { to: '/os/website/projects', label: 'Projects', Icon: Video },
   { to: '/os/website/services', label: 'Services', Icon: BriefcaseBusiness },
-  { to: '/os/website/highlights', label: 'Highlights', Icon: Sparkles },
   { to: '/os/website/partners', label: 'Partners', Icon: Handshake },
   { to: '/os/website/team', label: 'Team', Icon: UsersRound },
   { to: '/os/website/testimonials', label: 'Testimonials', Icon: MessageSquareQuote },

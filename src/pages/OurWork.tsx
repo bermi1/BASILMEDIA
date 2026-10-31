@@ -8,7 +8,7 @@ import { useI18n } from '@/lib/i18n';
 import { WORK_CATEGORIES } from '@/lib/types';
 import { parseVideo, videoLabel, youtubeThumb } from '@/lib/video';
 import { Media } from '@/components/Media';
-import { InstagramEmbed, VideoEmbed } from '@/components/VideoEmbed';
+import { VideoEmbed } from '@/components/VideoEmbed';
 import { Play } from '@/components/icons';
 import { PageHero } from '@/components/PageHero';
 
@@ -18,8 +18,6 @@ export default function OurWork() {
   const { t } = useI18n();
   useSeo('Our Work', 'Films, reels, photo stories, podcasts and corporate work by Basil Media.');
   const { rows } = useRows('projects_public', { publishedOnly: true });
-  const { rows: highlights } = useRows('highlights', { publishedOnly: true });
-  const reels = highlights.filter((h) => parseVideo(h.video_url).kind === 'instagram');
   const [params, setParams] = useSearchParams();
   const filter = params.get('c') ?? '';
   const openId = params.get('p');
@@ -100,18 +98,6 @@ export default function OurWork() {
       </div>
       </section>
 
-      {/* FROM INSTAGRAM — the reels play right here with Instagram's own player */}
-      {reels.length > 0 && (
-        <section className="container-bm pb-12 sm:pb-16" aria-labelledby="ig-h">
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <h2 id="ig-h" className="m-0 text-2xl font-extrabold">From Instagram</h2>
-            <a href="https://www.instagram.com/basilmedia_tz/" target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm font-bold no-underline">@basilmedia_tz <ExternalLink size={14} /></a>
-          </div>
-          <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {reels.map((r) => <InstagramEmbed key={r.id} src={(parseVideo(r.video_url) as { embed: string }).embed} title={r.title} />)}
-          </div>
-        </section>
-      )}
 
       <AnimatePresence>
         {cur && (

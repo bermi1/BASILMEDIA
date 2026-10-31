@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -1028,4 +1028,18 @@ from (values
   ('CardioTan · JKCI', '/img/partners/jkci.png')
 ) as v(name, logo)
 where p.name = v.name and coalesce(p.logo_url, '') = '';
+
+-- ===================== 0028_youtube_only_and_real_news.sql =====================
+-- Basil Media OS · 0028 no Instagram, no invented news.
+-- Instagram reels are deleted (work videos are YouTube only).
+delete from public.highlights where video_url like '%instagram.com%';
+update public.projects_public set video_url = '' where video_url like '%instagram.com%';
+-- The six starter stories were sample text, not real news: hide them (editable in Website CMS → Health news).
+update public.news_stories set published = false where title in (
+  'New national guidelines on antibiotic stewardship for referral hospitals',
+  'Registration renewals: council deadline moves to 31 December',
+  'Local study: shorter TB regimens hold up in Tanzanian clinics',
+  'Paediatric oncology unit opens second ward',
+  'Nurses’ conference calls for abstracts on community care',
+  'Drug alert: recall of one batch of an oral antibiotic');
 

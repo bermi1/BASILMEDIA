@@ -45,7 +45,7 @@ export default function HealthNews() {
             <a href="#subscribe" className="mt-4 inline-flex rounded-2xl bg-white px-5 py-3 font-bold text-basil no-underline hover:bg-basil-ice">Subscribe free</a>
           </div>
         </div>
-        <div className="container-bm relative pb-6">
+        <div className={`container-bm relative pb-6 ${stories.length ? '' : 'hidden'}`}>
           <div role="group" aria-label="Filter by topic" className="scrollbar-none flex gap-2 overflow-x-auto">
             {tags.map((t) => (
               <button key={t} type="button" aria-pressed={tag === t} onClick={() => setTag(t)} className={`min-h-[44px] shrink-0 rounded-full px-4 text-sm font-semibold ${tag === t ? 'border-0 bg-white text-basil' : 'border border-white/35 bg-transparent text-white hover:bg-white/10'}`}>
@@ -58,6 +58,8 @@ export default function HealthNews() {
 
       <div className="container-bm grid gap-8 py-8 sm:gap-10 sm:py-12 lg:grid-cols-[1fr_340px]">
         <div className="min-w-0">
+          <LiveHealthFeed />
+          {stories.length > 0 && <h2 className="m-0 mb-4 mt-10 text-2xl font-extrabold sm:mt-14">From Basil Media</h2>}
           {featured && (
             <Reveal>
               <Link to={`/health-news/${featured.id}`} className="group mb-7 grid overflow-hidden rounded-[22px] sm:mb-10 sm:rounded-[28px] border border-basil-line bg-white text-basil-ink no-underline transition hover:shadow-card hover:text-basil-ink md:grid-cols-2">
@@ -71,7 +73,7 @@ export default function HealthNews() {
               </Link>
             </Reveal>
           )}
-          <div className="mb-4 flex items-baseline justify-between"><h2 className="m-0 text-2xl font-extrabold">{tag === 'All' ? 'Latest stories' : tag}</h2><span className="font-mono text-xs text-basil-muted">{rest.length} STORIES</span></div>
+          <div className={`mb-4 flex items-baseline justify-between ${stories.length ? "" : "hidden"}`}><h3 className="m-0 text-xl font-extrabold">{tag === 'All' ? 'Latest stories' : tag}</h3><span className="font-mono text-xs text-basil-muted">{rest.length} STORIES</span></div>
           <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-4">
             {rest.map((s, i) => (
               <Reveal key={s.id} delay={i * 0.04}>
@@ -86,9 +88,8 @@ export default function HealthNews() {
               </Reveal>
             ))}
           </div>
-          {!rest.length && !featured && <p className="text-basil-muted">No stories in this topic yet.</p>}
+          {stories.length > 0 && !rest.length && !featured && <p className="text-basil-muted">No stories in this topic yet.</p>}
 
-          <LiveHealthFeed />
 
           <section aria-labelledby="opp-h" className="mt-8 rounded-[22px] bg-basil-mist p-4 sm:mt-12 sm:rounded-[28px] sm:p-8">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
