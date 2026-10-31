@@ -1,4 +1,4 @@
--- Basil Media OS · complete database setup (generated from 21 migrations).
+-- Basil Media OS · complete database setup (generated from 22 migrations).
 -- Paste into Supabase → SQL Editor on an EMPTY project and press Run.
 
 -- ===================== 0001_foundation.sql =====================
@@ -4258,4 +4258,13 @@ select v.title, v.url, v.cover, v.ord, true, 'portrait' from (values
   ('Basil Media · health story', 'https://www.instagram.com/reel/DePq1PqRqCE/', '/img/services/event-coverage-team.jpg', 7)
 ) as v(title, url, cover, ord)
 where not exists (select 1 from public.highlights h where h.video_url = v.url);
+
+-- ===================== 0023_hero_video.sql =====================
+-- Basil Media OS · 0023 homepage hero video and the team photo as the About picture.
+-- The hero loop (public/media/hero) is built from Basil Media photos by scripts/make-hero-video.py.
+-- Only replaces the starter values — a video or picture chosen in Website CMS → Site settings is kept.
+update public.site_settings set
+  hero_video_url = case when coalesce(hero_video_url, '') = '' then '/media/hero/basil-hero.mp4' else hero_video_url end,
+  about_image_url = case when coalesce(about_image_url, '') in ('', '/media/basil-media-studio-btv.webp') then '/img/team/basil-media-team.jpg' else about_image_url end
+where id = 'site';
 

@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -982,4 +982,13 @@ select v.title, v.url, v.cover, v.ord, true, 'portrait' from (values
   ('Basil Media · health story', 'https://www.instagram.com/reel/DePq1PqRqCE/', '/img/services/event-coverage-team.jpg', 7)
 ) as v(title, url, cover, ord)
 where not exists (select 1 from public.highlights h where h.video_url = v.url);
+
+-- ===================== 0023_hero_video.sql =====================
+-- Basil Media OS · 0023 homepage hero video and the team photo as the About picture.
+-- The hero loop (public/media/hero) is built from Basil Media photos by scripts/make-hero-video.py.
+-- Only replaces the starter values — a video or picture chosen in Website CMS → Site settings is kept.
+update public.site_settings set
+  hero_video_url = case when coalesce(hero_video_url, '') = '' then '/media/hero/basil-hero.mp4' else hero_video_url end,
+  about_image_url = case when coalesce(about_image_url, '') in ('', '/media/basil-media-studio-btv.webp') then '/img/team/basil-media-team.jpg' else about_image_url end
+where id = 'site';
 

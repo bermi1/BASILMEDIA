@@ -298,15 +298,15 @@ function GlanceCard({ title, url, poster, sub, index, shape }: { title: string; 
   return (
     <div className="h-full w-full">
       {on && url ? (
-        <div className="overflow-hidden rounded-[20px] shadow-card"><VideoEmbed url={url} title={title} autoPlay aspect={aspect} /></div>
+        <div className="h-full overflow-hidden rounded-2xl shadow-card"><VideoEmbed url={url} title={title} autoPlay aspect={aspect} /></div>
       ) : (
-        <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} className="group relative block h-full w-full overflow-hidden rounded-[20px] border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:ring-basil-sky/60 hover:shadow-[0_0_40px_-6px_rgba(124,192,245,0.55)]" style={{ background: gradient(index) }}>
-          {poster && <img src={poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />}
-          <span className="absolute inset-0 bg-gradient-to-t from-basil-night/85 via-transparent to-transparent" />
-          {url && <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 transition group-hover:scale-110"><Play size={18} /></span>}
-          <span className="absolute inset-x-3 bottom-3 text-left text-white">
-            {sub && <span className="block text-[10.5px] font-bold uppercase tracking-wide text-basil-haze">{sub}</span>}
-            <b className="line-clamp-2 text-[13px] leading-tight sm:text-[14.5px]">{title}</b>
+        <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} title={title} className="group relative block h-full w-full overflow-hidden rounded-2xl border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:ring-white/40" style={{ background: gradient(index) }}>
+          {poster && <img src={poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-top" />}
+          {/* minimal overlay: a thin fade at the very bottom, a small play icon in the corner */}
+          <span className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/60 to-transparent" />
+          {url && <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/35 text-white ring-1 ring-white/30 backdrop-blur-md transition group-hover:bg-white group-hover:text-basil-night"><Play size={11} /></span>}
+          <span className="absolute inset-x-2.5 bottom-2 truncate text-left text-[11px] font-medium leading-tight text-white/90 sm:text-[12px]">
+            {sub && shape === 'landscape' && <span className="mr-1 font-bold uppercase tracking-wide text-white/60">{sub} ·</span>}{title}
           </span>
         </button>
       )}

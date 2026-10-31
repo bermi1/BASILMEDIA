@@ -19,7 +19,13 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
   }, [i, images]);
   const v = parseVideo(video);
   if (v.kind === 'file') {
-    return <video aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" src={v.src} poster={images[0]} autoPlay muted loop playsInline preload="metadata" />;
+    // Built-in hero loops (public/media/hero) come in a wide and a tall version: phones get the tall one.
+    const tall = typeof matchMedia !== 'undefined' && matchMedia('(orientation: portrait)').matches;
+    const builtIn = v.src.startsWith('/media/hero/') && v.src.endsWith('.mp4');
+    const src = builtIn && tall ? v.src.replace(/\.mp4$/, '-portrait.mp4') : v.src;
+    const poster = builtIn ? src.replace(/\.mp4$/, '-poster.jpg') : images[0];
+    if (reduce) return <img aria-hidden="true" src={poster} alt="" className="absolute inset-0 h-full w-full object-cover" />;
+    return <video key={src} aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" src={src} poster={poster} autoPlay muted loop playsInline preload="auto" />;
   }
   if (v.kind === 'youtube') {
     return (
