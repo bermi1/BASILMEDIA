@@ -1,12 +1,49 @@
 // Small building blocks shared by the growth module's desktop pages and phone screens.
-import { useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type MouseEvent, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Printer } from 'lucide-react';
+import { PageTitle } from '@/os/OsLayout';
 import { list, save, subscribe } from '@/lib/db';
 import { isDemo } from '@/lib/supabase';
 import type { Booking, Gallery, Subscriber } from '@/lib/types';
 import { useTable } from '@/os/lib/store';
 import { isoPlus } from './lib';
 import './seed';
+
+// ---------- in-app navigation ----------
+// On the phone app, growth screens open details (a proposal, a retainer, a showcase…) inside the app
+// on a small stack instead of jumping to the desktop OS. On the desktop the same calls use the router.
+export const StackCtx = createContext<((to: string) => void) | null>(null);
+/** True when rendered inside the phone app (/app). */
+export const useInPhone = () => useLocation().pathname.startsWith('/app');
+/** Navigate to an OS path: pushes onto the phone stack when there is one, else uses the router. */
+export function useGo() {
+  const push = useContext(StackCtx);
+  const nav = useNavigate();
+  return useCallback((to: string) => (push ? push(to) : nav(to)), [push, nav]);
+}
+export function GoLink({ to, className, children, 'aria-label': aria }: { to: string; className?: string; children: ReactNode; 'aria-label'?: string }) {
+  const push = useContext(StackCtx);
+  const click = (e: MouseEvent) => {
+    if (!push) return;
+    e.preventDefault();
+    push(to);
+  };
+  return <Link to={to} className={className} onClick={click} aria-label={aria}>{children}</Link>;
+}
+/** Page heading: the OS PageTitle on desktop; a compact heading on the phone (the app bar already names the tab). */
+export function PageHead({ tag, title, sub, children }: { tag: string; title: string; sub?: string; children?: ReactNode }) {
+  if (!useInPhone()) return <PageTitle tag={tag} title={title} sub={sub}>{children}</PageTitle>;
+  return (
+    <div className="mb-4 flex flex-col gap-3">
+      <div className="min-w-0">
+        <h1 className="m-0 font-display text-[22px] font-extrabold leading-tight">{title}</h1>
+        {sub && <p className="m-0 mt-1 text-sm text-basil-muted">{sub}</p>}
+      </div>
+      {children && <div className="bm-phone-actions">{children}</div>}
+    </div>
+  );
+}
 
 /** Progress ring (SVG). */
 export function Ring({ value, max, size = 76, stroke = 8, label, sub, color }: { value: number; max: number; size?: number; stroke?: number; label?: ReactNode; sub?: ReactNode; color?: string }) {
