@@ -64,36 +64,36 @@ export default function Login() {
 
   return (
     <div className="flex min-h-screen flex-wrap bg-basil-mist text-basil-ink">
-      <section className="relative flex min-h-[340px] flex-[1_1_520px] flex-col justify-between overflow-hidden px-6 py-8 text-white sm:px-12 sm:py-10" style={{ background: 'linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
+      <section className="relative flex min-h-[230px] flex-[1_1_520px] flex-col justify-between overflow-hidden px-5 pb-16 pt-6 text-white sm:min-h-[340px] sm:px-12 sm:py-10 lg:pb-10" style={{ background: 'linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
         <div aria-hidden="true" className="absolute left-1/2 top-1/2 -ml-[340px] -mt-[400px] h-[680px] w-[680px] animate-glow rounded-full" style={{ background: 'radial-gradient(circle, rgba(124,192,245,0.3), rgba(124,192,245,0) 65%)' }} />
         <div aria-hidden="true" className="absolute -bottom-[240px] -right-[220px] h-[560px] w-[560px] animate-glow rounded-full [animation-delay:-3s]" style={{ background: 'radial-gradient(circle, rgba(15,110,194,0.6), rgba(15,110,194,0) 70%)' }} />
         <Link to="/" className="relative font-display text-sm font-extrabold tracking-[0.16em] text-basil-haze no-underline hover:text-white">← BASIL MEDIA · OS</Link>
-        <div className="relative flex flex-col items-start gap-7 py-8">
-          <img src="/logo-reverse.svg" alt="Basil Media" className="h-28 w-28 animate-float sm:h-[168px] sm:w-[168px]" style={{ filter: 'drop-shadow(0 24px 50px rgba(0,0,0,0.45))' }} />
-          <h1 className="m-0 max-w-[560px] text-[clamp(32px,4vw,58px)] font-extrabold leading-[1.06] tracking-[-0.02em]">Run the office.<br /><span className="text-basil-sky">Reach the audience.</span><br />Tell the story.</h1>
+        <div className="relative flex items-center gap-4 py-4 sm:flex-col sm:items-start sm:gap-7 sm:py-8">
+          <img src="/logo-reverse.svg" alt="Basil Media" className="h-16 w-16 animate-float sm:h-[168px] sm:w-[168px]" style={{ filter: 'drop-shadow(0 24px 50px rgba(0,0,0,0.45))' }} />
+          <h1 className="m-0 max-w-[560px] text-[clamp(22px,4vw,58px)] font-extrabold leading-[1.08] tracking-[-0.02em]">Run the office.<br /><span className="text-basil-sky">Reach the audience.</span><br />Tell the story.</h1>
         </div>
-        <div className="relative flex flex-wrap gap-2.5">
+        <div className="relative hidden flex-wrap gap-2.5 sm:flex">
           {['Role-based portals', 'Two-step verification', 'Dar es Salaam'].map((x) => (
             <span key={x} className="rounded-full border border-white/30 bg-white/10 px-3.5 py-2.5 text-[13px] text-basil-frost backdrop-blur-xl">{x}</span>
           ))}
         </div>
       </section>
 
-      <section className="relative flex flex-[1.2_1_520px] items-center justify-center px-4 py-10 sm:px-6">
+      <section className="relative -mt-12 flex flex-[1.2_1_520px] items-start justify-center px-3 pb-10 sm:px-6 lg:mt-0 lg:items-center lg:py-10">
         <AnimatePresence mode="wait">
           {loading ? (
             <Loader2 key="ld" className="animate-spin text-basil" size={36} />
           ) : !user ? (
-            <motion.form key="form" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} onSubmit={(e) => (e.preventDefault(), go())} className="flex w-full max-w-[460px] flex-col gap-[18px] rounded-[28px] border border-basil-line bg-white p-7 shadow-[0_16px_36px_rgba(10,47,92,0.12)] sm:p-10">
+            <motion.form key="form" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} onSubmit={(e) => (e.preventDefault(), go())} className="flex w-full max-w-[460px] flex-col gap-4 rounded-[26px] border border-basil-line bg-white p-5 shadow-[0_20px_50px_rgba(10,47,92,0.16)] sm:gap-[18px] sm:rounded-[28px] sm:p-10">
               <div>
                 <div className="font-mono text-[11px] tracking-[0.18em] text-basil">{mode === 'signin' ? 'KARIBU TENA' : 'KARIBU'}</div>
-                <h2 className="m-0 mt-2 text-[32px] font-extrabold">{mode === 'signin' ? 'Sign in' : 'Create account'}</h2>
+                <h2 className="m-0 mt-1.5 text-[26px] font-extrabold sm:text-[32px]">{mode === 'signin' ? 'Sign in' : 'Create account'}</h2>
                 <div className="mt-1.5 text-[15px] text-basil-muted">{mode === 'signin' ? 'Staff, partners and clients use the same door.' : 'The very first account becomes the Super Admin. After that, the Super Admin assigns roles.'}</div>
               </div>
               {mode === 'signin' && (
                 <>
-                  <button type="button" onClick={() => setToast('Passkey sign-in (fingerprint / Face ID) is switched on by your administrator. Use email for now.')} className="flex h-16 items-center justify-center gap-3 rounded-[18px] border-0 bg-basil text-base font-bold text-white shadow-glow hover:bg-basil-deep">
-                    <Fingerprint /> Sign in with fingerprint / Face ID <span className="font-medium opacity-80">(passkey)</span>
+                  <button type="button" onClick={() => setToast('Passkey sign-in (fingerprint / Face ID) is switched on by your administrator. Use email for now.')} className="flex h-14 items-center justify-center gap-3 rounded-[18px] border-0 bg-basil text-[15px] font-bold text-white shadow-glow hover:bg-basil-deep sm:h-16 sm:text-base">
+                    <Fingerprint /> Fingerprint / Face ID
                   </button>
                   <div className="flex items-center gap-3 text-[13px] text-basil-muted"><span className="h-px flex-1 bg-basil-line" />or with email<span className="h-px flex-1 bg-basil-line" /></div>
                 </>

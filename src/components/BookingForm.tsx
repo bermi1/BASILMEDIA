@@ -53,7 +53,7 @@ export function BookingForm() {
               </select>
             </label>
             <label className={`${label} flex-[1_1_140px]`}>{t('date')}<input type="date" className="field" value={f.date} onChange={set('date')} min={new Date().toISOString().slice(0, 10)} /></label>
-            <label className={`${label} col-span-2 flex-[2_1_220px]`}>{t('message')}<input className="field" value={f.message} onChange={set('message')} placeholder="Tell us about the moment" /></label>
+            <label className={`${label} col-span-2 basis-full`}>Your full inquiry<textarea rows={4} className="w-full resize-y rounded-[14px] border-0 px-3.5 py-3 text-[15px] text-basil-ink" value={f.message} onChange={set('message')} placeholder="Tell us everything: the event or project, dates, venue, number of guests, what you want delivered (photos, film, reels, live stream), budget and anything else." /></label>
             <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} type="submit" disabled={state === 'sending'} className="col-span-2 flex h-[50px] flex-none items-center justify-center gap-2 rounded-[14px] border-0 bg-white px-[26px] text-[15px] font-extrabold text-basil disabled:opacity-70">
               {state === 'sending' ? <Loader2 className="animate-spin" size={18} /> : null}
               {state === 'sending' ? 'Sending…' : t('send')}

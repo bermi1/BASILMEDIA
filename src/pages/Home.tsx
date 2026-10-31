@@ -50,62 +50,79 @@ export default function Home() {
 
   return (
     <>
-      {/* HERO — short on phones, team/office photos behind, crew at a glance */}
-      <section className="grain relative isolate overflow-hidden text-white" style={{ background: 'radial-gradient(ellipse at 15% 20%, rgba(124,192,245,0.35), transparent 50%), radial-gradient(ellipse at 90% 80%, rgba(15,110,194,0.6), transparent 55%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
+      {/* HERO — photos of the team/office behind, big type, then an "at a glance" bento */}
+      <section className="grain relative isolate overflow-hidden text-white" style={{ background: 'radial-gradient(ellipse at 12% 18%, rgba(124,192,245,0.38), transparent 50%), radial-gradient(ellipse at 92% 85%, rgba(245,185,66,0.22), transparent 45%), radial-gradient(ellipse at 80% 30%, rgba(15,110,194,0.6), transparent 55%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
         <HeroSlides images={photos} />
-        {hasPhotos && <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,30,61,0.35) 0%, rgba(6,30,61,0.55) 45%, rgba(6,30,61,0.95) 100%)' }} />}
-        {hasPhotos && <div className="absolute inset-0 hidden lg:block" style={{ background: 'linear-gradient(95deg, rgba(6,30,61,0.92) 30%, rgba(6,30,61,0.2) 75%)' }} />}
-        <div className={`container-bm relative flex min-h-[64svh] flex-col justify-end gap-6 pb-9 pt-16 sm:min-h-[560px] sm:pb-14 lg:flex-row lg:items-center lg:justify-between lg:py-16 ${hasPhotos ? '' : 'lg:min-h-[600px]'}`}>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="flex max-w-[640px] flex-col gap-4 sm:gap-5">
-            <div className="font-mono text-[10.5px] tracking-[0.2em] text-basil-haze sm:text-xs">{s.hero_kicker}</div>
-            <h1 className="m-0 text-[clamp(34px,6vw,74px)] font-extrabold leading-[1.02] tracking-[-0.02em]">
-              {s.tagline} <span className="text-basil-sky">{s.tagline_highlight}</span>
+        {hasPhotos && <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,30,61,0.3) 0%, rgba(6,30,61,0.55) 50%, rgba(6,30,61,0.96) 100%)' }} />}
+        {hasPhotos && <div className="absolute inset-0 hidden lg:block" style={{ background: 'linear-gradient(95deg, rgba(6,30,61,0.92) 30%, rgba(6,30,61,0.15) 75%)' }} />}
+        <div className="container-bm relative grid min-h-[62svh] items-end gap-8 pb-20 pt-14 sm:min-h-[560px] sm:pb-24 lg:min-h-[620px] lg:grid-cols-[1.25fr_1fr] lg:items-center lg:pb-28">
+          <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="flex flex-col gap-4 sm:gap-5">
+            <div className="flex items-start gap-2 font-mono text-[10px] leading-relaxed tracking-[0.14em] text-basil-haze sm:items-center sm:text-xs sm:tracking-[0.2em]"><span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-sun shadow-[0_0_12px_#F5B942] sm:mt-0" />{s.hero_kicker}</div>
+            <h1 className="m-0 text-[clamp(38px,7.2vw,92px)] font-extrabold leading-[0.98] tracking-[-0.035em]">
+              {s.tagline} <span className="text-glow">{s.tagline_highlight}</span>
             </h1>
             <p className="m-0 max-w-[540px] text-[15.5px] leading-relaxed text-basil-frost sm:text-lg">{s.hero_subtitle}</p>
             <div className="grid grid-cols-2 gap-2.5 sm:flex sm:gap-3">
-              <Link to="/#book" className="flex h-12 items-center justify-center rounded-2xl bg-white px-6 font-bold text-basil no-underline hover:bg-basil-ice sm:h-14">{t('book')}</Link>
-              <Link to="/our-work" className="flex h-12 items-center justify-center rounded-2xl border border-white/40 bg-white/10 px-6 font-bold text-white no-underline backdrop-blur hover:bg-white/20 hover:text-white sm:h-14">{t('viewWork')}</Link>
-            </div>
-            {/* At a glance */}
-            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-3">
-              {team.length > 0 && (
-                <Link to="/about" className="flex items-center gap-2.5 text-white no-underline hover:text-white">
-                  <span className="flex -space-x-2.5">
-                    {team.slice(0, 5).map((m) => (
-                      <span key={m.id} className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-basil-ice font-display text-sm font-extrabold text-basil ring-2 ring-basil-night">
-                        {m.photo_url ? <img src={m.photo_url} alt="" className="h-full w-full object-cover" /> : m.name[0]}
-                      </span>
-                    ))}
-                  </span>
-                  <span className="text-[13px] leading-tight text-basil-frost"><b className="block text-white">Meet the crew</b>{team.length} people · Dar es Salaam</span>
-                </Link>
-              )}
-              {s.stats[0] && <span className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-[13px] backdrop-blur"><b>{s.stats[0].value}{s.stats[0].suffix}</b> {s.stats[0].label}</span>}
+              <Link to="/#book" className="group flex h-[52px] items-center justify-center gap-2 whitespace-nowrap rounded-2xl bg-white px-4 text-[15px] font-bold sm:px-6 sm:text-base text-basil no-underline shadow-[0_18px_40px_rgba(0,0,0,0.25)] hover:bg-basil-ice sm:h-14">{t('book')}<ArrowRight size={18} className="transition group-hover:translate-x-1" /></Link>
+              <Link to="/our-work" className="flex h-[52px] items-center justify-center gap-2 whitespace-nowrap rounded-2xl border border-white/35 bg-white/10 px-4 text-[15px] font-bold sm:px-6 sm:text-base text-white no-underline backdrop-blur hover:bg-white/20 hover:text-white sm:h-14"><Play size={16} color="#FFFFFF" />{t('viewWork')}</Link>
             </div>
           </motion.div>
-          <div className="hidden w-[400px] shrink-0 flex-col gap-3 lg:flex">
-            {!hasPhotos && <div className="relative h-[340px]"><HeroOrb logo={s.logo_reverse_url || '/logo-reverse.svg'} /></div>}
-            {s.live_ticker && (
-              <div className="rounded-[20px] border border-white/30 bg-white/[0.12] px-4 py-3.5 backdrop-blur-xl">
-                <div className="flex items-center gap-2 text-xs text-basil-haze"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />Live from the studio</div>
-                <b className="font-display">{s.live_ticker}</b>
-              </div>
-            )}
-            <Link to="/find-me" className="flex items-center gap-3 rounded-[20px] bg-white px-4 py-3.5 text-basil-ink no-underline shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition hover:-translate-y-1 hover:text-basil-ink">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-basil-ice text-basil"><ScanFace size={22} /></span>
-              <span><span className="block text-xs text-basil-muted">Were you at an event?</span><b className="font-display text-basil">One selfie → all your photos</b></span>
-            </Link>
+          {!hasPhotos && <div className="relative hidden h-[420px] lg:block"><HeroOrb logo={s.logo_reverse_url || '/logo-reverse.svg'} /></div>}
+        </div>
+      </section>
+
+      {/* AT A GLANCE — bento overlapping the hero */}
+      <section aria-label="At a glance" className="container-bm relative z-10 -mt-14 sm:-mt-16">
+        <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4">
+          <Link to="/about" className="col-span-2 flex items-center gap-3 rounded-[22px] border border-basil-line bg-white p-4 text-basil-ink no-underline shadow-[0_20px_50px_rgba(10,47,92,0.16)] transition hover:-translate-y-1 hover:text-basil-ink lg:col-span-1">
+            <span className="flex -space-x-2.5">
+              {(team.length ? team.slice(0, 4) : []).map((m) => (
+                <span key={m.id} className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-basil font-display text-sm font-extrabold text-white ring-[3px] ring-white">
+                  {m.photo_url ? <img src={m.photo_url} alt="" className="h-full w-full object-cover" /> : m.name[0]}
+                </span>
+              ))}
+            </span>
+            <span className="min-w-0"><b className="block font-display">Meet the crew</b><span className="text-[13px] text-basil-muted">{team.length} creatives · Dar es Salaam</span></span>
+          </Link>
+          <Link to="/find-me" className="flex flex-col justify-between gap-3 rounded-[22px] bg-basil p-4 text-white no-underline shadow-[0_20px_50px_rgba(15,110,194,0.35)] transition hover:-translate-y-1 hover:text-white">
+            <span className="flex items-center justify-between"><ScanFace size={24} /><span className="rounded-full bg-white/15 px-2 py-0.5 text-[10px] font-bold tracking-wide">BERMI AI</span></span>
+            <span><b className="block font-display leading-tight">Find your photos</b><span className="text-[12.5px] text-basil-frost">One selfie, every photo</span></span>
+          </Link>
+          <div className="flex flex-col justify-between gap-3 rounded-[22px] p-4 text-basil-night shadow-[0_20px_50px_rgba(183,121,31,0.25)]" style={{ background: 'linear-gradient(140deg, #FDE7B0, #F5B942)' }}>
+            <span className="flex items-center gap-1.5 text-[11px] font-bold tracking-wide"><span className="h-2 w-2 animate-pulse rounded-full bg-red-600" />LATEST</span>
+            <b className="line-clamp-3 font-display text-[14px] leading-tight">{s.live_ticker || (projects[0] ? `Delivered · ${projects[0].title}` : 'New work every week')}</b>
           </div>
+          <div className="col-span-2 grid grid-cols-3 gap-2 rounded-[22px] bg-basil-deep p-4 text-white shadow-[0_20px_50px_rgba(10,47,92,0.25)] lg:col-span-1">
+            {s.stats.slice(0, 3).map((st) => (
+              <div key={st.label} className="min-w-0"><div className="font-display text-[22px] font-extrabold leading-none"><CountUp to={st.value} suffix={st.suffix} /></div><div className="mt-1 truncate text-[11px] text-basil-haze">{st.label}</div></div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* KINETIC BAND */}
+      <section aria-hidden="true" className="overflow-hidden py-6 sm:py-10">
+        <div className="flex w-max animate-marquee gap-8 whitespace-nowrap font-display text-[44px] font-extrabold leading-none tracking-[-0.03em] sm:text-[88px]" style={{ animationDuration: '40s' }}>
+          {[0, 1].map((k) => (
+            <span key={k} className="flex gap-8">
+              {services.map((x, i) => (
+                <span key={x.id + k} className="flex items-center gap-8">
+                  <span className={i % 2 ? 'text-basil' : 'outline-word [-webkit-text-stroke:1.5px_#0F6EC2]'}>{x.title}</span>
+                  <span className="text-sun">✦</span>
+                </span>
+              ))}
+            </span>
+          ))}
         </div>
       </section>
 
       {/* PARTNERS */}
       {partners.length > 0 && (
-        <section aria-label="Partners" className="overflow-hidden border-b border-[#E3EDF8] bg-white">
-          <div className="flex w-max animate-marquee gap-10 py-4 font-display text-[15px] font-bold text-[#6A7E99] hover:[animation-play-state:paused] sm:gap-14 sm:py-[22px] sm:text-lg">
+        <section aria-label="Partners" className="overflow-hidden border-y border-[#E3EDF8] bg-basil-mist">
+          <div className="flex w-max animate-marquee gap-10 py-4 font-display text-[14px] font-bold text-[#6A7E99] hover:[animation-play-state:paused] sm:gap-14 sm:py-5 sm:text-base">
             {[...partners, ...partners].map((p, i) => (
-              <span key={i} className="flex h-10 items-center sm:h-12" aria-hidden={i >= partners.length}>
-                {p.logo_url ? <img src={p.logo_url} alt={p.name} className="h-9 max-w-[140px] object-contain grayscale transition hover:grayscale-0 sm:h-12" loading="lazy" /> : p.name}
+              <span key={i} className="flex h-10 items-center" aria-hidden={i >= partners.length}>
+                {p.logo_url ? <img src={p.logo_url} alt={p.name} className="h-9 max-w-[140px] object-contain grayscale transition hover:grayscale-0" loading="lazy" /> : p.name}
               </span>
             ))}
           </div>
@@ -160,18 +177,6 @@ export default function Home() {
           </div>
         </section>
       )}
-
-      {/* STATS */}
-      <section className="bg-basil-deep text-white">
-        <div className="container-bm grid grid-cols-4 gap-2 py-6 text-center sm:gap-5 sm:py-12 sm:text-left">
-          {s.stats.slice(0, 4).map((st) => (
-            <div key={st.label}>
-              <div className="font-display text-[22px] font-extrabold sm:text-5xl"><CountUp to={st.value} suffix={st.suffix} /></div>
-              <div className="text-[11px] leading-tight text-basil-haze sm:text-base">{st.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* TESTIMONIALS — swipe on phones */}
       {testimonials.length > 0 && (

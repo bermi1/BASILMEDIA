@@ -43,6 +43,7 @@ export default function FindMe() {
               )}
               {g && !g.face_search_enabled && <p className="m-0 text-sm text-basil-haze">Selfie search is not switched on for this gallery — browse the collections instead.</p>}
               <div className="flex items-center gap-2 text-sm text-basil-haze"><Lock size={14} /> Matching happens on your device. No selfie is uploaded or stored.</div>
+              <div className="flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-bold tracking-wide text-white"><span className="h-1.5 w-1.5 rounded-full bg-sun shadow-[0_0_10px_#F5B942]" />Powered by Bermi AI</div>
             </motion.div>
           )}
           {step === 'consent' && g && (
@@ -64,7 +65,7 @@ export default function FindMe() {
 
         {step === 'landing' && !g && open.length > 0 && (
           <div className="mt-14">
-            <h2 className="mb-4 text-xl font-extrabold">Recent event galleries</h2>
+            <h2 className="mb-4 text-xl font-extrabold">Event galleries · tap yours</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {open.map((x, i) => (
                 <Link key={x.id} to={`/g/${x.slug}`} className="group no-underline">

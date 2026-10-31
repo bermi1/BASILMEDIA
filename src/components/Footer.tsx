@@ -96,7 +96,7 @@ export function Footer() {
       </div>
       <div aria-hidden="true" className="outline-word container-bm hidden overflow-hidden whitespace-nowrap font-display text-[clamp(64px,12vw,170px)] font-extrabold leading-[0.85] tracking-[-0.03em] md:block">BASIL MEDIA</div>
       <div className="container-bm flex flex-wrap justify-between gap-x-4 gap-y-2 border-t border-basil-haze/15 py-4 text-xs sm:text-[13px]">
-        <span>© {new Date().getFullYear()} Basil Media · Dar es Salaam</span>
+        <span>© {new Date().getFullYear()} Basil Media · Dar es Salaam · <span className="text-basil-haze/80">Designed &amp; powered by <b className="text-white">Bermi Techs</b></span></span>
         <span className="flex flex-wrap gap-4">
           <Link to="/privacy" className="text-basil-haze">{t('privacy')}</Link>
           <Link to="/privacy/face-search" className="text-basil-haze">{t('faceData')}</Link>

@@ -23,6 +23,8 @@ export default {
           frost: '#D6E8FA',
         },
         gold: '#C9A84C',
+        // Second brand accent: warm "sun" gold, used sparingly for highlights and live moments.
+        sun: { DEFAULT: '#F5B942', soft: '#FDE7B0', deep: '#B7791F' },
       },
       fontFamily: {
         display: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],

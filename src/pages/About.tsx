@@ -31,15 +31,23 @@ export default function About() {
       <section className="section bg-basil-mist">
         <div className="container-bm">
           <h2 className="h-section m-0 mb-5">{t('team')}</h2>
-          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-[repeat(auto-fit,minmax(200px,1fr))] sm:gap-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {team.map((m, i) => (
               <Reveal key={m.id} delay={i * 0.05}>
-                <div className="group overflow-hidden rounded-[18px] border border-basil-line bg-white sm:rounded-3xl">
-                  <div className="relative flex aspect-square items-center justify-center overflow-hidden font-display text-3xl font-extrabold text-basil sm:text-5xl" style={{ background: 'linear-gradient(160deg, #CFE3F7, #EAF3FC)' }}>
-                    {m.photo_url ? <img src={m.photo_url} alt={m.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" /> : m.name[0]}
-                  </div>
-                  <div className="px-2.5 py-2.5 sm:px-[18px] sm:py-4"><b className="block truncate text-[13px] sm:text-[17px]">{m.name}</b><div className="mt-0.5 line-clamp-2 text-[11px] leading-tight text-basil-muted sm:text-sm">{m.role}</div>{m.bio && <p className="mb-0 mt-2 hidden text-sm text-basil-muted sm:block">{m.bio}</p>}</div>
-                </div>
+                <figure tabIndex={0} className="group relative m-0 aspect-[3/4] overflow-hidden rounded-[22px] outline-none" style={{ background: 'linear-gradient(160deg, #2B86DA, #0A2F5C)' }}>
+                  {m.photo_url ? (
+                    <img src={m.photo_url} alt={m.name} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105 group-focus:scale-105" />
+                  ) : (
+                    <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center font-display text-[64px] font-extrabold text-white/25">{m.name[0]}</span>
+                  )}
+                  {/* phones: name always on a blue fade; desktop: full blue overlay on hover/focus */}
+                  <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-basil/95 via-basil/60 to-transparent p-3 pt-10 text-white transition duration-300 sm:translate-y-full sm:p-5 sm:pt-5 sm:opacity-0 sm:group-hover:translate-y-0 sm:group-hover:opacity-100 sm:group-focus:translate-y-0 sm:group-focus:opacity-100">
+                    <b className="block font-display text-[15px] leading-tight sm:text-xl">{m.name}</b>
+                    <span className="block text-[12px] text-basil-frost sm:text-sm">{m.role}</span>
+                    {m.bio && <span className="mt-2 hidden text-sm leading-snug text-white/90 sm:line-clamp-3">{m.bio}</span>}
+                  </figcaption>
+                  <span aria-hidden="true" className="pointer-events-none absolute inset-0 hidden bg-basil/35 opacity-0 mix-blend-multiply transition duration-300 group-hover:opacity-100 sm:block" />
+                </figure>
               </Reveal>
             ))}
           </div>

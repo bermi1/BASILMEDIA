@@ -113,7 +113,7 @@ create table public.bookings (
   contact text not null check (char_length(contact) between 5 and 160),
   service text not null default '' check (char_length(service) <= 200),
   preferred_date date,
-  message text not null default '' check (char_length(message) <= 4000),
+  message text not null default '' check (char_length(message) <= 50000), -- full inquiries welcome
   source text not null default 'booking' check (source in ('booking', 'contact', 'gallery-selection', 'find-me')),
   status text not null default 'new' check (status in ('new', 'contacted', 'won', 'lost', 'archived')),
   created_at timestamptz not null default now()

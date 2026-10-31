@@ -81,7 +81,7 @@ export default function Contact() {
               <a href={directions} target="_blank" rel="noreferrer" className="btn-primary h-11 min-h-0 px-4 text-sm">Go</a>
             </div>
           </div>
-          <div className="flex items-center justify-between gap-3 rounded-[22px] border border-basil-line bg-white p-4">
+          <div className="flex flex-col gap-3 rounded-[22px] border border-basil-line bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
             <b className="text-sm">Follow our work</b>
             <SocialRow dark={false} />
           </div>
