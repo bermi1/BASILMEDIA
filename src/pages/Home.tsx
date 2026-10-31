@@ -81,9 +81,9 @@ export default function Home() {
               <div key={r} className="overflow-hidden">
                 <ul className={`m-0 flex w-max list-none items-center gap-3 p-0 hover:[animation-play-state:paused] ${r ? 'animate-marquee-reverse' : 'animate-marquee'}`}>
                   {[...row, ...row, ...row, ...row].map((p, i) => (
-                    <li key={i} aria-hidden={i >= row.length} className="flex h-14 shrink-0 items-center justify-center rounded-2xl border border-basil-line bg-white px-5 sm:h-16 sm:px-6">
+                    <li key={i} aria-hidden={i >= row.length} className="flex h-16 shrink-0 items-center justify-center rounded-2xl border border-basil-line bg-white px-5 sm:h-[76px] sm:px-6">
                       {p.logo_url
-                        ? <img src={p.logo_url} alt={p.name} loading="lazy" className="h-9 max-w-[150px] object-contain sm:h-10" />
+                        ? <img src={p.logo_url} alt={p.name} loading="lazy" className="h-11 max-w-[160px] object-contain sm:h-[54px]" />
                         : <span className="whitespace-nowrap font-display text-[14px] font-bold text-basil-deep sm:text-[15px]">{p.name}</span>}
                     </li>
                   ))}

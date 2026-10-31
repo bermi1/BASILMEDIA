@@ -1,4 +1,4 @@
--- Basil Media OS · complete database setup (generated from 24 migrations).
+-- Basil Media OS · complete database setup (generated from 25 migrations).
 -- Paste into Supabase → SQL Editor on an EMPTY project and press Run.
 
 -- ===================== 0001_foundation.sql =====================
@@ -4288,4 +4288,20 @@ where link = '' and (title, starts_on) in (
 -- ===================== 0025_contact_number.sql =====================
 -- Basil Media OS · 0025 the real contact number for calls and WhatsApp.
 update public.site_settings set phone = '+255 625 199 652', whatsapp = '+255625199652' where id = 'site';
+
+-- ===================== 0026_partner_logos.sql =====================
+-- Basil Media OS · 0026 official partner logos (from each organisation's own website), only where none is set.
+update public.partners p set logo_url = v.logo
+from (values
+  ('Muhimbili National Hospital', '/img/partners/muhimbili-national-hospital.png'),
+  ('MUHAS', '/img/partners/muhas.png'),
+  ('Aga Khan Hospital, Dar es Salaam', '/img/partners/aga-khan-hospital.svg'),
+  ('CRDB Bank Foundation', '/img/partners/crdb-bank-foundation.png'),
+  ('Amref Health Africa', '/img/partners/amref-health-africa.png'),
+  ('Muhimbili Orthopaedic Institute (MOI)', '/img/partners/moi.png'),
+  ('Kairuki University', '/img/partners/kairuki-university.png'),
+  ('Tanzania Health Summit', '/img/partners/tanzania-health-summit.png'),
+  ('CardioTan · JKCI', '/img/partners/jkci.png')
+) as v(name, logo)
+where p.name = v.name and coalesce(p.logo_url, '') = '';
 

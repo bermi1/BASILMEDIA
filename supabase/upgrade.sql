@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -1012,4 +1012,20 @@ where link = '' and (title, starts_on) in (
 -- ===================== 0025_contact_number.sql =====================
 -- Basil Media OS · 0025 the real contact number for calls and WhatsApp.
 update public.site_settings set phone = '+255 625 199 652', whatsapp = '+255625199652' where id = 'site';
+
+-- ===================== 0026_partner_logos.sql =====================
+-- Basil Media OS · 0026 official partner logos (from each organisation's own website), only where none is set.
+update public.partners p set logo_url = v.logo
+from (values
+  ('Muhimbili National Hospital', '/img/partners/muhimbili-national-hospital.png'),
+  ('MUHAS', '/img/partners/muhas.png'),
+  ('Aga Khan Hospital, Dar es Salaam', '/img/partners/aga-khan-hospital.svg'),
+  ('CRDB Bank Foundation', '/img/partners/crdb-bank-foundation.png'),
+  ('Amref Health Africa', '/img/partners/amref-health-africa.png'),
+  ('Muhimbili Orthopaedic Institute (MOI)', '/img/partners/moi.png'),
+  ('Kairuki University', '/img/partners/kairuki-university.png'),
+  ('Tanzania Health Summit', '/img/partners/tanzania-health-summit.png'),
+  ('CardioTan · JKCI', '/img/partners/jkci.png')
+) as v(name, logo)
+where p.name = v.name and coalesce(p.logo_url, '') = '';
 
