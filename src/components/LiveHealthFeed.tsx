@@ -1,7 +1,7 @@
 // Live health news from WHO, Africa CDC, ReliefWeb, AllAfrica and more — fetched daily, sorted by zone,
 // outbreaks and emergencies flagged as critical. Headlines link to the original source.
 import { useEffect, useState } from 'react';
-import { AlertTriangle, ExternalLink, Radio } from 'lucide-react';
+import { AlertTriangle, ExternalLink, Info, Radio } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
 interface Item { id: string; image_url: string; title: string; summary: string; url: string; zone: string; source_name: string; published_at: string; critical: boolean; critical_reason: string }
@@ -12,6 +12,8 @@ const ZONES = [
   { key: 'east_africa', label: 'East Africa' },
   { key: 'tanzania', label: 'Tanzania' },
 ] as const;
+
+const host = (u: string) => { try { return new URL(u).host.replace(/^www\./, ''); } catch { return ''; } };
 
 function ago(iso: string) {
   const m = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
@@ -26,6 +28,10 @@ export function LiveHealthFeed() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [zone, setZone] = useState<(typeof ZONES)[number]['key']>('all');
   const [more, setMore] = useState(false);
+  const [sources, setSources] = useState<{ name: string; url: string }[]>([]);
+  useEffect(() => {
+    supabase.from('news_sources').select('name,url').eq('enabled', true).order('name').then(({ data }) => setSources((data ?? []) as { name: string; url: string }[]));
+  }, []);
   useEffect(() => {
     supabase.from('health_feed_items').select('id,image_url,title,summary,url,zone,source_name,published_at,critical,critical_reason').order('published_at', { ascending: false }).limit(120)
       .then(({ data }) => setItems((data ?? []) as Item[]));
@@ -53,7 +59,7 @@ export function LiveHealthFeed() {
               <span className="min-w-0">
                 <span className="block text-[11px] font-bold uppercase tracking-wide">Critical · {c.critical_reason}</span>
                 <b className="line-clamp-2 block text-sm leading-snug">{c.title}</b>
-                <span className="text-xs opacity-80">{c.source_name} · {ago(c.published_at)}</span>
+                <span className="text-xs opacity-80">Source: <b>{c.source_name}</b> · {host(c.url)} · {ago(c.published_at)}</span>
               </span>
             </a>
           ))}
@@ -84,7 +90,7 @@ export function LiveHealthFeed() {
                 <span className="min-w-0 flex-1">
                   <b className="line-clamp-2 block text-[15px] leading-snug group-hover:text-basil">{i.critical && <AlertTriangle size={14} className="mr-1 inline align-[-2px] text-red-600" aria-label="Critical" />}{i.title}</b>
                   {i.summary && <span className="mt-0.5 hidden text-[13px] leading-snug text-basil-muted sm:line-clamp-2">{i.summary}</span>}
-                  <span className="text-xs text-basil-muted">{i.source_name} · {ago(i.published_at)}</span>
+                  <span className="text-xs text-basil-muted">Source: <b className="font-semibold text-basil-deep">{i.source_name}</b> · {host(i.url)} · {ago(i.published_at)}</span>
                 </span>
                 <ExternalLink size={15} className="mt-1 shrink-0 text-basil-muted" />
               </a>
@@ -93,6 +99,20 @@ export function LiveHealthFeed() {
         </ul>
       )}
       {list.length > shown.length && <button type="button" onClick={() => setMore(true)} className="btn-outline mt-3 w-full">Show more</button>}
+
+      {/* How this works — sources, rights and the automatic "critical" label, stated plainly */}
+      <details className="group mt-4 rounded-2xl border border-basil-line bg-basil-mist/60 p-4 text-[13.5px] leading-relaxed text-[#33465F]">
+        <summary className="flex cursor-pointer list-none items-center gap-2 font-bold text-basil-deep"><Info size={16} />How this news feed works and where it comes from</summary>
+        <div className="mt-3 flex flex-col gap-2">
+          <p className="m-0">Basil Media does not write these stories. Once a day our system collects headlines from the public news feeds of the organisations listed below and sorts them by region (World, Africa, East Africa, Tanzania) from the places each story mentions.</p>
+          <p className="m-0">We show only the headline, a short summary and picture published by the source itself, the source's name and a link to the full article. All rights remain with the original publisher — please read and cite the original.</p>
+          <p className="m-0">The <b>Critical</b> label is added automatically when a story mentions an outbreak, a public-health emergency or a medicine-safety alert. It can be wrong, and nothing here is medical advice — follow the Ministry of Health and your clinician.</p>
+          <p className="m-0">See an error, or are you a publisher who wants your content removed? Email <a href="mailto:hello@basilmedia.co.tz">hello@basilmedia.co.tz</a> and we will act within one working day.</p>
+          {sources.length > 0 && (
+            <p className="m-0"><b>Sources:</b> {sources.map((x, k) => <span key={x.url}>{k > 0 && ' · '}<a href={'https://' + host(x.url)} target="_blank" rel="noreferrer">{x.name}</a></span>)}</p>
+          )}
+        </div>
+      </details>
     </section>
   );
 }

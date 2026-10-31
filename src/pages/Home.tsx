@@ -5,10 +5,10 @@ import { ArrowRight, Briefcase, CalendarDays, Camera, ChevronDown, HeartPulse, L
 import { useRows, useSettings } from '@/hooks/useData';
 import { useSeo } from '@/hooks/useSeo';
 import { useI18n } from '@/lib/i18n';
-import { videoLabel, videoOrientation, youtubeThumb, type Orientation } from '@/lib/video';
+import { parseVideo, videoLabel, videoOrientation, youtubeThumb, type Orientation } from '@/lib/video';
 import { HeroSlides } from '@/components/HeroSlides';
 import { gradient } from '@/components/Media';
-import { VideoEmbed } from '@/components/VideoEmbed';
+import { InstagramEmbed, VideoEmbed } from '@/components/VideoEmbed';
 import { Reveal } from '@/components/Reveal';
 import { BookingForm } from '@/components/BookingForm';
 import { Play } from '@/components/icons';
@@ -44,9 +44,10 @@ export default function Home() {
   const photos = s.hero_images?.length ? s.hero_images : s.hero_image_url ? [s.hero_image_url] : [];
   // Work at a glance: the reels first, then featured projects.
   const glance = [
-    ...highlights.map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels', shape: videoOrientation(h.video_url, h.orientation) })),
+    ...highlights.filter((h) => parseVideo(h.video_url).kind !== 'instagram').map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels', shape: videoOrientation(h.video_url, h.orientation) })),
     ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string, shape: videoOrientation(p.video_url, p.orientation) })),
   ];
+  const reels = highlights.filter((h) => parseVideo(h.video_url).kind === 'instagram');
   const [cat, setCat] = useState('All');
   const cats = ['All', ...Array.from(new Set(glance.map((g) => g.cat)))];
   const shown = glance.filter((g) => cat === 'All' || g.cat === cat).slice(0, 12);
@@ -158,6 +159,14 @@ export default function Home() {
             {/* Justified rows (like a photo library): reels and films share each row at one height, every row
                 is filled edge to edge, nothing is cropped and no row is left half empty. */}
             <JustifiedRows items={shown} />
+            {reels.length > 0 && (
+              <div className="mt-8">
+                <div className="mb-3 flex items-center justify-between"><b className="text-[15px] text-white">From Instagram</b><a href="https://www.instagram.com/basilmedia_tz/" target="_blank" rel="noreferrer" className="text-sm font-bold text-basil-sky no-underline hover:text-white">@basilmedia_tz</a></div>
+                <div className="snap-row items-start pb-1">
+                  {reels.map((r) => <div key={r.id} className="w-[78vw] max-w-[326px] shrink-0 snap-start"><InstagramEmbed src={(parseVideo(r.video_url) as { embed: string }).embed} title={r.title} /></div>)}
+                </div>
+              </div>
+            )}
           </div>
         </section>
       )}
@@ -298,7 +307,7 @@ function GlanceCard({ title, url, poster, sub, index, shape }: { title: string; 
   return (
     <div className="h-full w-full">
       {on && url ? (
-        <div className="h-full overflow-hidden rounded-2xl shadow-card"><VideoEmbed url={url} title={title} autoPlay aspect={aspect} /></div>
+        <div className="h-full overflow-hidden rounded-2xl shadow-card [&>div]:h-full"><VideoEmbed url={url} title={title} autoPlay aspect={aspect} /></div>
       ) : (
         <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} title={title} className="group relative block h-full w-full overflow-hidden rounded-2xl border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:ring-white/40" style={{ background: gradient(index) }}>
           {poster && <img src={poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-top" />}

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, CalendarPlus } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useRows } from '@/hooks/useData';
 import { LiveHealthFeed } from '@/components/LiveHealthFeed';
 import { useSeo } from '@/hooks/useSeo';
@@ -149,11 +150,11 @@ export function SubscribeSection({ source = 'health-news', standalone }: { sourc
       <div className={`container-bm grid items-center gap-6 pb-10 sm:gap-10 sm:pb-16 lg:grid-cols-[1fr_1.2fr] ${standalone ? 'pt-24 sm:pt-32' : 'pt-10 sm:pt-16'}`}>
         <div>
           <div className="font-mono text-xs tracking-[0.2em] text-basil-haze">SUBSCRIBE · JIUNGE</div>
-          <h2 className="my-2 text-[clamp(22px,3.4vw,42px)] font-bold leading-[1.1] sm:my-3">Your specialty.<br />Your language.<br /><span className="text-basil-sky">Your channel.</span></h2>
-          <p className="m-0 max-w-[460px] text-[15px] text-basil-frost sm:text-lg">Pick the specialties you care about and we only send what is relevant. One brief a week, plus urgent drug alerts when they matter.</p>
+          <h2 className="my-2 text-[clamp(22px,3.4vw,42px)] font-bold leading-[1.1] sm:my-3">Health news and events,<br /><span className="text-basil-sky">on your phone.</span></h2>
+          <p className="m-0 max-w-[460px] text-[15px] text-basil-frost sm:text-lg">The week's health news from Tanzania, Africa and the world, upcoming health events, and urgent alerts when they matter.</p>
           <ul className="mt-4 hidden list-none flex-col gap-2.5 p-0 sm:mt-6 sm:flex">
-            {['Free for health professionals', 'Stop anytime — reply STOP', 'Your data stays in line with the PDPA 2022'].map((x) => (
-              <li key={x} className="flex items-center gap-2.5"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-sm">✓</span>{x}</li>
+            {['Free for health workers', 'Stop anytime — reply STOP', 'Your data stays in line with the PDPA 2022'].map((x) => (
+              <li key={x} className="flex items-center gap-2.5"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20"><Check size={14} /></span>{x}</li>
             ))}
           </ul>
         </div>

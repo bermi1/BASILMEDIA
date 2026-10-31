@@ -1,4 +1,4 @@
--- Basil Media OS · complete database setup (generated from 22 migrations).
+-- Basil Media OS · complete database setup (generated from 24 migrations).
 -- Paste into Supabase → SQL Editor on an EMPTY project and press Run.
 
 -- ===================== 0001_foundation.sql =====================
@@ -4244,20 +4244,23 @@ alter table public.health_feed_items add column if not exists image_url text not
 
 -- ===================== 0022_instagram_reels.sql =====================
 -- Basil Media OS · 0022 current work from Instagram (@basilmedia_tz) on the homepage "work at a glance".
--- Covers are our own photos until a cover is uploaded in Website CMS → Highlights (Instagram does not
--- allow its thumbnails to be downloaded). The empty sample reels from 0018 are removed.
+-- Reels play with Instagram's own player and cover (no thumbnail of ours). The empty sample reels from 0018
+-- are removed.
 delete from public.highlights where id::text like 'b5a5e000-%';
 insert into public.highlights (title, video_url, thumbnail_url, sort_order, published, orientation)
 select v.title, v.url, v.cover, v.ord, true, 'portrait' from (values
-  ('CEO Forum · highlights', 'https://www.instagram.com/reel/Ddb4tAJozCz/', '/img/team/basil-media-team.jpg', 1),
-  ('CRDB Bank Marathon · video coverage', 'https://www.instagram.com/reel/DcJyeE6xOhp/', '/img/services/event-coverage-team.jpg', 2),
-  ('In the edit suite · the team at work', 'https://www.instagram.com/reel/DeHpkoWo32X/', '/img/services/editing-studio.jpg', 3),
-  ('Basil Media · latest reel', 'https://www.instagram.com/reel/DavwqtPRGqU/', '/img/team/crew-on-set.jpg', 4),
-  ('Basil Media · on location', 'https://www.instagram.com/reel/De3V9GHIK1m/', '/img/services/video-crew-conference.jpg', 5),
-  ('Basil Media · behind the camera', 'https://www.instagram.com/reel/DeujlQ2xqsY/', '/img/services/photographer-event.jpg', 6),
-  ('Basil Media · health story', 'https://www.instagram.com/reel/DePq1PqRqCE/', '/img/services/event-coverage-team.jpg', 7)
+  ('CEO Forum · highlights', 'https://www.instagram.com/reel/Ddb4tAJozCz/', '', 1),
+  ('CRDB Bank Marathon · video coverage', 'https://www.instagram.com/reel/DcJyeE6xOhp/', '', 2),
+  ('In the edit suite · the team at work', 'https://www.instagram.com/reel/DeHpkoWo32X/', '', 3),
+  ('Basil Media · latest reel', 'https://www.instagram.com/reel/DavwqtPRGqU/', '', 4),
+  ('Basil Media · on location', 'https://www.instagram.com/reel/De3V9GHIK1m/', '', 5),
+  ('Basil Media · behind the camera', 'https://www.instagram.com/reel/DeujlQ2xqsY/', '', 6),
+  ('Basil Media · health story', 'https://www.instagram.com/reel/DePq1PqRqCE/', '', 7)
 ) as v(title, url, cover, ord)
 where not exists (select 1 from public.highlights h where h.video_url = v.url);
+
+-- Clear the team-photo covers an earlier version of this file set on Instagram reels.
+update public.highlights set thumbnail_url = '' where video_url like 'https://www.instagram.com/%' and thumbnail_url like '/img/%';
 
 -- ===================== 0023_hero_video.sql =====================
 -- Basil Media OS · 0023 homepage hero video and the team photo as the About picture.
@@ -4267,4 +4270,22 @@ update public.site_settings set
   hero_video_url = case when coalesce(hero_video_url, '') in ('', '/media/hero/basil-hero.mp4') then '/media/hero/basil-hero-reel.mp4' else hero_video_url end,
   about_image_url = case when coalesce(about_image_url, '') in ('', '/media/basil-media-studio-btv.webp') then '/img/team/basil-media-team.jpg' else about_image_url end
 where id = 'site';
+
+-- ===================== 0024_health_events.sql =====================
+-- Basil Media OS · 0024 upcoming health events shown on the Subscribe page (admins add more in Website CMS → Events).
+insert into public.events (title, venue, starts_on, cpd, sector, link, published)
+select '16th African Academy of Sciences Biennial Scientific Conference', 'JNICC, Dar es Salaam', date '2026-12-15', '', 'Health',
+       'https://www.udsm.ac.tz/sites/default/files/2026-07/16AAS%20Conference.pdf', true
+where not exists (select 1 from public.events where title like '16th African Academy of Sciences%');
+
+-- The starter placeholder events (0003) were not real announcements: hide them (still editable in the CMS).
+update public.events set published = false
+where link = '' and (title, starts_on) in (
+  ('Tanzania Health Summit', date '2026-11-14'), ('Cardiology update for clinicians', date '2026-11-22'),
+  ('East African Paediatrics Congress', date '2026-12-10'), ('Pharmacy practice workshop', date '2026-12-25'),
+  ('Nursing leadership forum', date '2027-01-09'));
+
+-- ===================== 0025_contact_number.sql =====================
+-- Basil Media OS · 0025 the real contact number for calls and WhatsApp.
+update public.site_settings set phone = '+255 625 199 652', whatsapp = '+255625199652' where id = 'site';
 

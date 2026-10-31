@@ -34,8 +34,8 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   vision: 'To be East Africa’s most trusted media house: the studio institutions call when the moment matters.',
   company_profile_url: '',
   contact_email: 'hello@basilmedia.co.tz',
-  phone: '+255 700 000 000',
-  whatsapp: '+255700000000',
+  phone: '+255 625 199 652',
+  whatsapp: '+255625199652',
   address: '2 Mataka Street, Upanga, Dar es Salaam, Tanzania',
   map_embed_url: '',
   footer_about:
