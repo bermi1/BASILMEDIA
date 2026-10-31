@@ -1,0 +1,9 @@
+{
+  "name": "Basil Media OS",
+  "short_name": "Basil Media",
+  "start_url": "/os",
+  "display": "standalone",
+  "background_color": "#061E3D",
+  "theme_color": "#0A2F5C",
+  "icons": [{ "src": "/app-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
