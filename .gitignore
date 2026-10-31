@@ -7,3 +7,4 @@ dist
 supabase/.temp
 .claude/worktrees/
 tsconfig.tsbuildinfo
+accounts.local.txt
