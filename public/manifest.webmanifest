@@ -1,7 +1,8 @@
 {
   "name": "Basil Media OS",
+  "description": "Run the office. Reach the audience. Tell the story.",
   "short_name": "Basil Media",
-  "start_url": "/os",
+  "start_url": "/app",
   "display": "standalone",
   "background_color": "#061E3D",
   "theme_color": "#0A2F5C",
