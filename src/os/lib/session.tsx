@@ -2,6 +2,7 @@
 // (and as a named demo person) to try every portal and phone app; with Supabase the real user is used.
 import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
 import { useAuth } from '@/lib/auth';
+import './shared-seed';
 import { isDemo } from '@/lib/supabase';
 import type { AppRole } from '@/lib/types';
 
