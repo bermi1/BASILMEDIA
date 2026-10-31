@@ -37,22 +37,26 @@ export default function Home() {
   const photos = s.hero_images?.length ? s.hero_images : s.hero_image_url ? [s.hero_image_url] : [];
   // Work at a glance: the reels first, then featured projects.
   const glance = [
-    ...highlights.map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) })),
-    ...projects.filter((p) => p.featured).map((p) => ({ id: p.id, title: p.title, url: p.video_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category })),
-  ].slice(0, 10);
+    ...highlights.map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels' })),
+    ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string })),
+  ];
+  const [cat, setCat] = useState('All');
+  const cats = ['All', ...Array.from(new Set(glance.map((g) => g.cat)))];
+  const shown = glance.filter((g) => cat === 'All' || g.cat === cat).slice(0, 12);
+  const { rows: news } = useRows('news_stories', { publishedOnly: true, limit: 3 });
 
   return (
     <>
       {/* HERO — the picture/video speaks; few words */}
-      <section className="relative isolate flex min-h-[54svh] items-end overflow-hidden text-white sm:min-h-[78vh]" style={{ background: 'radial-gradient(ellipse at 15% 20%, rgba(124,192,245,0.35), transparent 50%), radial-gradient(ellipse at 90% 85%, rgba(245,185,66,0.2), transparent 45%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
+      <section className="relative isolate flex min-h-[60svh] items-end justify-center overflow-hidden text-center text-white sm:min-h-[80vh]" style={{ background: 'radial-gradient(ellipse at 15% 20%, rgba(124,192,245,0.35), transparent 50%), radial-gradient(ellipse at 90% 85%, rgba(245,185,66,0.2), transparent 45%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
         <HeroSlides images={photos} video={s.hero_video_url} />
         <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,30,61,0.45) 0%, rgba(6,30,61,0.1) 35%, rgba(6,30,61,0.85) 78%, rgba(6,30,61,0.98) 100%)' }} />
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="container-bm relative pb-7 pt-24 sm:pb-20">
-          <h1 className="m-0 max-w-[760px] text-[clamp(26px,5vw,64px)] font-bold leading-[1.08] tracking-[-0.025em]">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="container-bm relative flex flex-col items-center pb-8 pt-24 sm:pb-16">
+          <h1 className="m-0 max-w-[640px] text-[clamp(22px,3.6vw,44px)] font-bold leading-[1.15] tracking-[-0.02em]">
             {s.tagline} <span className="text-glow">{s.tagline_highlight}</span>
           </h1>
-          {s.hero_subtitle && <p className="m-0 mt-2.5 max-w-[480px] text-[14px] text-basil-frost sm:mt-4 sm:text-lg">{s.hero_subtitle}</p>}
-          <div className="mt-5 flex flex-wrap gap-2 sm:mt-7 sm:gap-3">
+          {s.hero_subtitle && <p className="m-0 mt-2 max-w-[440px] text-[13.5px] text-basil-frost sm:mt-3 sm:text-base">{s.hero_subtitle}</p>}
+          <div className="mt-5 flex flex-wrap justify-center gap-2 sm:mt-6 sm:gap-3">
             <Link to="/#book" className="group flex h-11 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-5 text-[14px] font-semibold text-basil no-underline hover:bg-basil-ice sm:h-12 sm:px-6 sm:text-[15px]">{t('book')}<ArrowRight size={16} className="transition group-hover:translate-x-1" /></Link>
             <Link to="/our-work" className="flex h-11 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/35 bg-white/10 px-5 text-[14px] font-semibold text-white no-underline backdrop-blur hover:bg-white/20 hover:text-white sm:h-12 sm:px-6 sm:text-[15px]"><Play size={15} color="#FFFFFF" />{t('viewWork')}</Link>
           </div>
@@ -99,8 +103,13 @@ export default function Home() {
         <section className="section bg-basil-mist">
           <div className="container-bm">
             <Head kicker="OUR WORK AT A GLANCE" title="Swipe through the stories" to="/our-work" link="All work" />
+            <div role="tablist" aria-label="Filter work" className="scrollbar-none -mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+              {cats.map((c) => (
+                <button key={c} type="button" role="tab" aria-selected={cat === c} onClick={() => setCat(c)} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium transition ${cat === c ? 'border-0 bg-basil text-white' : 'border border-basil-edge bg-white text-basil-deep'}`}>{c}</button>
+              ))}
+            </div>
             <div className="snap-row pb-1">
-              {glance.map((g, i) => <GlanceCard key={g.id} {...g} index={i} />)}
+              {shown.map((g, i) => <GlanceCard key={g.id} {...g} index={i} />)}
             </div>
           </div>
         </section>
@@ -134,6 +143,23 @@ export default function Home() {
                 <blockquote className="mx-0 my-2 line-clamp-4 text-[13.5px] leading-snug sm:text-[15px] sm:leading-relaxed">“{x.quote}”</blockquote>
                 <figcaption className="mt-auto text-[12.5px] font-bold text-basil-muted sm:text-sm">{x.company}</figcaption>
               </figure>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {news.length > 0 && (
+        <section className="container-bm pb-10 sm:pb-16">
+          <Head kicker="BASIL HEALTH BRIEF" title="Latest from the newsroom" to="/health-news" link="All news" />
+          <div className="snap-row sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible">
+            {news.map((n, i) => (
+              <Link key={n.id} to={`/health-news/${n.id}`} className="group flex w-[72vw] max-w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-basil-line bg-white text-basil-ink no-underline transition hover:shadow-card hover:text-basil-ink sm:w-auto sm:max-w-none">
+                <div className="aspect-[16/9] w-full" style={{ background: n.image_url ? `center/cover url(${n.image_url})` : gradient(i) }} />
+                <div className="flex flex-1 flex-col gap-1 p-3.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-basil">{n.tag}</span>
+                  <b className="line-clamp-2 text-[14px] leading-snug group-hover:text-basil">{n.title}</b>
+                </div>
+              </Link>
             ))}
           </div>
         </section>

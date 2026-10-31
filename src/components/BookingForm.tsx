@@ -1,6 +1,7 @@
+// Compact booking card: name + phone, tap a service, write the full inquiry, send.
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2, Send } from 'lucide-react';
 import { submit } from '@/lib/db';
 import { isEmail, normaliseTzPhone } from '@/lib/format';
 import { useI18n } from '@/lib/i18n';
@@ -10,61 +11,59 @@ export function BookingForm() {
   const { t } = useI18n();
   const { rows: services } = useRows('services', { publishedOnly: true });
   const [f, setF] = useState({ name: '', contact: '', service: '', date: '', message: '' });
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [err, setErr] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'sent'>('idle');
-  const [fail, setFail] = useState('');
   const set = (k: keyof typeof f) => (e: { target: { value: string } }) => setF({ ...f, [k]: e.target.value });
 
   const send = async () => {
-    const e: Record<string, string> = {};
-    if (f.name.trim().length < 2) e.name = 'Please enter your name';
-    if (!isEmail(f.contact) && !normaliseTzPhone(f.contact)) e.contact = 'Email or Tanzanian phone';
-    setErrors(e);
-    if (Object.keys(e).length) return;
+    if (f.name.trim().length < 2) return setErr('Please add your name.');
+    if (!isEmail(f.contact) && !normaliseTzPhone(f.contact)) return setErr('Add a phone number (07…) or an email.');
+    setErr('');
     setState('sending');
-    setFail('');
     try {
       await submit('bookings', {
-        name: f.name.trim(), contact: normaliseTzPhone(f.contact) ?? f.contact.trim(), service: f.service || services[0]?.title || '',
+        name: f.name.trim(), contact: normaliseTzPhone(f.contact) ?? f.contact.trim(), service: f.service || 'Not sure yet',
         preferred_date: f.date || null, message: f.message.trim(), source: 'booking', status: 'new',
       });
       setState('sent');
-    } catch (err) {
-      setFail((err as Error).message);
+    } catch (e) {
+      setErr((e as Error).message);
       setState('idle');
     }
   };
 
-  const label = 'flex flex-col gap-1.5 text-[13px] text-basil-frost';
-  const err = (k: string) => errors[k] && <span className="text-[12px] font-bold text-amber-200">{errors[k]}</span>;
-
+  const input = 'h-11 w-full rounded-xl border-0 bg-white/95 px-3.5 text-[14.5px] text-basil-ink outline-none placeholder:text-basil-muted/70 focus:ring-2 focus:ring-basil-sky';
   return (
-    <div className="relative overflow-hidden rounded-[26px] p-5 text-white sm:rounded-[30px] sm:p-8" style={{ background: 'linear-gradient(140deg, #0F6EC2, #0A2F5C)' }}>
-      <h2 className="m-0 mb-1 text-[26px] font-extrabold sm:text-[32px]">{t('bookTitle')}</h2>
-      <p className="m-0 mb-4 text-sm text-basil-frost sm:mb-[22px] sm:text-base">{t('bookSub')}</p>
+    <div className="mx-auto max-w-[720px] rounded-[24px] p-5 text-white sm:p-7" style={{ background: 'linear-gradient(140deg, #0F6EC2, #0A2F5C)' }}>
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div><h2 className="m-0 text-[20px] font-bold sm:text-2xl">{t('bookTitle')}</h2><p className="m-0 mt-0.5 text-[13px] text-basil-frost">{t('bookSub')}</p></div>
+      </div>
       <AnimatePresence mode="wait">
-        {state !== 'sent' ? (
-          <motion.form key="form" exit={{ opacity: 0, y: -10 }} onSubmit={(e) => (e.preventDefault(), send())} noValidate className="grid grid-cols-2 items-end gap-2.5 sm:flex sm:flex-wrap">
-            <label className={`${label} col-span-2 flex-[1_1_160px]`}>{t('name')}<input className="field" value={f.name} onChange={set('name')} placeholder="Full name" autoComplete="name" aria-invalid={!!errors.name} />{err('name')}</label>
-            <label className={`${label} col-span-2 flex-[1_1_180px]`}>Email / phone<input className="field" value={f.contact} onChange={set('contact')} placeholder="+255…" autoComplete="email" aria-invalid={!!errors.contact} />{err('contact')}</label>
-            <label className={`${label} flex-[1_1_170px]`}>{t('service')}
-              <select className="field" value={f.service} onChange={set('service')}>
-                {services.map((s) => <option key={s.id}>{s.title}</option>)}
-              </select>
-            </label>
-            <label className={`${label} flex-[1_1_140px]`}>{t('date')}<input type="date" className="field" value={f.date} onChange={set('date')} min={new Date().toISOString().slice(0, 10)} /></label>
-            <label className={`${label} col-span-2 basis-full`}>Your full inquiry<textarea rows={4} className="w-full resize-y rounded-[14px] border-0 px-3.5 py-3 text-[15px] text-basil-ink" value={f.message} onChange={set('message')} placeholder="Tell us everything: the event or project, dates, venue, number of guests, what you want delivered (photos, film, reels, live stream), budget and anything else." /></label>
-            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }} type="submit" disabled={state === 'sending'} className="col-span-2 flex h-[50px] flex-none items-center justify-center gap-2 rounded-[14px] border-0 bg-white px-[26px] text-[15px] font-extrabold text-basil disabled:opacity-70">
-              {state === 'sending' ? <Loader2 className="animate-spin" size={18} /> : null}
-              {state === 'sending' ? 'Sending…' : t('send')}
-            </motion.button>
-            {fail && <p role="alert" className="m-0 w-full text-sm text-amber-200">{fail}</p>}
-          </motion.form>
-        ) : (
-          <motion.div key="done" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} role="status" className="flex items-center gap-3 rounded-[18px] bg-white/[0.14] p-5 text-[17px]">
-            <CheckCircle2 className="shrink-0 text-basil-sky" />
-            <span><b>{t('thanks')}</b> {t('thanksSub')}</span>
+        {state === 'sent' ? (
+          <motion.div key="ok" initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} role="status" className="flex items-center gap-3 rounded-2xl bg-white/[0.14] p-4 text-[15px]">
+            <CheckCircle2 className="shrink-0 text-basil-sky" /><span><b>{t('thanks')}</b> {t('thanksSub')}</span>
           </motion.div>
+        ) : (
+          <motion.form key="f" exit={{ opacity: 0 }} onSubmit={(e) => (e.preventDefault(), send())} noValidate className="flex flex-col gap-2.5">
+            <div className="grid grid-cols-2 gap-2.5">
+              <label><span className="sr-only">{t('name')}</span><input className={input} value={f.name} onChange={set('name')} placeholder="Your name" autoComplete="name" /></label>
+              <label><span className="sr-only">Phone or email</span><input className={input} value={f.contact} onChange={set('contact')} placeholder="Phone or email" autoComplete="tel" /></label>
+            </div>
+            <div role="group" aria-label={t('service')} className="scrollbar-none -mx-1 flex gap-1.5 overflow-x-auto px-1 py-0.5">
+              {services.map((s) => {
+                const on = f.service === s.title;
+                return <button key={s.id} type="button" aria-pressed={on} onClick={() => setF({ ...f, service: on ? '' : s.title })} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium transition ${on ? 'border-0 bg-white text-basil' : 'border border-white/30 bg-white/10 text-white'}`}>{s.title}</button>;
+              })}
+            </div>
+            <label><span className="sr-only">Your inquiry</span><textarea rows={3} className={`${input} h-auto resize-y py-2.5`} value={f.message} onChange={set('message')} placeholder="Tell us about it — event, date, venue, what you need…" /></label>
+            <div className="flex items-center gap-2.5">
+              <label className="flex-1"><span className="sr-only">{t('date')} (optional)</span><input type="date" className={`${input} text-[13.5px]`} value={f.date} onChange={set('date')} min={new Date().toISOString().slice(0, 10)} /></label>
+              <button type="submit" disabled={state === 'sending'} className="flex h-11 shrink-0 items-center gap-2 rounded-xl border-0 bg-white px-5 text-[14.5px] font-bold text-basil disabled:opacity-70">
+                {state === 'sending' ? <Loader2 className="animate-spin" size={16} /> : <Send size={16} />}{state === 'sending' ? 'Sending…' : 'Send'}
+              </button>
+            </div>
+            {err && <p role="alert" className="m-0 text-[13px] font-bold text-sun-soft">{err}</p>}
+          </motion.form>
         )}
       </AnimatePresence>
     </div>
