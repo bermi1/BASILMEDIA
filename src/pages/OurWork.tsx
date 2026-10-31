@@ -24,6 +24,7 @@ export default function OurWork() {
   const items = useMemo(() => rows.filter((p) => !filter || p.category === filter), [rows, filter]);
   const cur = rows.find((p) => p.id === openId);
   const curIndex = rows.findIndex((p) => p.id === openId);
+  const spotlight = rows.find((p) => p.featured && (p.image_url || p.video_url)) ?? rows[0];
   const setQ = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params);
     Object.entries(patch).forEach(([k, v]) => (v ? next.set(k, v) : next.delete(k)));
@@ -57,7 +58,19 @@ export default function OurWork() {
         </div>
       </div>
 
-      <section className="container-bm pb-12 pt-4 sm:pb-20 sm:pt-6">
+      <section className="relative">
+      <div aria-hidden="true" className="bg-dots fade-mask pointer-events-none absolute inset-x-0 top-0 h-[520px] opacity-80" />
+      <div className="container-bm relative pb-12 pt-4 sm:pb-20 sm:pt-6">
+        {!filter && spotlight && (
+          <motion.button type="button" initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} onClick={() => setQ({ p: spotlight.id })} className="group relative mb-8 block aspect-[4/5] w-full overflow-hidden rounded-[26px] border-0 p-0 text-left shadow-[0_30px_80px_-24px_rgba(10,47,92,0.55)] sm:mb-12 sm:aspect-[21/9]">
+            <Media src={spotlight.image_url || youtubeThumb(spotlight.video_url)} index={0} className="flex h-full flex-col justify-end p-5 text-white sm:p-10">
+              <span className="relative mb-2 inline-flex w-fit items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] backdrop-blur"><span className="h-1.5 w-1.5 rounded-full bg-sun shadow-[0_0_10px_#F5B942]" />Spotlight</span>
+              <b className="relative max-w-[720px] font-display text-[22px] font-bold leading-tight sm:text-[40px]">{spotlight.title}</b>
+              <span className="relative mt-1 text-[13px] text-basil-frost sm:text-base">{[spotlight.category, spotlight.client].filter(Boolean).join(' · ')}</span>
+              <span className="relative mt-4 inline-flex w-fit items-center gap-2 rounded-full bg-white px-4 py-2.5 text-[13px] font-semibold text-basil transition group-hover:shadow-[0_0_30px_rgba(124,192,245,0.7)]"><Play size={14} />{spotlight.video_url ? 'Watch the story' : 'Open the story'}</span>
+            </Media>
+          </motion.button>
+        )}
         {filter ? (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4">
             {items.map((p) => <Card key={p.id} p={p} index={rows.indexOf(p)} onOpen={() => setQ({ p: p.id })} />)}
@@ -82,6 +95,7 @@ export default function OurWork() {
           </div>
         )}
         {!items.length && <p className="text-basil-muted">No projects in this category yet.</p>}
+      </div>
       </section>
 
       <AnimatePresence>
@@ -118,7 +132,7 @@ export default function OurWork() {
 function Card({ p, index, onOpen }: { p: { title: string; category: string; client: string; image_url: string; video_url: string; external_url: string }; index: number; onOpen: () => void }) {
   const src = videoLabel(p.video_url);
   return (
-    <button type="button" onClick={onOpen} className="group relative block aspect-[4/5] w-full overflow-hidden rounded-[18px] border-0 p-0 text-left shadow-card sm:rounded-[22px]">
+    <button type="button" onClick={onOpen} className="group relative block aspect-[4/5] w-full overflow-hidden rounded-[18px] border-0 p-0 text-left shadow-card ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-14px_rgba(15,110,194,0.55)] hover:ring-basil-sky/60 sm:rounded-[22px]">
       <Media src={p.image_url || youtubeThumb(p.video_url)} index={index} className="flex h-full flex-col justify-end gap-1 p-3 text-white sm:p-5">
         <span className="absolute left-2.5 top-2.5 flex gap-1 sm:left-4 sm:top-4">
           {src && <span className="rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-extrabold text-basil sm:text-xs">{src}</span>}

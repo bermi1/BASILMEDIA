@@ -16,11 +16,11 @@ import { Play } from '@/components/icons';
 const ICONS: Record<string, typeof Video> = { video: Video, camera: Camera, mic: Mic, radio: Radio, sparkles: Sparkles, briefcase: Briefcase };
 const PILLARS = [['Health', HeartPulse], ['Innovation', Lightbulb], ['Youth', Users]] as const;
 
-function Head({ kicker, title, to, link }: { kicker: string; title: string; to?: string; link?: string }) {
+function Head({ kicker, title, to, link, dark }: { kicker: string; title: string; to?: string; link?: string; dark?: boolean }) {
   return (
     <Reveal className="mb-5 flex items-end justify-between gap-3 sm:mb-7">
-      <div className="min-w-0"><div className="kicker">{kicker}</div><h2 className="h-section m-0 mt-1">{title}</h2></div>
-      {to && <Link to={to} className="flex shrink-0 items-center gap-1 text-sm font-bold no-underline sm:text-base">{link}<ArrowRight size={16} /></Link>}
+      <div className="min-w-0"><div className={`kicker ${dark ? '!text-basil-sky' : ''}`}>{kicker}</div><h2 className={`h-section m-0 mt-1 ${dark ? 'text-white' : ''}`}>{title}</h2></div>
+      {to && <Link to={to} className={`flex shrink-0 items-center gap-1 text-sm font-bold no-underline sm:text-base ${dark ? 'text-basil-sky hover:text-white' : ''}`}>{link}<ArrowRight size={16} /></Link>}
     </Reveal>
   );
 }
@@ -83,7 +83,10 @@ export default function Home() {
       )}
 
       {/* WHO WE ARE */}
-      <section className="container-bm section">
+      <section className="relative overflow-hidden">
+        <div aria-hidden="true" className="bg-dots fade-mask absolute inset-0" />
+        <div aria-hidden="true" className="aurora -right-24 top-10 h-72 w-72 bg-basil-sky" />
+        <div className="container-bm section relative">
         <Reveal className="grid items-center gap-6 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
           <div>
             <div className="kicker">WHO WE ARE</div>
@@ -94,18 +97,27 @@ export default function Home() {
               <Link to="/about" className="ml-1 flex items-center gap-1 text-sm font-bold no-underline">Our story <ArrowRight size={15} /></Link>
             </div>
           </div>
-          {s.about_image_url && <img src={s.about_image_url} alt="Basil Media studio" loading="lazy" className="aspect-[16/10] w-full rounded-[26px] object-cover shadow-card" />}
+          {s.about_image_url && (
+            <div className="relative rounded-[28px] p-[1.5px] shadow-[0_30px_80px_-20px_rgba(15,110,194,0.45)]" style={{ background: 'linear-gradient(135deg, #7CC0F5, #0F6EC2 45%, #F5B942)' }}>
+              <img src={s.about_image_url} alt="Basil Media studio" loading="lazy" className="aspect-[16/10] w-full rounded-[26px] object-cover" />
+              <span className="absolute -bottom-3 left-5 flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-[12px] font-semibold text-basil-deep shadow-card"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />Studio · Upanga, Dar es Salaam</span>
+            </div>
+          )}
         </Reveal>
+        </div>
       </section>
 
       {/* WORK AT A GLANCE — swipe */}
       {glance.length > 0 && (
-        <section className="section bg-basil-mist">
-          <div className="container-bm">
-            <Head kicker="OUR WORK AT A GLANCE" title="Swipe through the stories" to="/our-work" link="All work" />
+        <section className="section relative overflow-hidden bg-basil-night">
+          <div aria-hidden="true" className="bg-dots-dark fade-mask absolute inset-0" />
+          <div aria-hidden="true" className="aurora -left-20 top-0 h-80 w-80 bg-basil" />
+          <div aria-hidden="true" className="aurora -right-16 bottom-0 h-64 w-64 bg-sun/60 [animation-delay:-4s]" />
+          <div className="container-bm relative">
+            <Head dark kicker="OUR WORK AT A GLANCE" title="Swipe through the stories" to="/our-work" link="All work" />
             <div role="tablist" aria-label="Filter work" className="scrollbar-none -mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
               {cats.map((c) => (
-                <button key={c} type="button" role="tab" aria-selected={cat === c} onClick={() => setCat(c)} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium transition ${cat === c ? 'border-0 bg-basil text-white' : 'border border-basil-edge bg-white text-basil-deep'}`}>{c}</button>
+                <button key={c} type="button" role="tab" aria-selected={cat === c} onClick={() => setCat(c)} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium transition ${cat === c ? 'border-0 bg-white text-basil-night shadow-[0_0_24px_rgba(124,192,245,0.55)]' : 'border border-white/20 bg-white/[0.06] text-white/80 backdrop-blur hover:bg-white/15'}`}>{c}</button>
               ))}
             </div>
             <div className="snap-row pb-1">
@@ -116,19 +128,22 @@ export default function Home() {
       )}
 
       {/* SERVICES */}
-      <section className="container-bm section">
+      <section className="relative">
+        <div aria-hidden="true" className="bg-dots fade-mask absolute inset-0 opacity-70" />
+        <div className="container-bm section relative">
         <Head kicker={t('services').toUpperCase()} title={t('servicesTitle')} to="/services" link="All" />
         <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-3">
           {services.map((x) => {
             const Icon = ICONS[x.icon] ?? Video;
             return (
-              <Link key={x.id} to={`/services#${x.slug}`} className="group flex flex-col gap-2 rounded-[20px] border border-basil-line bg-white p-3.5 text-basil-ink no-underline transition hover:-translate-y-1 hover:border-basil-soft hover:text-basil-ink hover:shadow-card sm:gap-3 sm:p-6">
+              <Link key={x.id} to={`/services#${x.slug}`} className="glow-card group flex flex-col gap-2 rounded-[20px] border border-basil-line bg-white/85 p-3.5 text-basil-ink no-underline backdrop-blur hover:text-basil-ink sm:gap-3 sm:p-6">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-basil-ice text-basil transition group-hover:bg-basil group-hover:text-white sm:h-12 sm:w-12"><Icon size={20} /></span>
                 <b className="font-display text-[14px] font-semibold leading-tight sm:text-lg">{x.title}</b>
                 <span className="line-clamp-2 text-[13px] leading-snug text-basil-muted sm:text-[15px]">{x.short}</span>
               </Link>
             );
           })}
+        </div>
         </div>
       </section>
 
@@ -153,7 +168,7 @@ export default function Home() {
           <Head kicker="BASIL HEALTH BRIEF" title="Latest from the newsroom" to="/health-news" link="All news" />
           <div className="snap-row sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible">
             {news.map((n, i) => (
-              <Link key={n.id} to={`/health-news/${n.id}`} className="group flex w-[72vw] max-w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-basil-line bg-white text-basil-ink no-underline transition hover:shadow-card hover:text-basil-ink sm:w-auto sm:max-w-none">
+              <Link key={n.id} to={`/health-news/${n.id}`} className="glow-card group flex w-[72vw] max-w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-basil-line bg-white text-basil-ink no-underline hover:text-basil-ink sm:w-auto sm:max-w-none">
                 <div className="aspect-[16/9] w-full" style={{ background: n.image_url ? `center/cover url(${n.image_url})` : gradient(i) }} />
                 <div className="flex flex-1 flex-col gap-1 p-3.5">
                   <span className="text-[11px] font-bold uppercase tracking-wide text-basil">{n.tag}</span>
@@ -179,7 +194,7 @@ function GlanceCard({ title, url, poster, sub, index }: { title: string; url: st
       {on && url ? (
         <div className="overflow-hidden rounded-[20px] shadow-card"><VideoEmbed url={url} title={title} autoPlay aspect="9 / 16" /></div>
       ) : (
-        <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} className="group relative block w-full overflow-hidden rounded-[20px] border-0 p-0 shadow-card" style={{ aspectRatio: '9 / 16', background: gradient(index) }}>
+        <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} className="group relative block w-full overflow-hidden rounded-[20px] border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:ring-basil-sky/60 hover:shadow-[0_0_40px_-6px_rgba(124,192,245,0.55)]" style={{ aspectRatio: '9 / 16', background: gradient(index) }}>
           {poster && <img src={poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />}
           <span className="absolute inset-0 bg-gradient-to-t from-basil-night/85 via-transparent to-transparent" />
           {url && <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 transition group-hover:scale-110"><Play size={18} /></span>}
