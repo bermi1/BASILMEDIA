@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowRight, Briefcase, Camera, ChevronDown, HeartPulse, Lightbulb, Mic, Radio, Sparkles, Star, Users, Video } from 'lucide-react';
+import { ArrowRight, Briefcase, CalendarDays, Camera, ChevronDown, HeartPulse, Lightbulb, Mic, Radio, Sparkles, Star, Users, Video } from 'lucide-react';
 import { useRows, useSettings } from '@/hooks/useData';
 import { useSeo } from '@/hooks/useSeo';
 import { useI18n } from '@/lib/i18n';
@@ -13,7 +13,13 @@ import { Reveal } from '@/components/Reveal';
 import { BookingForm } from '@/components/BookingForm';
 import { Play } from '@/components/icons';
 
-const ICONS: Record<string, typeof Video> = { video: Video, camera: Camera, mic: Mic, radio: Radio, sparkles: Sparkles, briefcase: Briefcase };
+const STEPS: [string, string][] = [
+  ['Brief', 'We listen and agree the plan and budget.'],
+  ['Shoot', 'Our crew films and photographs on location or in studio.'],
+  ['Edit', 'Edit, colour, sound and subtitles in EN / SW.'],
+  ['Deliver', 'Files, gallery and reels on the agreed date.'],
+];
+const ICONS: Record<string, typeof Video> = { video: Video, camera: Camera, mic: Mic, radio: Radio, sparkles: Sparkles, briefcase: Briefcase, heart: HeartPulse, calendar: CalendarDays };
 const PILLARS = [['Health', HeartPulse], ['Innovation', Lightbulb], ['Youth', Users]] as const;
 
 function Head({ kicker, title, to, link, dark }: { kicker: string; title: string; to?: string; link?: string; dark?: boolean }) {
@@ -135,23 +141,55 @@ export default function Home() {
         </section>
       )}
 
-      {/* SERVICES */}
+      {/* SERVICES — photo cards: a swipe row on phones, a grid with one large lead card on desktop */}
       <section className="relative">
         <div aria-hidden="true" className="bg-dots fade-mask absolute inset-0 opacity-70" />
         <div className="container-bm section relative">
-        <Head kicker={t('services').toUpperCase()} title={t('servicesTitle')} to="/services" link="All" />
-        <div className="grid grid-cols-2 gap-2.5 sm:gap-3.5 lg:grid-cols-3">
-          {services.map((x) => {
-            const Icon = ICONS[x.icon] ?? Video;
-            return (
-              <Link key={x.id} to={`/services#${x.slug}`} className="glow-card group flex flex-col gap-2 rounded-[20px] border border-basil-line bg-white/85 p-3.5 text-basil-ink no-underline backdrop-blur hover:text-basil-ink sm:gap-3 sm:p-6">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-basil-ice text-basil transition group-hover:bg-basil group-hover:text-white sm:h-12 sm:w-12"><Icon size={20} /></span>
-                <b className="font-display text-[14px] font-semibold leading-tight sm:text-lg">{x.title}</b>
-                <span className="line-clamp-2 text-[13px] leading-snug text-basil-muted sm:text-[15px]">{x.short}</span>
-              </Link>
-            );
-          })}
-        </div>
+          <Head kicker={t('services').toUpperCase()} title={t('servicesTitle')} to="/services" link="All" />
+          <div className="snap-row pb-1 lg:grid lg:auto-rows-[220px] lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
+            {services.map((x, i) => {
+              const Icon = ICONS[x.icon] ?? Video;
+              const lead = i === 0;
+              // the last card stretches so the desktop grid never ends with an empty slot
+              const gap = (4 - ((services.length + 3) % 4)) % 4;
+              const stretch = i === services.length - 1 && i > 0 ? (['', 'lg:col-span-2', 'lg:col-span-3', 'lg:col-span-4'][gap] ?? '') : '';
+              return (
+                <Link key={x.id} to={`/services#${x.slug}`}
+                  className={`group relative block w-[72vw] max-w-[300px] shrink-0 snap-start overflow-hidden rounded-[22px] text-white no-underline hover:text-white lg:w-auto lg:max-w-none ${lead ? 'lg:col-span-2 lg:row-span-2' : stretch}`}
+                  style={{ background: gradient(i) }}>
+                  <div className="aspect-[4/5] lg:aspect-auto lg:h-full">
+                    {x.image_url && <img src={x.image_url} alt={x.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />}
+                    <span className="absolute inset-0 bg-gradient-to-t from-basil-night/90 via-basil-night/30 to-transparent" />
+                    <span className="absolute left-3 top-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 text-basil backdrop-blur"><Icon size={19} /></span>
+                    <span className="absolute inset-x-4 bottom-4 flex flex-col gap-1.5">
+                      <b className={`font-display font-bold leading-tight ${lead ? 'text-[20px] lg:text-[30px]' : 'text-[19px]'}`}>{x.title}</b>
+                      <span className={`text-[13.5px] leading-snug text-white/85 ${lead ? 'lg:max-w-md lg:text-base' : 'line-clamp-2'}`}>{x.short}</span>
+                      {lead && x.deliverables?.length > 0 && (
+                        <span className="mt-1 hidden flex-wrap gap-1.5 lg:flex">{x.deliverables.slice(0, 4).map((d) => <span key={d} className="rounded-full bg-white/15 px-2.5 py-1 text-xs backdrop-blur">{d}</span>)}</span>
+                      )}
+                      <span className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-basil-sky">Learn more <ArrowRight size={15} className="transition group-hover:translate-x-0.5" /></span>
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+
+          {/* How we work */}
+          <div className="mt-6 rounded-[22px] border border-basil-line bg-white/90 p-4 backdrop-blur sm:mt-8 sm:p-6">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <b className="font-display text-lg">How we work</b>
+              <Link to="/#book" className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-full bg-basil px-4 text-sm font-bold text-white no-underline hover:bg-basil-deep hover:text-white">{t('book')} <ArrowRight size={15} /></Link>
+            </div>
+            <ol className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-4">
+              {STEPS.map(([title, line], i) => (
+                <li key={title} className="flex gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-basil-ice font-display text-sm font-extrabold text-basil">{i + 1}</span>
+                  <span className="min-w-0"><b className="block text-[14px]">{title}</b><span className="text-[12.5px] leading-snug text-basil-muted">{line}</span></span>
+                </li>
+              ))}
+            </ol>
+          </div>
         </div>
       </section>
 

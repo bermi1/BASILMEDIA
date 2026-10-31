@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -904,4 +904,19 @@ insert into public.calendar_events (id, title, description, location, starts_at,
   (pg_temp.sid(622), 'Gear check day', 'Clean, charge and test every camera and light.', 'Media store', (current_date + 4) + time '09:00', (current_date + 4) + time '12:00', false, '', 'staff', pg_temp.who('storekeeper')),
   (pg_temp.sid(623), 'East African Health Expo', 'Our stand is B14.', 'Diamond Jubilee Hall', (current_date + 21)::timestamptz, (current_date + 23)::timestamptz, true, '', 'everyone', pg_temp.who('account_manager'))
 on conflict (id) do nothing;
+
+-- ===================== 0019_service_photos.sql =====================
+-- Basil Media OS · 0019 team photos on the services (only where no picture has been set yet).
+update public.services s set image_url = v.img
+from (values
+  ('video-production', '/img/services/video-crew-conference.jpg'),
+  ('photography', '/img/services/photographer-event.jpg'),
+  ('brand-storytelling', '/img/services/photographer-event.jpg'),
+  ('podcast-production', '/img/services/editing-studio.jpg'),
+  ('live-streaming', '/img/services/video-crew-conference.jpg'),
+  ('event-coverage', '/img/services/event-coverage-team.jpg'),
+  ('corporate-content', '/img/services/editing-studio.jpg'),
+  ('health-communication', '/img/services/event-coverage-team.jpg')
+) as v(slug, img)
+where s.slug = v.slug and coalesce(s.image_url, '') = '';
 
