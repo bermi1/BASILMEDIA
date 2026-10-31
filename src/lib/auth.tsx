@@ -27,6 +27,19 @@ interface AuthCtx {
 
 const Ctx = createContext<AuthCtx | null>(null);
 
+/** Plain-language sign-in errors. "Invalid API key" means the site was built with a key that does not
+ *  belong to its Supabase project — a hosting setting, not the user's password. */
+function friendly(e: { message?: string }): Error {
+  const m = e.message ?? String(e);
+  if (/invalid api key|no api key|apikey/i.test(m)) {
+    const host = (() => { try { return new URL(import.meta.env.VITE_SUPABASE_URL as string).host; } catch { return 'the database'; } })();
+    return new Error(`The website's database key is not valid for ${host}. In Vercel → Settings → Environment Variables, set SUPABASE_URL and SUPABASE_ANON_KEY from the same Supabase project (Settings → API), then redeploy.`);
+  }
+  if (m === 'Invalid login credentials') return new Error('Email or password is not correct.');
+  if (/email not confirmed/i.test(m)) return new Error('Please confirm your email first — check your inbox for the link.');
+  return new Error(m);
+}
+
 async function loadRoles(userId: string): Promise<{ roles: AppRole[]; access: PortalAccess[] }> {
   const { data } = await supabase.from('user_roles').select('role').eq('user_id', userId);
   const roles = (data ?? []).map((r: { role: AppRole }) => r.role);
@@ -60,19 +73,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error(error.message === 'Invalid login credentials' ? 'Email or password is not correct.' : error.message);
+    if (error) throw friendly(error);
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, name: string) => {
     if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
     const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-    if (error) throw error;
+    if (error) throw friendly(error);
     return { needsConfirm: !data.session };
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/login` });
-    if (error) throw error;
+    if (error) throw friendly(error);
   }, []);
 
   const signOut = useCallback(async () => {

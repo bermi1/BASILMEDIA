@@ -1,14 +1,14 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { fileURLToPath, URL } from 'node:url';
+import { pickSupabaseEnv } from './supabase-env.mjs';
 
-// The Supabase URL and public (anon/publishable) key may be set on the host as VITE_SUPABASE_*,
-// SUPABASE_* or NEXT_PUBLIC_SUPABASE_* (e.g. the Vercel Supabase integration). Only these two
-// values are passed to the browser — never any other SUPABASE_* secret.
+// Supabase URL + public key: see supabase-env.mjs (matching pair, cleaned, never a secret key).
 export default defineConfig(({ mode }) => {
   const env = { ...loadEnv(mode, process.cwd(), ''), ...process.env } as Record<string, string | undefined>;
-  const url = env.VITE_SUPABASE_URL || env.SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const key = env.VITE_SUPABASE_ANON_KEY || env.SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY || env.SUPABASE_PUBLISHABLE_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '';
+  const { url, key, source, problems } = pickSupabaseEnv(env);
+  for (const p of problems) console.warn(`[supabase] ${p}`);
+  console.log(url ? `[supabase] using ${source}_URL (${url}) and its key (${key.slice(0, 14)}…)` : '[supabase] no Supabase URL/key found — the site will show the setup screen');
   return {
   define: {
     'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(url),
