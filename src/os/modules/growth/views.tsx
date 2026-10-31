@@ -1,6 +1,7 @@
 // Client-facing views shared by the public pages (/s/:slug, /d/:token) and the OS previews.
 import { useState } from 'react';
 import { Calendar, Check, Heart, Mail, MessageCircle, Phone, Play, Sparkles } from 'lucide-react';
+import { GoLink } from './kit';
 import { DEAL_STEPS, dmy, type Contract, type Cta, type DealRoom, type Proposal, type ReferenceItem, type Showcase } from './lib';
 
 const tsh = (n: number) => `TSH ${Math.round(n).toLocaleString('en-GB')}`;
@@ -127,19 +128,19 @@ export function DealRoomView({ deal, proposal, contract, showcaseSlug, onSign, i
       </div>
       <div className={box}>
         <h2 className="m-0 text-lg font-extrabold text-[#0A2F5C]">1 · Work we picked for you</h2>
-        {showcaseSlug ? <a href={`/s/${showcaseSlug}`} target="_blank" rel="noreferrer" className="font-bold">Open your showcase →</a> : <p className="m-0 text-sm text-[#4A5D78]">Your account manager shared references in person.</p>}
+        {showcaseSlug ? <a href={`/s/${showcaseSlug}`} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center font-bold">Open your showcase →</a> : <p className="m-0 text-sm text-[#4A5D78]">Your account manager shared references in person.</p>}
       </div>
       {proposal && (
         <div className={box}>
           <h2 className="m-0 text-lg font-extrabold text-[#0A2F5C]">2 · What we propose <span className="text-sm font-normal text-[#4A5D78]">{proposal.number}</span></h2>
           <p className="m-0 mt-1 whitespace-pre-line text-sm">{proposal.what_we_propose}</p>
           {proposal.client_gains && <p className="m-0 mt-2 whitespace-pre-line text-sm">{proposal.client_gains}</p>}
-          {internal && <a href={`/os/growth/proposals/${proposal.id}`} className="mt-2 inline-block text-sm font-bold">Open full proposal →</a>}
+          {internal && <GoLink to={`/os/growth/proposals/${proposal.id}`} className="mt-1 inline-flex min-h-[44px] items-center text-sm font-bold">Open full proposal →</GoLink>}
         </div>
       )}
       <div className={box}>
         <h2 className="m-0 text-lg font-extrabold text-[#0A2F5C]">3 · Quotation</h2>
-        {deal.quotation_url ? <a href={deal.quotation_url} target="_blank" rel="noreferrer" className="font-bold">Open quotation →</a> : <p className="m-0 text-sm text-[#4A5D78]">Your quotation link will appear here.</p>}
+        {deal.quotation_url ? <a href={deal.quotation_url} target="_blank" rel="noreferrer" className="inline-flex min-h-[44px] items-center font-bold">Open quotation →</a> : <p className="m-0 text-sm text-[#4A5D78]">Your quotation link will appear here.</p>}
       </div>
       <div className={box}>
         <h2 className="m-0 text-lg font-extrabold text-[#0A2F5C]">4 · Production services agreement</h2>
