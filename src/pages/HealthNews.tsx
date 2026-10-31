@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase, CalendarPlus } from 'lucide-react';
 import { useRows } from '@/hooks/useData';
+import { LiveHealthFeed } from '@/components/LiveHealthFeed';
 import { useSeo } from '@/hooks/useSeo';
 import { fmtDate } from '@/lib/format';
 import { Media } from '@/components/Media';
@@ -85,6 +86,8 @@ export default function HealthNews() {
             ))}
           </div>
           {!rest.length && !featured && <p className="text-basil-muted">No stories in this topic yet.</p>}
+
+          <LiveHealthFeed />
 
           <section aria-labelledby="opp-h" className="mt-8 rounded-[22px] bg-basil-mist p-4 sm:mt-12 sm:rounded-[28px] sm:p-8">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3">

@@ -55,9 +55,9 @@ export function Footer() {
             <div className="font-mono text-[11px] tracking-[0.2em] text-basil-haze">{t('ready')}</div>
             <div className="mt-1 font-display text-[22px] font-extrabold leading-[1.1] text-white sm:text-[clamp(28px,3.5vw,42px)]">{t('readyTitle')}</div>
           </div>
-          <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex sm:gap-3">
-            <Link to="/#book" className="flex h-12 items-center justify-center rounded-2xl bg-white px-5 font-extrabold text-basil no-underline hover:bg-basil-ice">{t('book')}</Link>
-            <a href={waLink(s.whatsapp || s.phone)} target="_blank" rel="noreferrer" className="flex h-12 items-center justify-center rounded-2xl border border-white/45 px-5 font-bold text-white no-underline hover:bg-white/10 hover:text-white">WhatsApp</a>
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:gap-3">
+            <Link to="/#book" className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-full bg-white px-4 text-sm font-extrabold text-basil no-underline hover:bg-basil-ice">{t('book')}</Link>
+            <a href={waLink(s.whatsapp || s.phone)} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-full border border-white/45 px-4 text-sm font-bold text-white no-underline hover:bg-white/10 hover:text-white">WhatsApp</a>
           </div>
         </div>
       </div>
