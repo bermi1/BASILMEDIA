@@ -1,29 +1,22 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, Briefcase, Building2, Check, Crown, FolderKanban, Globe2, Loader2, Package, TrendingUp, User, Wallet } from 'lucide-react';
-import { useAuth, ROLE_LABEL } from '@/lib/auth';
+import { Check, Globe2, Loader2, type LucideIcon } from 'lucide-react';
+import { PORTAL_BLURB, sortPortals } from '@/lib/roles';
+import { portalMeta } from '@/os/PortalSwitcher';
+import { useAuth } from '@/lib/auth';
 import { isDemo } from '@/lib/supabase';
 import { useSeo } from '@/hooks/useSeo';
 import { Fingerprint } from '@/components/icons';
 import type { AppRole } from '@/lib/types';
 
-const PORTALS: { role: AppRole | 'website'; name: string; line: string; to: string; Icon: typeof Crown; main?: boolean }[] = [
-  { role: 'website', name: 'Website CMS', line: 'Edit pages, pictures, videos and news', to: '/os/website', Icon: Globe2, main: true },
-  { role: 'boss', name: 'Boss', line: 'Approve money, see cash and risk in one glance', to: '/os', Icon: Crown, main: true },
-  { role: 'gm_cfo', name: 'GM/CFO', line: 'Recommend spend, reconcile, run payroll', to: '/os', Icon: BarChart3 },
-  { role: 'finance', name: 'Finance', line: 'Pay approved requests, chase invoices', to: '/os', Icon: Wallet },
-  { role: 'project_lead', name: 'Projects', line: 'Stages, crew, budgets and footage backup', to: '/os', Icon: FolderKanban },
-  { role: 'staff', name: 'Staff', line: 'My shoots, requests, payslips and leave', to: '/os', Icon: User },
-  { role: 'storekeeper', name: 'Store', line: 'Gear check-out, returns and condition', to: '/os', Icon: Package },
-  { role: 'growth', name: 'Growth', line: 'Bookings, subscribers and deal rooms', to: '/os', Icon: TrendingUp },
-  { role: 'receptionist', name: 'Reception', line: 'Visitors, bookings and walk-in enquiries', to: '/os', Icon: Building2 },
-  { role: 'client', name: 'Client', line: 'Your projects, reviews, invoices and retainer', to: '/os', Icon: Briefcase },
-];
+type Portal = { role: AppRole | 'website'; name: string; line: string; to: string; Icon: LucideIcon; accent: string };
+const WEBSITE: Portal = { role: 'website', name: 'Website CMS', line: 'Edit pages, pictures, videos and news', to: '/os/website', Icon: Globe2, accent: '#0A2F5C' };
+const ALL: AppRole[] = ['boss', 'gm_cfo', 'finance', 'account_manager', 'growth', 'receptionist', 'project_lead', 'staff', 'storekeeper', 'driver', 'client'];
 
 export default function Login() {
   useSeo('Sign in · Basil Media OS');
-  const { user, signIn, signUp, resetPassword, hasRole, canEditWebsite, signOut, loading } = useAuth();
+  const { user, signIn, signUp, resetPassword, canEditWebsite, signOut, loading } = useAuth();
   const [params] = useSearchParams();
   const nav = useNavigate();
   const [mode, setMode] = useState<'signin' | 'signup'>(params.get('mode') === 'signup' ? 'signup' : 'signin');
@@ -56,7 +49,17 @@ export default function Login() {
     }
   };
 
-  const portals = user ? PORTALS.filter((p) => (p.role === 'website' ? canEditWebsite : hasRole(p.role))) : [];
+  // Every portal this person can open: own roles, roles the GM covers, and portals given for a project.
+  const mine: AppRole[] = !user ? [] : user.roles.includes('super_admin') ? ALL : sortPortals(user.access.map((a) => a.role));
+  const portals: Portal[] = [
+    ...(canEditWebsite ? [WEBSITE] : []),
+    ...mine.map((r) => { const m = portalMeta(r); return { role: r, name: m.label, line: PORTAL_BLURB[r] ?? '', to: '/os', Icon: m.Icon, accent: m.accent }; }),
+  ];
+  const open = (p: Portal) => {
+    if (p.role !== 'website') try { localStorage.setItem('basil-acting-role', p.role); } catch { /* private mode */ }
+    if (p.role !== 'website' && matchMedia('(max-width: 767px)').matches) location.assign('/app');
+    else nav(p.to);
+  };
   const next = params.get('next');
   useEffect(() => {
     if (user && next && next.startsWith('/os')) nav(next, { replace: true });
@@ -122,16 +125,16 @@ export default function Login() {
               <div>
                 <div className="font-mono text-[11px] tracking-[0.18em] text-basil">HABARI, {(user.name || user.email).split(/[ @]/)[0].toUpperCase()}</div>
                 <h2 className="m-0 mt-2 text-[34px] font-extrabold">Choose your portal</h2>
-                <div className="mt-1.5 text-[15px] text-basil-muted">You see only the portals your role allows: {user.roles.map((r) => ROLE_LABEL[r]).join(', ') || 'no role yet'}.</div>
+                <div className="mt-1.5 text-[15px] text-basil-muted">{portals.length > 1 ? 'Each portal has its own menu — you can switch any time from the top of the app.' : 'Your portal is ready.'}</div>
               </div>
               {portals.length ? (
                 <div className="grid grid-cols-[repeat(auto-fit,minmax(210px,1fr))] gap-3.5">
-                  {portals.map(({ role, name: n, line, to, Icon, main }) => (
-                    <Link key={role} to={to} className="flex min-h-[150px] flex-col gap-3 rounded-[22px] border border-basil-line bg-white p-5 text-basil-ink no-underline transition hover:-translate-y-[3px] hover:border-basil-soft hover:text-basil-ink hover:shadow-[0_18px_36px_rgba(10,47,92,0.14)]">
-                      <span className="flex items-start justify-between"><span className={`flex h-12 w-12 items-center justify-center rounded-[14px] ${main ? 'bg-basil text-white' : 'bg-basil-ice text-basil'}`}><Icon size={24} /></span><Check size={18} className="text-basil-edge" /></span>
+                  {portals.map((p) => { const { role, name: n, line, Icon, accent } = p; return (
+                    <button type="button" key={role} onClick={() => open(p)} className="flex min-h-[150px] flex-col gap-3 rounded-[22px] border border-basil-line bg-white p-5 text-left text-basil-ink no-underline transition hover:-translate-y-[3px] hover:border-basil-soft hover:text-basil-ink hover:shadow-[0_18px_36px_rgba(10,47,92,0.14)]">
+                      <span className="flex items-start justify-between"><span className="flex h-12 w-12 items-center justify-center rounded-[14px] text-white" style={{ background: accent }}><Icon size={24} /></span><Check size={18} className="text-basil-edge" /></span>
                       <span><span className="block font-display text-lg font-extrabold">{n}</span><span className="mt-1 block text-[13px] leading-[1.45] text-basil-muted">{line}</span></span>
-                    </Link>
-                  ))}
+                    </button>
+                  ); })}
                 </div>
               ) : (
                 <div className="rounded-[22px] border border-basil-line bg-white p-6 text-basil-muted">Your account is waiting for a role. Ask the Super Admin to give you access.</div>

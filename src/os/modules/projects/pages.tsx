@@ -19,11 +19,11 @@ import { BudgetBar, CallSheet, CardSafety, firstName, HealthDot, nameOf, NewProj
 
 const LEADERS = ['boss', 'gm_cfo', 'project_lead'] as const;
 function useScope() {
-  const { userId, can } = useActing();
+  const { userId, can, scope } = useActing();
   const { rows: projects } = useProjects();
   const { rows: crew } = useCrew();
-  const seeAll = can('boss', 'gm_cfo', 'finance', 'project_lead');
-  return { userId, seeAll, projects: visibleProjects(projects, crew, userId, seeAll), crew };
+  const seeAll = can('boss', 'gm_cfo', 'finance', 'project_lead') && !scope;
+  return { userId, seeAll, projects: visibleProjects(projects, crew, userId, seeAll, scope), crew };
 }
 
 // ================= Board =================

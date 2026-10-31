@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpen, CalendarRange, Globe2, Handshake, Images, Inbox, LayoutDashboard, LogOut, Menu,
   MessageSquareQuote, Newspaper, Settings2, Sparkles, Users, UsersRound, Video, BriefcaseBusiness, X, ExternalLink, Loader2,
@@ -8,7 +8,10 @@ import { useAuth, ROLE_LABEL } from '@/lib/auth';
 import { isDemo } from '@/lib/supabase';
 import { MODULES } from './modules';
 import { useActing } from './lib/session';
-import { Smartphone, ShieldCheck } from 'lucide-react';
+import { Smartphone, ShieldCheck, KeyRound } from 'lucide-react';
+import { PortalMenu } from './PortalSwitcher';
+import type { AppRole } from '@/lib/types';
+import { IMPLIED_ROLES } from '@/lib/roles';
 
 const CMS_NAV = [
   { to: '/os/website', label: 'Overview', Icon: LayoutDashboard, end: true },
@@ -27,35 +30,50 @@ const CMS_NAV = [
   { to: '/os/website/subscribers', label: 'Subscribers', Icon: Users },
 ];
 
+/** Nav items of one portal (role). Each portal keeps its own menu. */
+export function usePortalNav(role: AppRole) {
+  const { user } = useAuth();
+  // A portal that comes with another role (GM ⇒ Finance, Account Manager, Reception) shows only its own work:
+  // items the parent portal already has are left there, so nothing is listed twice.
+  const parents = (user?.roles ?? []).filter((p) => p !== 'super_admin' && IMPLIED_ROLES[p]?.includes(role));
+  return MODULES.map((m) => ({ ...m, nav: m.nav.filter((n) => n.roles.includes(role) && !parents.some((p) => n.roles.includes(p))) })).filter((m) => m.nav.length);
+}
+
 export function OsLayout() {
   const { user, loading, signOut, canEditWebsite } = useAuth();
-  const { canAny: can } = useActing();
+  const { role, setRole, canAny } = useActing();
   const [open, setOpen] = useState(false);
   const loc = useLocation();
+  const go = useNavigate();
+  const portalNav = usePortalNav(role);
   if (loading) return <div className="flex min-h-screen items-center justify-center"><Loader2 className="animate-spin text-basil" size={36} /></div>;
   if (!user) return <Navigate to={`/login?next=${encodeURIComponent(loc.pathname)}`} replace />;
+  const inCms = loc.pathname.startsWith('/os/website');
+  const pick = (r: AppRole) => (setRole(r), setOpen(false), go('/os'));
 
   const nav = (
     <nav aria-label="OS" className="flex flex-col gap-0.5">
-      <NavLink to="/os" end className={itemCls}><LayoutDashboard size={18} />Home</NavLink>
-      {canEditWebsite && (
+      <NavLink to="/os" end className={itemCls} onClick={() => setOpen(false)}><LayoutDashboard size={18} />Home</NavLink>
+      {inCms && canEditWebsite ? (
         <>
           <div className="mb-1 mt-5 px-3 font-mono text-[10px] tracking-[0.18em] text-basil-haze/70">WEBSITE CMS</div>
           {CMS_NAV.map(({ to, label, Icon, end }) => <NavLink key={to} to={to} end={end} className={itemCls} onClick={() => setOpen(false)}><Icon size={18} />{label}</NavLink>)}
         </>
+      ) : (
+        portalNav.map((m) => (
+          <div key={m.key}>
+            <div className="mb-1 mt-5 px-3 font-mono text-[10px] tracking-[0.18em] text-basil-haze/70">{m.section}</div>
+            {m.nav.map(({ to, label, icon: Icon, badge }) => {
+              const b = badge?.() ?? 0;
+              return <NavLink key={to} to={to} end={to.split('/').length <= 3} className={itemCls} onClick={() => setOpen(false)}><Icon size={18} /><span className="flex-1">{label}</span>{b > 0 && <span className="rounded-full bg-basil px-2 text-xs font-bold text-white">{b}</span>}</NavLink>;
+            })}
+          </div>
+        ))
       )}
-      {MODULES.filter((m) => m.nav.some((n) => can(...n.roles))).map((m) => (
-        <div key={m.key}>
-          <div className="mb-1 mt-5 px-3 font-mono text-[10px] tracking-[0.18em] text-basil-haze/70">{m.section}</div>
-          {m.nav.filter((n) => can(...n.roles)).map(({ to, label, icon: Icon, badge }) => {
-            const b = badge?.() ?? 0;
-            return <NavLink key={to} to={to} end={to.split('/').length <= 3} className={itemCls} onClick={() => setOpen(false)}><Icon size={18} /><span className="flex-1">{label}</span>{b > 0 && <span className="rounded-full bg-basil px-2 text-xs font-bold text-white">{b}</span>}</NavLink>;
-          })}
-        </div>
-      ))}
       <div className="mb-1 mt-5 px-3 font-mono text-[10px] tracking-[0.18em] text-basil-haze/70">PLATFORM</div>
       <a href="/app" className={itemCls({ isActive: false })}><Smartphone size={18} />Phone app</a>
-      {user.roles.includes('super_admin') && <NavLink to="/os/admin/users" className={itemCls}><ShieldCheck size={18} />Users &amp; roles</NavLink>}
+      {canAny('boss', 'gm_cfo') && <NavLink to="/os/admin/access" className={itemCls} onClick={() => setOpen(false)}><KeyRound size={18} />Portal access</NavLink>}
+      {user.roles.includes('super_admin') && <NavLink to="/os/admin/users" className={itemCls} onClick={() => setOpen(false)}><ShieldCheck size={18} />Users &amp; roles</NavLink>}
     </nav>
   );
 
@@ -66,6 +84,7 @@ export function OsLayout() {
           <Link to="/os" className="flex items-center gap-2.5 no-underline"><img src="/logo-reverse.svg" alt="" className="h-11 w-11" /><span className="font-display text-lg font-extrabold text-white">Basil <span className="text-basil-sky">OS</span></span></Link>
           <button type="button" aria-label="Close menu" onClick={() => setOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-xl border-0 bg-white/10 text-white lg:hidden"><X size={18} /></button>
         </div>
+        <div className="mb-3"><PortalMenu onRole={pick} website={canEditWebsite ? { active: inCms, onPick: () => (setOpen(false), go('/os/website')) } : undefined} /></div>
         <div className="min-h-0 flex-1 overflow-y-auto">{nav}</div>
         <div className="mt-4 rounded-2xl bg-white/[0.07] p-3">
           <div className="truncate text-sm font-bold">{user.name || user.email}</div>

@@ -14,7 +14,7 @@ import { ConcernsBoard, RequestBoardPage, RetainerDetail, RetainersPage } from '
 import { GrowthInbox } from './phone';
 
 const BOSS: AppRole[] = ['boss', 'gm_cfo'];
-const GROWTH: AppRole[] = ['growth', 'account_manager', 'gm_cfo', 'boss'];
+const GROWTH: AppRole[] = ['growth', 'account_manager', 'boss'];
 const count = (table: string, f: (r: Record<string, unknown>) => boolean) => () => (isDemo ? demoTable(table).filter(f).length : 0);
 const InboxPage = () => (<div><PageTitle tag="GROWTH · INBOX" title="Inbox" sub="Website bookings to convert into leads, and retainer client requests." /><GrowthInbox /></div>);
 
@@ -22,7 +22,7 @@ export const growthModule: OsModule = {
   key: 'growth',
   section: 'LEADERSHIP & GROWTH',
   nav: [
-    { to: '/os/boss', label: 'Boss cockpit', icon: Crown, roles: BOSS },
+    { to: '/os/boss', label: 'Boss cockpit', icon: Crown, roles: ['boss'] },
     { to: '/os/boss/briefing', label: 'Monday briefing', icon: BookOpen, roles: BOSS },
     { to: '/os/boss/scoreboard', label: 'Scoreboard', icon: Target, roles: BOSS },
     { to: '/os/boss/decisions', label: 'Decision log', icon: Gavel, roles: BOSS },

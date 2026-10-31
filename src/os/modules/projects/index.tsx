@@ -9,7 +9,8 @@ import { FootagePage, PostPage, ProjectPage, ProjectsBoard, ShootsPage, TasksPag
 import { AnnouncementsPage, AttendancePage, DirectoryPage, LeavePage, PeopleHome, SuggestionsPage, WeeklyReportsPage } from './people';
 
 const WORK: AppRole[] = ['boss', 'gm_cfo', 'project_lead', 'staff'];
-const LEAD: AppRole[] = ['boss', 'gm_cfo', 'project_lead'];
+/** Day-to-day production work (the GM/Boss see it inside each project instead). */
+const CREW: AppRole[] = ['project_lead', 'staff'];
 const ALL_STAFF: AppRole[] = ['boss', 'gm_cfo', 'finance', 'project_lead', 'staff', 'storekeeper', 'growth', 'account_manager', 'receptionist', 'driver'];
 
 const atRisk = () => (isDemo ? footageAtRisk(demoTable('media_cards') as unknown as MediaCard[], demoTable('shoots') as unknown as Shoot[], demoTable('footage_copies') as unknown as FootageCopy[]).length : 0);
@@ -20,10 +21,10 @@ export const projectsModule: OsModule = {
   section: 'WORK',
   nav: [
     { to: '/os/projects', label: 'Projects', icon: Briefcase, roles: WORK },
-    { to: '/os/projects/tasks', label: 'Tasks', icon: ListChecks, roles: WORK },
+    { to: '/os/projects/tasks', label: 'Tasks', icon: ListChecks, roles: CREW },
     { to: '/os/projects/shoots', label: 'Shoots & crew', icon: Clapperboard, roles: WORK },
-    { to: '/os/projects/post', label: 'Post-production', icon: Film, roles: LEAD },
-    { to: '/os/projects/footage', label: 'Footage safety', icon: HardDrive, roles: WORK, badge: atRisk },
+    { to: '/os/projects/post', label: 'Post-production', icon: Film, roles: CREW },
+    { to: '/os/projects/footage', label: 'Footage safety', icon: HardDrive, roles: CREW, badge: atRisk },
     { to: '/os/people', label: 'Staff portal', icon: Users, roles: ALL_STAFF },
     { to: '/os/people/reports', label: 'Weekly reports', icon: FileText, roles: ALL_STAFF },
     { to: '/os/people/suggestions', label: 'Suggestion box', icon: Lightbulb, roles: ALL_STAFF },

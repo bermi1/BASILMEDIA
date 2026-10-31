@@ -218,12 +218,12 @@ export function StaffMyDay() {
 
 // ---------- Project Lead ----------
 function useLeadScope() {
-  const { userId, can } = useActing();
+  const { userId, can, scope: limit } = useActing();
   const { rows: projects } = useProjects();
   const { rows: crew } = useCrew();
-  const led = projects.filter((p) => p.lead_id === userId);
-  const seeAll = can('boss', 'gm_cfo');
-  const scope = seeAll ? projects : visibleProjects(projects, crew, userId, false);
+  const led = projects.filter((p) => p.lead_id === userId || !!limit?.includes(p.id));
+  const seeAll = can('boss', 'gm_cfo') && !limit;
+  const scope = seeAll ? projects : visibleProjects(projects, crew, userId, false, limit);
   return { userId, led, scope, ids: new Set(scope.map((p) => p.id)) };
 }
 

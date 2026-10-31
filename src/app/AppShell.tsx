@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useLocation, useSearchParams } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bell, ChevronRight, Globe2, LayoutDashboard, Loader2, LogOut, MoreHorizontal, RefreshCcw, UserCog } from 'lucide-react';
+import { Bell, ChevronDown, ChevronRight, Globe2, KeyRound, LayoutDashboard, Loader2, LogOut, MoreHorizontal, RefreshCcw, UserCog } from 'lucide-react';
+import { PortalList, portalMeta } from '@/os/PortalSwitcher';
+import { PortalAccessPanel } from '@/os/AccessAdmin';
 import { useAuth, ROLE_LABEL } from '@/lib/auth';
 import { isDemo } from '@/lib/supabase';
 import { ActingProvider, useActing } from '@/os/lib/session';
@@ -31,7 +33,8 @@ export default function PhoneApp() {
 
 function Shell() {
   const { user, signOut } = useAuth();
-  const { role, roles, setRole, userId } = useActing();
+  const { role, roles, setRole, userId, canAny } = useActing();
+  const [portalsOpen, setPortalsOpen] = useState(false);
   const [params, setParams] = useSearchParams();
   const app = PHONE_APPS[role];
   const tabs = useMemo(() => [...(app?.tabs ?? []).slice(0, 4), { key: 'more', label: 'More', icon: MoreHorizontal, element: null }], [app]);
@@ -48,6 +51,8 @@ function Shell() {
   }, [app]);
   useEffect(() => void (scrollTo({ top: 0 }), setExtra(null)), [tab, role]);
   const go = (k: string) => setParams((p) => (p.set('tab', k), p), { replace: true });
+  const switchRole = (r: AppRole) => (setRole(r), setParams((p) => (p.set('tab', PHONE_APPS[r]?.tabs[0]?.key ?? 'home'), p), { replace: true }));
+  const leaderExtras: PhoneExtra[] = canAny('boss', 'gm_cfo') ? [{ key: 'access', label: 'Portal access', icon: KeyRound, sub: 'Give someone a portal for a project', element: <PortalAccessPanel /> }] : [];
 
   const current = tabs.find((t) => t.key === tab)!;
   const first = (user?.name || user?.email || '').split(/[ @]/)[0];
@@ -57,10 +62,10 @@ function Shell() {
       <header className="sticky top-0 z-30 border-b border-white/10 pt-[env(safe-area-inset-top)] text-white" style={{ background: `linear-gradient(135deg, #0A2F5C, #061E3D)` }}>
         <div className="mx-auto flex h-14 max-w-xl items-center gap-3 px-4">
           <img src="/logo-reverse.svg" alt="" className="h-8 w-8" />
-          <div className="min-w-0 flex-1 leading-tight">
+          <button type="button" disabled={roles.length < 2} onClick={() => setPortalsOpen(true)} aria-label={`Portal: ${app?.title ?? ROLE_LABEL[role]}. Switch portal`} className="min-w-0 flex-1 border-0 bg-transparent p-0 text-left leading-tight text-white">
             <div className="truncate font-display text-[15px] font-extrabold">{extra ? extra.label : current.key === 'more' ? 'More' : current.label}</div>
-            <div className="truncate text-[11px] text-basil-haze"><span className="mr-1 inline-block h-2 w-2 rounded-full align-middle" style={{ background: accent }} />{app?.title ?? ROLE_LABEL[role]} · {first}</div>
-          </div>
+            <div className="flex items-center gap-1 truncate text-[11px] text-basil-haze"><span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ background: accent }} /><span className="truncate">{app?.title ?? ROLE_LABEL[role]} · {first}</span>{roles.length > 1 && <ChevronDown size={13} className="shrink-0" />}</div>
+          </button>
           <button type="button" onClick={() => setAlertsOpen(true)} aria-label={`Alerts, ${unread} unread`} className="relative flex h-11 w-11 items-center justify-center rounded-full border-0 bg-white/10 text-white">
             <Bell size={20} />
             {unread > 0 && <span className="absolute right-1.5 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold">{unread}</span>}
@@ -77,7 +82,7 @@ function Shell() {
                 {extra.element}
               </>
             ) : current.key === 'more' ? (
-              <More extras={app?.more ?? []} onOpen={setExtra} roles={roles} role={role} setRole={(r) => (setRole(r), go(PHONE_APPS[r]?.tabs[0]?.key ?? 'home'))} signOut={signOut} />
+              <More extras={[...(app?.more ?? []), ...leaderExtras]} onOpen={setExtra} roles={roles} role={role} setRole={switchRole} signOut={signOut} />
             ) : (
               current.element
             )}
@@ -103,6 +108,9 @@ function Shell() {
       <Sheet open={alertsOpen} onClose={() => setAlertsOpen(false)} title="Alerts">
         <Alerts />
       </Sheet>
+      <Sheet open={portalsOpen} onClose={() => setPortalsOpen(false)} title="Switch portal">
+        <PortalList onRole={switchRole} onDone={() => setPortalsOpen(false)} />
+      </Sheet>
     </div>
   );
 }
@@ -127,11 +135,14 @@ function More({ extras, onOpen, roles, role, setRole, signOut }: { extras: Phone
         <section>
           <h2 className="mb-2 flex items-center gap-2 text-sm font-bold text-basil-muted"><UserCog size={16} />Switch portal{isDemo && ' (demo: view as any role)'}</h2>
           <div className="grid grid-cols-2 gap-2">
-            {roles.filter((r) => PHONE_APPS[r]).map((r) => (
-              <button key={r} type="button" onClick={() => setRole(r)} aria-pressed={r === role} className={`flex items-center gap-2 rounded-2xl p-3 text-left text-sm font-bold ${r === role ? 'border-0 text-white' : 'border border-basil-line bg-white text-basil-ink'}`} style={r === role ? { background: PHONE_APPS[r]!.accent } : undefined}>
-                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: r === role ? '#fff' : PHONE_APPS[r]!.accent }} />{PHONE_APPS[r]!.title}
-              </button>
-            ))}
+            {roles.filter((r) => PHONE_APPS[r]).map((r) => {
+              const m = portalMeta(r);
+              return (
+                <button key={r} type="button" onClick={() => setRole(r)} aria-pressed={r === role} className={`flex min-h-[48px] items-center gap-2 rounded-2xl p-3 text-left text-sm font-bold ${r === role ? 'border-0 text-white' : 'border border-basil-line bg-white text-basil-ink'}`} style={r === role ? { background: m.accent } : undefined}>
+                  <m.Icon size={16} className="shrink-0" style={{ color: r === role ? '#fff' : m.accent }} /><span className="truncate">{PHONE_APPS[r]!.title}</span>
+                </button>
+              );
+            })}
           </div>
         </section>
       )}

@@ -41,7 +41,9 @@ export function useGateCtx(): GateCtx {
 }
 
 /** Projects the acting person may see: leaders see all, others only those they lead or crew on. */
-export function visibleProjects(projects: Project[], crew: Crew[], userId: string, seeAll: boolean) {
+export function visibleProjects(projects: Project[], crew: Crew[], userId: string, seeAll: boolean, scope: string[] | null = null) {
+  // A project-only portal grant limits even a "see all" portal (e.g. Project Lead for one project).
+  if (scope) return projects.filter((p) => scope.includes(p.id) || p.lead_id === userId);
   if (seeAll) return projects;
   const mine = new Set(crew.filter((c) => c.user_id === userId).map((c) => c.project_id));
   return projects.filter((p) => p.lead_id === userId || mine.has(p.id));
