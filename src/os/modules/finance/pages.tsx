@@ -109,7 +109,8 @@ export function BudgetsPage() {
 }
 function MiniBudget({ id }: { id: string }) {
   const fin = useFinance();
-  const p = fin.project(id)!;
+  const p = fin.project(id);
+  if (!p) return null;
   const m = fin.projectMoney(p);
   return <div className="rounded-2xl border border-basil-line bg-white p-3"><div className="mb-1 flex justify-between text-sm"><b className="truncate">{p.name}</b><span className="text-xs">{tshShort(m.spent + m.committed)} / {tshShort(m.allocated)}</span></div><Progress value={m.spent + m.committed} max={m.allocated} /></div>;
 }

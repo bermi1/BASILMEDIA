@@ -22,6 +22,8 @@ const Privacy = lazy(() => import('@/pages/Privacy').then((m) => ({ default: m.P
 const FacePrivacy = lazy(() => import('@/pages/Privacy').then((m) => ({ default: m.FacePrivacy })));
 const OsRoutes = lazy(() => import('@/os/OsRoutes'));
 const PhoneApp = lazy(() => import('@/app/AppShell'));
+const Showcase = lazy(() => import('@/os/modules/growth/public').then((m) => ({ default: m.ShowcasePage })));
+const DealRoom = lazy(() => import('@/os/modules/growth/public').then((m) => ({ default: m.DealRoomPage })));
 
 const Spinner = () => <div className="flex min-h-[50vh] items-center justify-center"><Loader2 className="animate-spin text-basil" size={32} /></div>;
 
@@ -48,6 +50,8 @@ export default function App() {
                 <Route path="*" element={<NotFound />} />
               </Route>
               <Route path="login" element={<Login />} />
+              <Route path="s/:slug" element={<Showcase />} />
+              <Route path="d/:token" element={<DealRoom />} />
               <Route path="admin/*" element={<OsRoutes />} />
               <Route path="os/*" element={<OsRoutes />} />
               <Route path="app" element={<PhoneApp />} />

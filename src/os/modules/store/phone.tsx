@@ -45,7 +45,7 @@ export function MyGear() {
         if (!g) return null;
         const late = isOverdue(c);
         return (
-          <div key={c.id} className={`rounded-2xl border bg-white p-3 ${late ? 'border-red-200' : 'border-basil-line'}`}>
+          <div key={c.id} className={`min-w-0 rounded-2xl border bg-white p-3 ${late ? 'border-red-200' : 'border-basil-line'}`}>
             <div className="flex items-center gap-3">
               <GearThumb gear={g} />
               <span className="min-w-0 flex-1"><b className="block truncate">{g.name}</b><span className="block truncate text-xs text-basil-muted">{g.tag} · {projectName(projects, c.project_id)}</span></span>

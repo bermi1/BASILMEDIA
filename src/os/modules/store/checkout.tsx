@@ -394,7 +394,7 @@ export function ReturnsPanel() {
             if (!it) return null;
             const late = isOverdue(c);
             return (
-              <div key={c.id} className={`flex items-center gap-3 rounded-2xl border bg-white p-3 ${late ? 'border-red-200' : 'border-basil-line'}`}>
+              <div key={c.id} className={`flex min-w-0 items-center gap-3 rounded-2xl border bg-white p-3 ${late ? 'border-red-200' : 'border-basil-line'}`}>
                 <GearThumb gear={it} />
                 <span className="min-w-0 flex-1">
                   <b className="block truncate">{it.name}</b>
@@ -433,9 +433,9 @@ export function WhoHasIt({ limit }: { limit?: number }) {
   };
   if (!groups.length) return <EmptyBox>Nothing is out right now.</EmptyBox>;
   return (
-    <div className="grid gap-3 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
       {groups.slice(0, limit).map(({ holder, list, late }) => (
-        <div key={holder} className={`rounded-2xl border bg-white p-3 ${late ? 'border-red-200' : 'border-basil-line'}`}>
+        <div key={holder} className={`min-w-0 rounded-2xl border bg-white p-3 ${late ? 'border-red-200' : 'border-basil-line'}`}>
           <div className="flex items-center gap-3">
             <Avatar name={nameOf(people, holder)} />
             <span className="min-w-0 flex-1"><b className="block">{nameOf(people, holder)}</b><span className="text-xs text-basil-muted">{list.length} item{list.length > 1 ? 's' : ''} · {[...new Set(list.map((c) => projectName(projects, c.project_id)))].join(', ')}</span></span>

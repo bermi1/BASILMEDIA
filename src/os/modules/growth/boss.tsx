@@ -41,7 +41,7 @@ function useForeign(table: string, q: Parameters<typeof fetchRows>[1] = {}) {
 }
 
 export interface ApprovalItem { id: string; title: string; sub: string; amount: number; at: string; kind: 'money' | 'proposal' | 'other'; link?: string }
-const BOSS_STATUSES = ['recommended', 'awaiting_boss', 'pending_boss', 'gm_recommended', 'boss_review'];
+const BOSS_STATUSES = ['boss_approval'];
 
 /** Everything the cockpit needs, derived from every module's tables. */
 export function useBoss() {
