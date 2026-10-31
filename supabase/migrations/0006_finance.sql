@@ -14,10 +14,7 @@ returns jsonb language sql stable security definer set search_path = public as $
   select value from public.app_settings where key = _key;
 $$;
 
-create or replace function public.is_staff(_user uuid)
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.user_roles where user_id = _user and role <> 'client');
-$$;
+-- public.is_staff(_user default auth.uid()) is defined once in 0005_projects.sql.
 
 -- Document numbering from app_settings.numbering, e.g. "BM-INV-{YYYY}-{0000}". Yearly counters reset each year.
 create table public.doc_counters (

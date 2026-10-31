@@ -8,10 +8,7 @@ create or replace function public.is_store_manager() returns boolean
 language sql stable security definer set search_path = public as $$
   select public.has_any_role(auth.uid(), array['storekeeper', 'gm_cfo', 'boss']::public.app_role[]);
 $$;
-create or replace function public.is_staff() returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.user_roles where user_id = auth.uid() and role <> 'client');
-$$;
+-- public.is_staff(_user default auth.uid()) is defined once in 0005_projects.sql.
 create or replace function public.is_reception() returns boolean
 language sql stable security definer set search_path = public as $$
   select public.has_any_role(auth.uid(), array['receptionist', 'gm_cfo', 'boss']::public.app_role[]);

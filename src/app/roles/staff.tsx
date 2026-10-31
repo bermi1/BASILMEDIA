@@ -2,7 +2,8 @@ import { Clapperboard, Contact, FileText, Leaf, Lightbulb, ListChecks, Megaphone
 import type { PhoneRoleApp } from '@/os/modules/types';
 import { MyMoneyRequests } from '@/os/modules/finance/phone';
 import { MyGear } from '@/os/modules/store/phone';
-import { AnnouncementsPanel, Directory, LeavePanel, MyShoots, MyTasks, Payslips, StaffMyDay, SuggestionBox, WeeklyReportForm } from '@/os/modules/projects/phone';
+import { AnnouncementsPanel, Directory, LeavePanel, MyShoots, MyTasks, StaffMyDay, SuggestionBox, WeeklyReportForm } from '@/os/modules/projects/phone';
+import { MyPayslips } from '@/os/modules/finance/phone';
 
 export const app: PhoneRoleApp = {
   title: 'Staff',
@@ -17,7 +18,7 @@ export const app: PhoneRoleApp = {
     { key: 'report', label: 'Weekly report', icon: FileText, sub: 'Due Saturday 18:00', element: <WeeklyReportForm /> },
     { key: 'ideas', label: 'Suggestion box', icon: Lightbulb, sub: 'Anonymous if you like', element: <SuggestionBox /> },
     { key: 'leave', label: 'Leave', icon: Leaf, sub: 'Balance and requests', element: <LeavePanel /> },
-    { key: 'payslips', label: 'Payslips', icon: Receipt, element: <Payslips /> },
+    { key: 'payslips', label: 'Payslips', icon: Receipt, element: <MyPayslips /> },
     { key: 'news', label: 'Announcements', icon: Megaphone, element: <AnnouncementsPanel /> },
     { key: 'directory', label: 'Directory', icon: Contact, sub: 'Phones and birthdays', element: <Directory /> },
     { key: 'gear', label: 'My gear', icon: Package, element: <MyGear /> },
