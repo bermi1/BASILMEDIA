@@ -8,7 +8,7 @@ import { useActing } from '@/os/lib/session';
 import { useToast } from '@/os/cms/toast';
 import { PageTitle } from '@/os/OsLayout';
 import { Empty, Field, Pill, Sheet, Tabs, inputCls, tsh } from '@/os/ui';
-import { addDays, dayKey, fmtDate, overlaps, rentalLateDays, rentalTotals, type Rental, type Reservation } from './data';
+import { addDays, dayKey, fmtDate, isOverdue, overlaps, rentalLateDays, rentalTotals, type Checkout, type Rental, type Reservation } from './data';
 import { Chip, EmptyBox, GearThumb, SearchBox, matchGear, useGear } from './shared';
 
 const STATUS: Record<Rental['status'], { label: string; tone: 'blue' | 'amber' | 'green' | 'grey' }> = {
@@ -25,7 +25,7 @@ export function RentalsPanel() {
   const list = rentals.filter((r) => (tab === 'active' ? r.status !== 'closed' : r.status === 'closed'));
   const handOut = async (r: Rental) => {
     const busy = r.gear_ids.map((id) => gear.find((g) => g.id === id)).filter((g) => g && g.status !== 'available' && g.status !== 'reserved');
-    if (busy.length) return toast(`${busy[0]!.name} is not in the store`, 'error');
+    if (busy.length) return toast(`${busy[0]!.name} is not back in the store yet — check it in first`, 'error');
     for (const id of r.gear_ids) await updateRow('gear_items', id, { status: 'out', holder_id: null });
     await updateRow('gear_rentals', r.id, { status: 'out' });
     toast('Handed to renter · agreement signed');
@@ -75,13 +75,23 @@ function NewRentalSheet({ open, onClose, rentals }: { open: boolean; onClose: ()
   const chosen = gear.filter((g) => f.gear_ids.includes(g.id));
   const dayRate = chosen.reduce((s, g) => s + g.day_rate, 0);
   const suggest = f.pricing === 'day' ? Math.round(dayRate * 1.2) : Math.round(dayRate * 1.2 * 5);
-  const clash = (id: string) => res.some((r) => r.gear_id === id && r.status === 'reserved' && overlaps(f.start_date, f.end_date, r.start_date, r.end_date)) || rentals.some((r) => r.gear_ids.includes(id) && ['booked', 'out'].includes(r.status) && overlaps(f.start_date, f.end_date, r.start_date, r.end_date));
+  const { rows: outNow } = useTable<Checkout>('gear_checkouts', { eq: { status: 'out' } });
+  // Still out with crew past the hire start (or overdue) → cannot be promised to a renter.
+  const busyOut = (id: string) => {
+    const co = outNow.filter((c) => c.gear_id === id);
+    if (co.length) return co.some((c) => isOverdue(c) || dayKey(c.due_at) >= f.start_date);
+    return gear.find((g) => g.id === id)?.status === 'out'; // out on another rental
+  };
+  const clash = (id: string) => busyOut(id) || res.some((r) => r.gear_id === id && r.status === 'reserved' && overlaps(f.start_date, f.end_date, r.start_date, r.end_date)) || rentals.some((r) => r.gear_ids.includes(id) && ['booked', 'out'].includes(r.status) && overlaps(f.start_date, f.end_date, r.start_date, r.end_date));
   const save = async () => {
     if (!f.renter_name || !f.renter_phone || !f.gear_ids.length) return toast('Renter, phone and at least one item are required', 'error');
     if (f.gear_ids.some(clash)) return toast('One of the items is booked for those dates', 'error');
-    const no = `BM-RNT-${dayKey().slice(0, 4)}-${String(rentals.length + 11).padStart(3, '0')}`;
+    const year = dayKey().slice(0, 4);
+    const last = Math.max(10, ...rentals.filter((r) => r.agreement_no?.startsWith(`BM-RNT-${year}-`)).map((r) => Number(r.agreement_no.split('-').pop()) || 0));
+    const no = `BM-RNT-${year}-${String(last + 1).padStart(3, '0')}`;
     await insertRow('gear_rentals', { ...f, rate: f.rate || suggest, deposit: f.deposit || Math.round(chosen.reduce((s, g) => s + g.purchase_price, 0) * 0.15), late_fee_per_day: f.late_fee_per_day || Math.round(dayRate * 0.6), agreement_no: no, status: 'booked', returned_at: null, inspection_note: '', damage_charge: 0, deposit_refunded: 0, created_by: userId });
     toast(`Rental ${no} booked`);
+    setF((x) => ({ ...x, renter_name: '', renter_company: '', renter_phone: '', renter_id_number: '', gear_ids: [], rate: 0, deposit: 0, late_fee_per_day: 0 }));
     onClose();
   };
   return (
@@ -99,7 +109,7 @@ function NewRentalSheet({ open, onClose, rentals }: { open: boolean; onClose: ()
         <div className="flex max-h-52 flex-col gap-1.5 overflow-y-auto">
           {gear.filter((g) => matchGear(g, q) && g.status !== 'out_of_service' && g.status !== 'in_repair').map((g) => {
             const on = f.gear_ids.includes(g.id), c = clash(g.id);
-            return <button key={g.id} type="button" disabled={c && !on} aria-pressed={on} onClick={() => setF({ ...f, gear_ids: on ? f.gear_ids.filter((x) => x !== g.id) : [...f.gear_ids, g.id] })} className={`flex min-h-[48px] items-center gap-2 rounded-xl border px-3 text-left text-sm ${on ? 'border-amber-500 bg-amber-50' : 'border-basil-line bg-white'} ${c && !on ? 'opacity-50' : ''}`}><GearThumb gear={g} size={28} /><span className="flex-1 truncate"><b>{g.name}</b></span>{c ? <Pill tone="red">Booked</Pill> : <span className="text-xs text-basil-muted">{tsh(g.day_rate)}/day</span>}</button>;
+            return <button key={g.id} type="button" disabled={c && !on} aria-pressed={on} onClick={() => setF({ ...f, gear_ids: on ? f.gear_ids.filter((x) => x !== g.id) : [...f.gear_ids, g.id] })} className={`flex min-h-[48px] items-center gap-2 rounded-xl border px-3 text-left text-sm ${on ? 'border-amber-500 bg-amber-50' : 'border-basil-line bg-white'} ${c && !on ? 'opacity-50' : ''}`}><GearThumb gear={g} size={28} /><span className="flex-1 truncate"><b>{g.name}</b></span>{c ? <Pill tone="red">{busyOut(g.id) ? 'Out' : 'Booked'}</Pill> : g.status === 'out' ? <Pill tone="amber">Back {fmtDate(outNow.find((x) => x.gear_id === g.id)?.due_at)}</Pill> : <span className="text-xs text-basil-muted">{tsh(g.day_rate)}/day</span>}</button>;
           })}
         </div>
         <div className="flex gap-2"><Chip on={f.pricing === 'day'} onClick={() => setF({ ...f, pricing: 'day' })}>Per day</Chip><Chip on={f.pricing === 'week'} onClick={() => setF({ ...f, pricing: 'week' })}>Per week</Chip></div>

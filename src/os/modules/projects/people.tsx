@@ -435,12 +435,12 @@ export function Directory() {
         </div>
       )}
       <label className="relative"><span className="sr-only">Search staff</span><Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-basil-muted" /><input className={`${inputCls} pl-10`} placeholder="Search name, role or team" value={q} onChange={(e) => setQ(e.target.value)} /></label>
-      <ul className="m-0 grid list-none gap-2 p-0 md:grid-cols-2">
+      <ul className="m-0 grid list-none grid-cols-1 gap-2 p-0 md:grid-cols-2">
         {list.map((p) => { const d = det(p.id); return (
-          <li key={p.id} className="flex items-center gap-3 rounded-2xl border border-basil-line bg-white p-3">
+          <li key={p.id} className="flex min-w-0 items-center gap-3 rounded-2xl border border-basil-line bg-white p-3">
             <Avatar name={p.full_name} size={44} />
             <span className="min-w-0 flex-1"><b className="block truncate">{p.full_name}</b><span className="block truncate text-xs text-basil-muted">{d?.job_title ?? p.roles.join(', ')}{d?.department ? ` · ${d.department}` : ''}</span>{d?.birthday && <span className="block text-xs text-basil-muted"><Cake size={11} className="inline" /> {bday(d.birthday)}</span>}</span>
-            {p.phone && <><a href={telLink(p.phone)} aria-label={`Call ${p.full_name}`} className="flex h-11 w-11 items-center justify-center rounded-full bg-basil-ice text-basil"><Phone size={17} /></a><a href={waLink('Habari ' + p.full_name.split(' ')[0] + ', ', p.phone)} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${p.full_name}`} className="flex h-11 w-11 items-center justify-center rounded-full bg-emerald-50 text-emerald-700"><MessageCircle size={17} /></a></>}
+            {p.phone && <><a href={telLink(p.phone)} aria-label={`Call ${p.full_name}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-basil-ice text-basil"><Phone size={17} /></a><a href={waLink('Habari ' + p.full_name.split(' ')[0] + ', ', p.phone)} target="_blank" rel="noreferrer" aria-label={`WhatsApp ${p.full_name}`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-700"><MessageCircle size={17} /></a></>}
           </li>); })}
       </ul>
     </div>
