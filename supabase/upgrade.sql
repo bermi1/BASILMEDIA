@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -956,10 +956,10 @@ select v.name, v.logo, v.site, v.ord from (values
   ('Tanzania Health Summit', '', '', 8),
   ('CardioTan · JKCI', '', 'https://www.jkci.or.tz', 9),
   ('SATA', '', 'https://www.sata.or.tz', 10),
-  ('SNOSSA', '', '', 11),
+  ('SNOSSA Conference 2026', '', '', 11),
   ('NEDC', '', '', 12),
-  ('CareHealth Tanzania', '', '', 13),
-  ('Ampola Regency', '', '', 14)
+  ('CareHealth & Hospitality Services', '', '', 13),
+  ('Ampola Regency Hospital', '', '', 14)
 ) as v(name, logo, site, ord)
 where not exists (select 1 from public.partners p where lower(p.name) = lower(v.name));
 
@@ -1042,4 +1042,12 @@ update public.news_stories set published = false where title in (
   'Paediatric oncology unit opens second ward',
   'Nurses’ conference calls for abstracts on community care',
   'Drug alert: recall of one batch of an oral antibiotic');
+
+-- ===================== 0029_partner_names.sql =====================
+-- Basil Media OS · 0029 partner names as on their logos (SNOSSA = its 2026 conference).
+update public.partners set name = 'SNOSSA Conference 2026' where name = 'SNOSSA';
+update public.partners set name = 'Ampola Regency Hospital' where name = 'Ampola Regency';
+update public.partners set name = 'CareHealth & Hospitality Services' where name = 'CareHealth Tanzania';
+update public.partners set name = 'SATA · Society of Anaesthesiologists of Tanzania' where name = 'SATA';
+update public.partners set name = 'NEDC · National Enterprise and Development Chamber' where name = 'NEDC';
 

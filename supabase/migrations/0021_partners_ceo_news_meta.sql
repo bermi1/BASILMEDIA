@@ -22,10 +22,10 @@ select v.name, v.logo, v.site, v.ord from (values
   ('Tanzania Health Summit', '', '', 8),
   ('CardioTan · JKCI', '', 'https://www.jkci.or.tz', 9),
   ('SATA', '', 'https://www.sata.or.tz', 10),
-  ('SNOSSA', '', '', 11),
+  ('SNOSSA Conference 2026', '', '', 11),
   ('NEDC', '', '', 12),
-  ('CareHealth Tanzania', '', '', 13),
-  ('Ampola Regency', '', '', 14)
+  ('CareHealth & Hospitality Services', '', '', 13),
+  ('Ampola Regency Hospital', '', '', 14)
 ) as v(name, logo, site, ord)
 where not exists (select 1 from public.partners p where lower(p.name) = lower(v.name));
 
