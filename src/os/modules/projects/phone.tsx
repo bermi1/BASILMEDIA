@@ -1,5 +1,4 @@
 // Stable exports used by the phone apps (Boss, GM/CFO, Project Lead, Staff…). Keep these names stable.
-import './seed';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AlertTriangle, ArrowRight, CalendarCheck, ChevronRight, Clapperboard, FileText, Lightbulb, MapPin, Plane, Wallet } from 'lucide-react';

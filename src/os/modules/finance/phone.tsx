@@ -6,7 +6,6 @@ import { useActing } from '@/os/lib/session';
 import { useTable } from '@/os/lib/store';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Pill, Progress, Sheet, Stat, StageTracker, Tabs, tsh, tshShort } from '@/os/ui';
-import './seed';
 import {
   approvePayroll, bossDecide, fmtDate, monthLabel, retireDue, reviewPayroll, runStage, unretiredFor, useFinance,
   type Fin, type MoneyRequest, type PayrollRun, type Payslip,

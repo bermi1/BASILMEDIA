@@ -1,6 +1,5 @@
 // Data hooks and workflow actions for the projects module. Every action works in demo mode and,
 // with Supabase, calls the matching SQL function in 0005_projects.sql.
-import './seed';
 import { demoTable, insertRow, nowIso, rpc, updateRow, useTable, type Person } from '@/os/lib/store';
 import { notify } from '@/os/lib/notify';
 import { supabase } from '@/lib/supabase';
@@ -59,22 +58,6 @@ export async function createProjectFromTemplate(input: {
     _template: tpl.key, _name: input.name, _client: input.client_id, _lead: input.lead_id, _start: input.start_date, _end: input.end_date,
     _budget: input.budget, _contract: input.contract_value, _priority: input.priority, _location: input.location, _description: input.description,
     _tasks: tpl.tasks.map(([title, due]) => ({ title, due: addDays(input.start_date, due) })), _deliverables: tpl.deliverables.map(([title, spec]) => ({ title, spec })),
-  }, async () => {
-    const year = new Date().getFullYear();
-    const n = demoTable('projects').length + 1;
-    const p = await insertRow<Project>('projects', {
-      name: input.name, client_id: input.client_id, service: tpl.service, stage: 'Brief', lead_id: input.lead_id,
-      start_date: input.start_date, end_date: input.end_date, budget: input.budget, contract_value: input.contract_value,
-      priority: input.priority, location: input.location, health: 'green', spent: 0, code: `BM-PRJ-${year}-${String(n + 12).padStart(3, '0')}`,
-      description: input.description, template: tpl.key,
-    });
-    await insertRow('project_crew', { project_id: p.id, user_id: input.lead_id, role: 'Project lead', days: 0 });
-    for (const [title, due] of tpl.tasks)
-      await insertRow('tasks', { project_id: p.id, title, description: '', assignee_id: input.lead_id, due_date: addDays(input.start_date, due), priority: 'Normal', status: 'To do', checklist: [], minutes_logged: 0, created_by: actor, completed_at: null });
-    for (const [title, spec] of tpl.deliverables)
-      await insertRow('deliverables', { project_id: p.id, title, spec, owner_id: input.lead_id, due_date: input.end_date, post_status: 'Not started', revision_round: 0, delivered_at: null });
-    if (input.lead_id !== actor) await notify(input.lead_id, `You lead a new project: ${input.name}`, `${tpl.name} · starts ${fmtDate(input.start_date)} · due ${fmtDate(input.end_date)}`, '/app', 'task');
-    return p.id;
   });
 }
 
@@ -83,11 +66,7 @@ export async function moveStage(p: Project, stage: string, ctx: GateCtx) {
   const back = PROJECT_STAGES.indexOf(stage) < PROJECT_STAGES.indexOf(p.stage);
   const why = back ? null : checkMove(p, stage, ctx);
   if (why) throw new Error(why);
-  return rpc('move_project_stage', { _project: p.id, _stage: stage }, async () => {
-    await updateRow('projects', p.id, { stage });
-    if (stage === 'Invoice') await notify('u-fin', `Ready to invoice: ${p.name}`, 'All deliverables delivered. Raise the final invoice.', '/os/finance', 'money');
-    if (stage === 'Client Review') await notify('u-growth', `${p.name} is with the client`, 'Draft sent for review.', '', 'info');
-  });
+  return rpc('move_project_stage', { _project: p.id, _stage: stage });
 }
 
 // ---------- tasks ----------
@@ -110,7 +89,7 @@ export const addComment = (task_id: string, author_id: string, body: string) => 
 
 // ---------- shoots ----------
 export async function confirmCallSheet(sc: ShootCrew) {
-  return rpc('confirm_call_sheet', { _id: sc.id }, () => updateRow('shoot_crew', sc.id, { confirmed_at: nowIso() }));
+  return rpc('confirm_call_sheet', { _id: sc.id });
 }
 export async function addShootCrew(shoot: Shoot, user_id: string, role: string, projectName: string) {
   await insertRow('shoot_crew', { shoot_id: shoot.id, user_id, role, call_time: shoot.call_time, confirmed_at: null });
@@ -135,10 +114,7 @@ export const verifyCopy = (c: FootageCopy, by: string) => updateRow('footage_cop
 // ---------- people ----------
 export async function decideLeave(l: LeaveRequest, approve: boolean, note: string, actor: string) {
   if (l.user_id === actor) throw new Error('You cannot approve your own leave.');
-  return rpc('decide_leave', { _id: l.id, _approve: approve, _note: note }, async () => {
-    await updateRow('leave_requests', l.id, { status: approve ? 'Approved' : 'Rejected', decided_by: actor, decided_at: nowIso(), decision_note: note });
-    await notify(l.user_id, `Leave ${approve ? 'approved' : 'not approved'}`, `${l.leave_type} · ${fmtDate(l.start_date)} – ${fmtDate(l.end_date)}${note ? ` · ${note}` : ''}`, '/app', 'approval');
-  });
+  return rpc('decide_leave', { _id: l.id, _approve: approve, _note: note });
 }
 export async function submitLeave(row: Omit<LeaveRequest, 'id' | 'created_at' | 'status' | 'decided_by' | 'decided_at' | 'decision_note'>) {
   const r = await insertRow<LeaveRequest>('leave_requests', { ...row, status: 'Pending', decided_by: null, decided_at: null, decision_note: '' });
@@ -149,10 +125,7 @@ export async function submitLeave(row: Omit<LeaveRequest, 'id' | 'created_at' | 
 export const submitSuggestion = (author: string, anonymous: boolean, category: string, body: string) =>
   insertRow('suggestions', { author_id: anonymous ? null : author, anonymous, category, body, status: 'Under review', reply: '', replied_by: null, replied_at: null });
 export async function replySuggestion(s: Suggestion, status: string, reply: string, actor: string) {
-  return rpc('reply_suggestion', { _id: s.id, _status: status, _reply: reply }, async () => {
-    await updateRow('suggestions', s.id, { status, reply, replied_by: actor, replied_at: nowIso() });
-    if (s.author_id) await notify(s.author_id, `Your suggestion: ${status}`, reply, '/app', 'info');
-  });
+  return rpc('reply_suggestion', { _id: s.id, _status: status, _reply: reply });
 }
 
 export function leaveUsed(userId: string, leave: LeaveRequest[], year = new Date().getFullYear()) {

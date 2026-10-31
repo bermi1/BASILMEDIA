@@ -1,4 +1,3 @@
-import './seed';
 import { Briefcase, Clapperboard, Clock, Contact, FileText, Film, HardDrive, Leaf, Lightbulb, ListChecks, Megaphone, Users } from 'lucide-react';
 import { isDemo } from '@/lib/supabase';
 import { demoTable } from '@/os/lib/store';

@@ -3,7 +3,6 @@ import { CalendarDays } from 'lucide-react';
 import { ALL_ROLES } from '@/os/lib/session';
 import type { OsModule } from '../types';
 import { CalendarApp } from './CalendarApp';
-import './seed';
 
 export { CalendarApp, CalendarPhone } from './CalendarApp';
 export type { CalendarAppProps, CalView } from './CalendarApp';

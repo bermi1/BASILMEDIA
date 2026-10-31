@@ -6,7 +6,6 @@ import { useActing } from '@/os/lib/session';
 import { usePeople, useTable, type Person } from '@/os/lib/store';
 import { Empty, Pill, inputCls } from '@/os/ui';
 import { GEAR_STATUS, type Checkout, type Gear, type ProjectRef } from './data';
-import './seed';
 
 export const STORE_ROLES: AppRole[] = ['storekeeper', 'gm_cfo', 'boss'];
 export const RECEPTION_ROLES: AppRole[] = ['receptionist', 'gm_cfo', 'boss'];

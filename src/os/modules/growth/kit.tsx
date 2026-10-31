@@ -6,7 +6,6 @@ import { isDemo } from '@/lib/supabase';
 import type { Booking, Gallery, Subscriber } from '@/lib/types';
 import { useTable } from '@/os/lib/store';
 import { isoPlus } from './lib';
-import './seed';
 
 /** Progress ring (SVG). */
 export function Ring({ value, max, size = 76, stroke = 8, label, sub, color }: { value: number; max: number; size?: number; stroke?: number; label?: ReactNode; sub?: ReactNode; color?: string }) {

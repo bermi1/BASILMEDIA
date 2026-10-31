@@ -1,7 +1,6 @@
 // Growth / Account Manager phone app definition (shared by both roles; coral accent).
 import { CalendarDays, FileSignature, FileText, Gavel, Inbox, Kanban, Repeat, Share2, Users } from 'lucide-react';
 import type { PhoneRoleApp } from '../types';
-import './seed';
 import { BookingsInbox, Pipeline } from './crm';
 import { ContractsList, EventsList, ProposalsList, SubscribersGlance, TendersList } from './docs';
 import { RequestBoard, RetainersList } from './retainers';

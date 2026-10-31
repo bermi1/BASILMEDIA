@@ -1,7 +1,6 @@
 import { Car, History, Navigation, Route } from 'lucide-react';
 import type { PhoneRoleApp } from '@/os/modules/types';
 import { CurrentTrip, TripHistory, TripsList, VehiclePanel } from '@/os/modules/store/transport';
-import '@/os/modules/store/seed';
 
 export const app: PhoneRoleApp = {
   title: 'Driver',

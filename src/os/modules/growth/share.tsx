@@ -29,10 +29,7 @@ export function ReferenceLibrary() {
   const clearer = can('boss', 'gm_cfo');
   const setCleared = async (r: ReferenceItem, cleared: boolean) => {
     try {
-      await rpc('set_reference_cleared', { _id: r.id, _cleared: cleared }, () => {
-        const x = demoTable('reference_items').find((i) => i.id === r.id)!;
-        Object.assign(x, { cleared, cleared_by: cleared ? userId : null, cleared_at: cleared ? new Date().toISOString() : null });
-      });
+      await rpc('set_reference_cleared', { _id: r.id, _cleared: cleared });
       toast(cleared ? 'Cleared for sharing' : 'Removed from sharing');
     } catch (e) {
       toast((e as Error).message, 'error');

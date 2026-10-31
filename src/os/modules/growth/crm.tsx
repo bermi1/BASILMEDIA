@@ -30,14 +30,7 @@ export function useLeadHeat() {
 }
 
 export async function moveLead(lead: Lead, stage: LeadStage, actor: string, lostReason = '') {
-  await rpc('move_lead', { _lead: lead.id, _stage: stage, _lost_reason: lostReason || null }, () => {
-    const rows = demoTable('leads');
-    const r = rows.find((x) => x.id === lead.id);
-    if (!r) throw new Error('Lead not found');
-    if (stage === 'Lost' && !lostReason) throw new Error('Choose a lost reason');
-    Object.assign(r, { stage, lost_reason: stage === 'Lost' ? lostReason : '', probability: stage === 'Won' ? 100 : stage === 'Lost' ? 0 : r.probability, stage_changed_at: nowIso() });
-    demoTable('lead_activity').push({ id: newId(), lead_id: lead.id, kind: 'stage', from_stage: lead.stage, to_stage: stage, body: lostReason, actor_id: actor, created_at: nowIso() });
-  });
+  await rpc('move_lead', { _lead: lead.id, _stage: stage, _lost_reason: lostReason || null });
 }
 
 const OPEN = (l: Lead) => l.stage !== 'Won' && l.stage !== 'Lost';

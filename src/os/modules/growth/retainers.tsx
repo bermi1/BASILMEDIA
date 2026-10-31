@@ -121,27 +121,13 @@ export function YearCalendar({ items, onPick }: { items: CalItem[]; onPick?: (i:
 
 /** Advance a shoot's live status (crew / AM). Clients get notified at key moments. */
 export async function setShootStatus(item: CalItem, status: string) {
-  await rpc('set_shoot_status', { _item: item.id, _status: status }, () => {
-    const r = demoTable('retainer_calendar').find((x) => x.id === item.id);
-    if (!r) throw new Error('Not found');
-    r.status = status;
-  });
+  await rpc('set_shoot_status', { _item: item.id, _status: status });
   if (['On the way', 'Arrived', 'Wrapped'].includes(status) && item.client_id === 'c-hospital') await notify('u-client', `Crew ${status.toLowerCase()}`, `${item.title} · ${item.time}`, '/app?tab=home', 'info');
 }
 
 /** Client sign-off: confirm completed (consumes allowance) or report an issue, with a 1–5 star rating. */
 export async function signOffShoot(item: CalItem, outcome: 'completed' | 'issue', rating: number, comment: string, userId: string) {
-  await rpc('client_signoff_shoot', { _item: item.id, _completed: outcome === 'completed', _rating: rating, _comment: comment }, () => {
-    const r = demoTable('retainer_calendar').find((x) => x.id === item.id);
-    if (!r) throw new Error('Not found');
-    if (r.signoff) throw new Error('Already signed off');
-    if (rating < 1 || rating > 5) throw new Error('Choose 1–5 stars');
-    r.signoff = { outcome, rating, comment, at: nowIso(), by: userId };
-    r.status = 'Completed';
-    for (const [unit, qty] of Object.entries(item.units) as [UnitKey, number][]) {
-      demoTable('allowance_ledger').push({ id: newId(), retainer_id: item.retainer_id, client_id: item.client_id, month: monthKey(item.date), unit, qty, kind: 'usage', source_id: item.id, note: `Signed off: ${item.title}`, created_at: nowIso() });
-    }
-  });
+  await rpc('client_signoff_shoot', { _item: item.id, _completed: outcome === 'completed', _rating: rating, _comment: comment });
   await notify('u-growth', outcome === 'issue' ? 'Client reported an issue' : 'Shoot signed off', `${item.title} · ${'★'.repeat(rating)}${comment ? ` · ${comment}` : ''}`, '/os/retainers', outcome === 'issue' ? 'alert' : 'info');
 }
 
@@ -260,10 +246,7 @@ export function RequestBoard({ compact = false }: { compact?: boolean }) {
         const it = await insertRow<CalItem>('retainer_calendar', { retainer_id: q.retainer_id, client_id: q.client_id, date: day, time: '09:00', kind: q.type === 'podcast' ? 'podcast' : q.type === 'shoot' ? 'shoot' : 'delivery', title: q.title, location: q.location, map_url: q.location ? `https://maps.google.com/?q=${encodeURIComponent(q.location)}` : '', status: 'Scheduled', crew: q.type === 'shoot' ? [{ user_id: 'u-jonathan', role: 'Lead camera' }, { user_id: 'u-benedicto', role: 'Photographer' }] : [], call_time: q.type === 'shoot' ? '08:00' : '', checklist: [], units: q.units, signoff: null, gallery_slug: '', link: '' });
         itemId = it.id;
       }
-      await rpc('set_request_status', { _id: q.id, _status: status, _quote: quote ? Number(quote) : null, _note: note || null }, () => {
-        const r = demoTable('client_requests').find((x) => x.id === q.id)!;
-        Object.assign(r, { status, note: note || r.note, ...(quote ? { quote_amount: Number(quote), quote_status: 'sent' } : {}), ...(itemId ? { scheduled_item_id: itemId } : {}) });
-      });
+      await rpc('set_request_status', { _id: q.id, _status: status, _quote: quote ? Number(quote) : null, _note: note || null });
       if (q.client_id === 'c-hospital') await notify('u-client', `Request ${status.toLowerCase()}`, q.title, '/app?tab=requests', 'info');
       toast(`Moved to ${status}`);
       setOpen(null);

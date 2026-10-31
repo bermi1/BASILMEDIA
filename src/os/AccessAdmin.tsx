@@ -21,14 +21,9 @@ registerSeed('portal_grants', () => [
 ]);
 
 export async function grantPortal(g: { user_id: string; role: AppRole; project_id: string | null; expires_at: string | null; note: string }, by: string) {
-  return rpc('grant_portal', { _user: g.user_id, _role: g.role, _project: g.project_id, _expires: g.expires_at, _note: g.note }, async () => {
-    if (g.user_id === by) throw new Error('You cannot grant access to yourself');
-    await insertRow('portal_grants', { ...g, granted_by: by });
-    await insertRow('notifications', { user_id: g.user_id, title: 'New portal access', body: `You can now open the ${portalMeta(g.role).label} portal. Switch portals from the top of the app.`, link: '/app', kind: 'info', read_at: null });
-    return null;
-  });
+  return rpc('grant_portal', { _user: g.user_id, _role: g.role, _project: g.project_id, _expires: g.expires_at, _note: g.note });
 }
-export const revokePortal = (id: string) => (supabase ? rpc('revoke_portal', { _id: id }, () => null) : deleteRow('portal_grants', id));
+export const revokePortal = (id: string) => (supabase ? rpc('revoke_portal', { _id: id }) : deleteRow('portal_grants', id));
 
 export function PortalAccessPanel() {
   const { userId, canAny } = useActing();

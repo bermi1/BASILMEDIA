@@ -13,7 +13,6 @@ import { EmptyBox, GearStatusPill, GearThumb, SearchBox, SectionHead, matchGear,
 import { CheckinSheet, ConsumablesPanel } from './ops';
 import { WhoHasIt } from './checkout';
 import { AssetDetail } from './gear';
-import './seed';
 
 export { RoomsBoard } from './reception';
 

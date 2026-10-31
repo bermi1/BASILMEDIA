@@ -2,7 +2,6 @@ import { Banknote, FileBadge2, FileSpreadsheet, FileText, HandCoins, LayoutDashb
 import { isDemo } from '@/lib/supabase';
 import { demoTable } from '@/os/lib/store';
 import type { OsModule } from '../types';
-import './seed';
 import { InvoicesList, MoneyInOut, PrintDoc, QuotationsList } from './docs';
 import { ProformasList } from './proformas';
 import { ApprovalsPage, BudgetsPage, FinanceOverview, FinanceSettingsPage, MyRequestsPage, PayPage, PayrollPage, ReconcilePage, RegisterPage } from './pages';

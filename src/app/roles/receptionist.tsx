@@ -1,7 +1,6 @@
 import { CalendarClock, ConciergeBell, History, Mail, MessageSquarePlus, UserPlus } from 'lucide-react';
 import type { PhoneRoleApp } from '@/os/modules/types';
 import { DeskBoard, ParcelsPanel, RoomsBoard, SignInForm, VisitorLog, WalkInEnquiry } from '@/os/modules/store/reception';
-import '@/os/modules/store/seed';
 
 export const app: PhoneRoleApp = {
   title: 'Reception',

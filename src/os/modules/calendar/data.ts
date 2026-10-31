@@ -7,12 +7,6 @@ import { supabase } from '@/lib/supabase';
 import { fetchRows, onChange, type Row } from '@/os/lib/store';
 import { useActing } from '@/os/lib/session';
 // Make sure every source table has its demo seed registered, wherever the calendar is mounted.
-import '@/os/lib/shared-seed';
-import '@/os/modules/projects/seed';
-import '@/os/modules/growth/seed';
-import '@/os/modules/store/seed';
-import '@/os/modules/finance/seed';
-import './seed';
 import { aggregate, FINANCE_ROLES, type CalEvent, type Sources, type Viewer } from './lib';
 
 const FEED_TABLES = ['projects', 'clients', 'shoots', 'shoot_crew', 'retainer_calendar', 'trips', 'room_bookings', 'growth_events', 'leave_requests'] as const;

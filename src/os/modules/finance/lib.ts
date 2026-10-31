@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase';
 import { demoTable, insertRow, newId, nowIso, persistDemo, rpc, updateRow, useTable, type Row } from '@/os/lib/store';
 import { notify } from '@/os/lib/notify';
 import type { AppRole } from '@/lib/types';
-import './seed';
 
 // ---------------------------------------------------------------- types
 export type ReqStatus = 'draft' | 'submitted' | 'gm_review' | 'boss_approval' | 'approved' | 'paid' | 'retired' | 'reconciled' | 'returned' | 'rejected';
@@ -357,38 +356,7 @@ export interface RequestDraft {
 }
 
 export function submitRequest(data: RequestDraft, id: string | null, actor: Actor) {
-  return rpc<string>('submit_money_request', { _data: data, _id: id }, () => {
-    const s = settingsNow();
-    const reqs = reqTable();
-    need(!!actor.userId, 'Sign in first');
-    need(!(s.block_on_unretired && unretiredFor(reqs, actor.userId, s.retirement_days).length), 'Retire the receipts for your earlier advance before requesting more money');
-    let r: MoneyRequest;
-    let wasReturned = false;
-    if (!id) {
-      r = { id: newId(), number: nextNumber('request', reqs.map((x) => x.number)), requester_id: actor.userId, status: 'draft', created_at: nowIso(), change_returned: 0, approved_alone: false, over_budget: false, duplicate_of: null, question: null, recommendation: '' } as unknown as MoneyRequest;
-      reqs.push(r);
-    } else {
-      r = findReq(id);
-      need(r.requester_id === actor.userId, 'Only the requester can submit this request');
-      need(['draft', 'returned'].includes(r.status), `This request is already ${STATUS_LABEL[r.status]}`);
-      wasReturned = r.status === 'returned';
-    }
-    const lines = demoTable('project_budget_lines') as unknown as BudgetLine[];
-    const line = lines.find((l) => l.id === data.budget_line_id);
-    Object.assign(r, { ...data, category: data.category || line?.line || '' });
-    delete (r as unknown as Record<string, unknown>).comment;
-    need(Number(r.amount) > 0, 'Enter an amount above zero');
-    need(r.purpose.trim().length >= 3, 'Say what the money is for');
-    need(!line || line.project_id === r.project_id, 'That budget line belongs to another project');
-    const rem = line ? lineStats(line, reqs, demoTable('expenses') as unknown as Expense[]).remaining : Infinity;
-    const dup = reqs.find((x) => x.id !== r.id && x.requester_id === actor.userId && Number(x.amount) === Number(r.amount) && x.project_id === r.project_id && !['draft', 'rejected'].includes(x.status) && Date.now() - new Date(x.created_at).getTime() < 7 * 864e5);
-    const isGm = actor.role === 'gm_cfo';
-    Object.assign(r, { status: isGm ? 'boss_approval' : 'gm_review', submitted_at: nowIso(), stage_at: nowIso(), question: null, over_budget: Number(r.amount) > rem, duplicate_of: dup?.id ?? null, returned_at: null });
-    pushStep({ request_id: r.id, step: 'submit', actor_id: actor.userId, decision: wasReturned ? 'resubmitted' : 'submitted', comment: data.comment ?? '', amount: Number(r.amount) });
-    if (isGm) notifyRole('boss', `Approval needed · ${tshTxt(r.amount)}`, `${r.purpose} · requested by GM/CFO`, '/app?tab=approvals', 'approval');
-    else notifyRole('gm_cfo', `New money request ${r.number}`, `${r.purpose} · ${tshTxt(r.amount)}`, '/app?tab=review');
-    return r.id;
-  });
+  return rpc<string>('submit_money_request', { _data: data, _id: id });
 }
 
 export async function saveDraft(data: RequestDraft, id: string | null, actor: Actor) {
@@ -399,144 +367,30 @@ export async function saveDraft(data: RequestDraft, id: string | null, actor: Ac
 }
 
 export function reviewRequest(id: string, decision: 'recommend' | 'return' | 'reject', comment: string, actor: Actor) {
-  return rpc<string>('review_money_request', { _id: id, _decision: decision, _comment: comment }, () => {
-    need(actor.role === 'gm_cfo', 'Only the GM/CFO reviews money requests');
-    const r = findReq(id);
-    need(r.status === 'gm_review', `This request is not waiting for review (it is ${STATUS_LABEL[r.status]})`);
-    need(r.requester_id !== actor.userId, 'You cannot review your own request');
-    need(decision === 'recommend' || comment.trim().length > 0, 'Give a reason');
-    const s = settingsNow();
-    const now = nowIso();
-    if (decision === 'recommend') {
-      const used = reqTable().filter((x) => x.approved_alone && x.approved_by === actor.userId && x.approved_at?.slice(0, 10) === today()).reduce((a, x) => a + Number(x.approved_amount ?? 0), 0);
-      const cap = s.approval_limits.gm_cfo_daily_cap;
-      if (Number(r.amount) < s.approval_limits.gm_cfo_alone_below && (!cap || used + Number(r.amount) <= cap)) {
-        Object.assign(r, { status: 'approved', approved_amount: r.amount, approved_by: actor.userId, approved_at: now, approved_alone: true, reviewed_by: actor.userId, reviewed_at: now, recommendation: comment, stage_at: now });
-        pushStep({ request_id: id, step: 'review', actor_id: actor.userId, decision: 'approved_within_limit', comment, amount: r.amount });
-        void notify(r.requester_id, `Request approved · ${r.number}`, 'Approved by GM/CFO within limit. Finance will pay next.', '/app?tab=requests', 'money');
-        notifyRole('finance', `Ready to pay · ${tshTxt(r.amount)}`, `${r.number} · ${r.purpose}`, '/app?tab=queue');
-        return 'approved';
-      }
-      Object.assign(r, { status: 'boss_approval', reviewed_by: actor.userId, reviewed_at: now, recommendation: comment, stage_at: now });
-      pushStep({ request_id: id, step: 'review', actor_id: actor.userId, decision: 'recommended', comment, amount: r.amount });
-      notifyRole('boss', `Approval needed · ${tshTxt(r.amount)}`, `${r.purpose} · recommended by GM/CFO`, '/app?tab=approvals', 'approval');
-      return 'boss_approval';
-    }
-    if (decision === 'return') {
-      Object.assign(r, { status: 'returned', reviewed_by: actor.userId, reviewed_at: now, returned_at: now, stage_at: now });
-      pushStep({ request_id: id, step: 'review', actor_id: actor.userId, decision: 'returned', comment, amount: r.amount });
-      void notify(r.requester_id, `Request returned · ${r.number}`, comment, '/app?tab=requests', 'money');
-      return 'returned';
-    }
-    Object.assign(r, { status: 'rejected', reviewed_by: actor.userId, reviewed_at: now, rejected_at: now, stage_at: now });
-    pushStep({ request_id: id, step: 'review', actor_id: actor.userId, decision: 'rejected', comment, amount: r.amount });
-    void notify(r.requester_id, `Request rejected · ${r.number}`, comment, '/app?tab=requests', 'money');
-    return 'rejected';
-  });
+  return rpc<string>('review_money_request', { _id: id, _decision: decision, _comment: comment });
 }
 
 export type BossDecision = 'approve' | 'approve_changed' | 'reject' | 'question';
 export function bossDecide(id: string, decision: BossDecision, opts: { amount?: number; comment?: string; verified_by?: 'pin' | 'passkey' | null }, actor: Actor) {
   const comment = opts.comment ?? '';
   const device = typeof navigator !== 'undefined' ? navigator.userAgent.slice(0, 120) : '';
-  return rpc<string>('approve_money_request', { _id: id, _decision: decision, _amount: opts.amount ?? null, _comment: comment, _verified_by: opts.verified_by ?? null, _device: device }, () => {
-    need(actor.role === 'boss', 'Only the Boss approves money requests');
-    const r = findReq(id);
-    need(r.status === 'boss_approval', `This request is not waiting for the Boss (it is ${STATUS_LABEL[r.status]})`);
-    need(r.requester_id !== actor.userId, 'You cannot approve your own request');
-    need(r.reviewed_by !== actor.userId, 'The reviewer and the approver must be different people');
-    const now = nowIso();
-    if (decision === 'approve' || decision === 'approve_changed') {
-      need(opts.verified_by === 'pin' || opts.verified_by === 'passkey', 'Confirm with your fingerprint or PIN');
-      const amt = decision === 'approve_changed' ? Number(opts.amount) : Number(r.amount);
-      need(amt > 0, 'Enter the approved amount');
-      Object.assign(r, { status: 'approved', approved_amount: amt, approved_by: actor.userId, approved_at: now, question: null, stage_at: now });
-      pushStep({ request_id: id, step: 'approve', actor_id: actor.userId, decision: amt !== Number(r.amount) ? 'approved_changed' : 'approved', comment, amount: amt, device, verified_by: opts.verified_by });
-      void notify(r.requester_id, `Approved · ${tshTxt(amt)}`, `${r.number} · Finance will pay next`, '/app?tab=requests', 'money');
-      notifyRole('finance', `Ready to pay · ${tshTxt(amt)}`, `${r.number} · ${r.purpose}`, '/app?tab=queue');
-      return 'approved';
-    }
-    need(comment.trim().length > 0, decision === 'question' ? 'Type your question' : 'Give a reason');
-    if (decision === 'question') {
-      r.question = comment;
-      pushStep({ request_id: id, step: 'approve', actor_id: actor.userId, decision: 'question', comment, amount: r.amount });
-      void notify(r.requester_id, `The Boss has a question · ${r.number}`, comment, '/app?tab=requests', 'approval');
-      return 'question';
-    }
-    Object.assign(r, { status: 'rejected', rejected_at: now, approved_by: actor.userId, stage_at: now });
-    pushStep({ request_id: id, step: 'approve', actor_id: actor.userId, decision: 'rejected', comment, amount: r.amount, device, verified_by: opts.verified_by ?? null });
-    void notify(r.requester_id, `Request rejected · ${r.number}`, comment, '/app?tab=requests', 'money');
-    if (r.reviewed_by) void notify(r.reviewed_by, `Boss rejected ${r.number}`, comment, '', 'money');
-    return 'rejected';
-  });
+  return rpc<string>('approve_money_request', { _id: id, _decision: decision, _amount: opts.amount ?? null, _comment: comment, _verified_by: opts.verified_by ?? null, _device: device });
 }
 
 export function answerQuestion(id: string, answer: string, actor: Actor) {
-  return rpc('answer_money_request', { _id: id, _answer: answer }, () => {
-    const r = findReq(id);
-    need(r.requester_id === actor.userId, 'Only the requester can answer');
-    need(r.status === 'boss_approval' && !!r.question, 'There is no open question');
-    need(answer.trim().length > 0, 'Type your answer');
-    r.question = null;
-    pushStep({ request_id: id, step: 'answer', actor_id: actor.userId, decision: 'answered', comment: answer, amount: r.amount });
-    notifyRole('boss', `Answer on ${r.number}`, answer, '/app?tab=approvals', 'approval');
-  });
+  return rpc('answer_money_request', { _id: id, _answer: answer });
 }
 
 export function payRequest(id: string, p: { method: string; reference: string; proof_url: string; account_id: string | null }, actor: Actor) {
-  return rpc('pay_money_request', { _id: id, _method: p.method, _reference: p.reference, _proof_url: p.proof_url, _account_id: p.account_id }, () => {
-    need(actor.role === 'finance', 'Only Finance pays money requests');
-    const r = findReq(id);
-    need(r.status === 'approved', `Only approved requests can be paid (this one is ${STATUS_LABEL[r.status]})`);
-    need(r.requester_id !== actor.userId, 'You cannot pay your own request');
-    need(r.approved_by !== actor.userId, 'The approver cannot also pay');
-    need(p.method === 'Cash' || p.reference.trim().length > 0, 'Enter the transaction reference');
-    const amt = Number(r.approved_amount ?? r.amount);
-    const now = nowIso();
-    Object.assign(r, { status: 'paid', paid_at: now, paid_by: actor.userId, paid_method: p.method, paid_reference: p.reference, paid_proof_url: p.proof_url, paid_account_id: p.account_id, stage_at: now });
-    pushStep({ request_id: id, step: 'pay', actor_id: actor.userId, decision: 'paid', comment: `${p.method} · ${p.reference}`, amount: amt });
-    demoTable('expenses').push({ id: newId(), created_at: now, date: today(), amount: amt, category: r.category || 'Contingency', account_id: p.account_id, project_id: r.project_id, budget_line_id: r.budget_line_id, request_id: r.id, payroll_run_id: null, payee: r.payee, description: `${r.number} · ${r.purpose}`, receipt_url: p.proof_url, petty_cash: p.method === 'Cash', recorded_by: actor.userId });
-    void notify(r.requester_id, `Paid · ${tshTxt(amt)}`, `${p.method} ref ${p.reference}. Retire receipts within ${settingsNow().retirement_days} days.`, '/app?tab=requests', 'money');
-  });
+  return rpc('pay_money_request', { _id: id, _method: p.method, _reference: p.reference, _proof_url: p.proof_url, _account_id: p.account_id });
 }
 
 export function retireRequest(id: string, receipts: { url: string; amount: number; note: string }[], change: number, note: string, actor: Actor) {
-  return rpc('retire_money_request', { _id: id, _receipts: receipts, _change: change, _note: note }, () => {
-    const r = findReq(id);
-    need(r.requester_id === actor.userId, 'Only the requester retires receipts');
-    need(r.status === 'paid', 'Only paid requests can be retired');
-    need(receipts.length > 0, 'Attach at least one receipt');
-    const amt = Number(r.approved_amount ?? r.amount);
-    need(change >= 0 && change <= amt, 'Change returned must be between 0 and the amount paid');
-    const spent = receipts.reduce((s, x) => s + Number(x.amount), 0);
-    const now = nowIso();
-    demoTable('retirements').push({ id: newId(), created_at: now, request_id: id, receipts, total_spent: spent, change_returned: change, note, retired_by: actor.userId });
-    Object.assign(r, { status: 'retired', retired_at: now, change_returned: change, stage_at: now });
-    for (const e of demoTable('expenses')) if (e.request_id === id) e.amount = Math.max(amt - change, 0);
-    pushStep({ request_id: id, step: 'retire', actor_id: actor.userId, decision: 'retired', comment: note, amount: spent });
-    notifyRole('gm_cfo', `Receipts to reconcile · ${r.number}`, `${tshTxt(spent)} in receipts`, '/app?tab=more');
-  });
+  return rpc('retire_money_request', { _id: id, _receipts: receipts, _change: change, _note: note });
 }
 
 export function reconcileRequest(id: string, decision: 'ok' | 'query', comment: string, actor: Actor) {
-  return rpc('reconcile_money_request', { _id: id, _decision: decision, _comment: comment }, () => {
-    need(actor.role === 'gm_cfo', 'Only the GM/CFO reconciles');
-    const r = findReq(id);
-    need(r.status === 'retired', 'Only retired requests can be reconciled');
-    need(r.requester_id !== actor.userId, 'You cannot reconcile your own request');
-    const now = nowIso();
-    if (decision === 'query') {
-      need(comment.trim().length > 0, 'Say what is wrong with the receipts');
-      Object.assign(r, { status: 'paid', retired_at: null, stage_at: now });
-      const rt = demoTable('retirements');
-      for (let i = rt.length - 1; i >= 0; i--) if (rt[i].request_id === id) rt.splice(i, 1);
-      pushStep({ request_id: id, step: 'reconcile', actor_id: actor.userId, decision: 'queried', comment });
-      void notify(r.requester_id, `Receipts queried · ${r.number}`, comment, '/app?tab=requests', 'money');
-      return;
-    }
-    Object.assign(r, { status: 'reconciled', reconciled_at: now, reconciled_by: actor.userId, stage_at: now });
-    pushStep({ request_id: id, step: 'reconcile', actor_id: actor.userId, decision: 'reconciled', comment });
-  });
+  return rpc('reconcile_money_request', { _id: id, _decision: decision, _comment: comment });
 }
 
 // ---------------------------------------------------------------- invoices (demo twins of the SQL triggers)
@@ -559,52 +413,12 @@ export const PROFORMA_TERMS = 'Payment by bank transfer or mobile money. Quote t
 
 /** Quotation → proforma: copies client, lines and VAT, marks the quotation accepted. Returns the proforma id. */
 export function convertQuotationToProforma(quotationId: string, actor: Actor, validUntil?: string) {
-  return rpc<string>('convert_quotation_to_proforma', { _quotation_id: quotationId, _valid_until: validUntil ?? null }, () => {
-    need(MONEY_DOC_ROLES.includes(actor.role), 'Only the GM/CFO or Finance can raise a proforma');
-    const q = (demoTable('quotations') as unknown as Quotation[]).find((x) => x.id === quotationId);
-    need(!!q, 'Quotation not found');
-    need(['sent', 'viewed', 'accepted'].includes(q!.status), `Only a sent or accepted quotation can become a proforma (this one is ${STATUS_LABEL[q!.status] ?? q!.status})`);
-    need(!q!.invoice_id, 'This quotation is already invoiced');
-    need(!proTable().some((p) => p.quotation_id === quotationId && p.status !== 'cancelled'), 'This quotation already has a proforma');
-    need(q!.items.length > 0, 'The quotation has no line items');
-    const id = newId();
-    proTable().push({
-      id, number: nextNumber('proforma', proTable().map((p) => p.number)), client_id: q!.client_id, project_id: q!.project_id, quotation_id: q!.id, prospect: q!.prospect, title: q!.title,
-      items: structuredClone(q!.items), discount: q!.discount, vat_on: q!.vat_on, vat_rate: q!.vat_rate, issue_date: today(), valid_until: validUntil ?? addDays(today(), 30), status: 'draft',
-      sent_at: null, accepted_at: null, cancelled_at: null, invoice_id: null, notes: q!.notes ?? '', terms: PROFORMA_TERMS, created_at: nowIso(),
-    });
-    Object.assign(q!, { status: 'accepted', accepted_at: q!.accepted_at ?? nowIso() });
-    return id;
-  });
+  return rpc<string>('convert_quotation_to_proforma', { _quotation_id: quotationId, _valid_until: validUntil ?? null });
 }
 
 /** Proforma → tax invoice (draft, 50/50 schedule, proforma and quotation linked). Returns the invoice id. */
 export function convertProformaToInvoice(id: string, actor: Actor, dueDate?: string) {
-  return rpc<string>('convert_proforma_to_invoice', { _id: id, _due_date: dueDate ?? null }, () => {
-    need(MONEY_DOC_ROLES.includes(actor.role), 'Only the GM/CFO or Finance can raise an invoice');
-    const p = proTable().find((x) => x.id === id);
-    need(!!p, 'Proforma not found');
-    need(!p!.invoice_id, 'This proforma is already invoiced');
-    need(['sent', 'accepted'].includes(p!.status), `Send the proforma before invoicing it (this one is ${STATUS_LABEL[p!.status] ?? p!.status})`);
-    need(!!p!.client_id, `Add ${p!.prospect || 'the prospect'} as a client before invoicing`);
-    need(p!.items.length > 0, 'The proforma has no line items');
-    const due = dueDate ?? addDays(today(), 14);
-    const total = docTotals(p!).total;
-    const invs = demoTable('invoices') as unknown as Invoice[];
-    const inv: Invoice = {
-      id: newId(), number: nextNumber('invoice', invs.map((x) => x.number)), client_id: p!.client_id, project_id: p!.project_id, quotation_id: p!.quotation_id, proforma_id: p!.id,
-      title: p!.title, po_ref: '', items: structuredClone(p!.items), discount: p!.discount, vat_on: p!.vat_on, vat_rate: p!.vat_rate, deposit: Math.round(total / 2),
-      schedule: [{ label: 'Deposit', pct: 50, due }, { label: 'On delivery', pct: 50, due: addDays(due, 31) }], issue_date: today(), due_date: due, status: 'draft',
-      sent_at: null, viewed_at: null, paid_at: null, cancelled_at: null, notes: p!.notes, terms: p!.terms, created_at: nowIso(),
-    };
-    invs.push(inv);
-    Object.assign(p!, { status: 'accepted', accepted_at: p!.accepted_at ?? nowIso(), invoice_id: inv.id });
-    if (p!.quotation_id) {
-      const q = (demoTable('quotations') as unknown as Quotation[]).find((x) => x.id === p!.quotation_id);
-      if (q && !q.invoice_id) q.invoice_id = inv.id;
-    }
-    return inv.id;
-  });
+  return rpc<string>('convert_proforma_to_invoice', { _id: id, _due_date: dueDate ?? null });
 }
 
 // ---------------------------------------------------------------- payroll workflow
@@ -612,54 +426,16 @@ const runsTable = () => demoTable('payroll_runs') as unknown as PayrollRun[];
 const findRun = (id: string) => { const r = runsTable().find((x) => x.id === id); if (!r) throw new Error('Payroll run not found'); return r; };
 
 export function preparePayroll(period: string, payDay: string, actor: Actor) {
-  return rpc<string>('prepare_payroll_run', { _period: period, _pay_day: payDay }, () => {
-    need(actor.role === 'finance', 'Only Finance prepares payroll');
-    const s = settingsNow();
-    let run = runsTable().find((r) => r.period === period);
-    need(!run || ['prepared', 'returned'].includes(run.status), `Payroll for ${period} is already ${run && STATUS_LABEL[run.status]}`);
-    if (!run) { run = { id: newId(), period, created_at: nowIso() } as PayrollRun; runsTable().push(run); }
-    const slips = (demoTable('salary_profiles') as unknown as SalaryProfile[]).filter((p) => p.active).map((p) => computePayslip(p, s.statutory_rates));
-    const ps = demoTable('payslips');
-    for (let i = ps.length - 1; i >= 0; i--) if (ps[i].run_id === run.id) ps.splice(i, 1);
-    slips.forEach((x) => ps.push({ id: newId(), run_id: run!.id, created_at: nowIso(), ...x }));
-    Object.assign(run, { status: 'prepared', pay_day: payDay, prepared_by: actor.userId, prepared_at: nowIso(), reviewed_by: null, reviewed_at: null, approved_by: null, approved_at: null, comment: '', ...runTotals(slips) });
-    notifyRole('gm_cfo', `Payroll ${period} ready for review`, '', '/app?tab=more');
-    return run.id;
-  });
+  return rpc<string>('prepare_payroll_run', { _period: period, _pay_day: payDay });
 }
 export function reviewPayroll(id: string, decision: 'ok' | 'return', comment: string, actor: Actor) {
-  return rpc('review_payroll_run', { _id: id, _decision: decision, _comment: comment }, () => {
-    need(actor.role === 'gm_cfo', 'Only the GM/CFO reviews payroll');
-    const run = findRun(id);
-    need(run.status === 'prepared', 'Payroll is not waiting for review');
-    need(run.prepared_by !== actor.userId, 'The preparer cannot also review');
-    if (decision === 'return') { Object.assign(run, { status: 'returned', comment }); notifyRole('finance', `Payroll ${run.period} returned`, comment, ''); return; }
-    Object.assign(run, { status: 'reviewed', reviewed_by: actor.userId, reviewed_at: nowIso(), comment });
-    notifyRole('boss', `Payroll ${run.period} needs approval`, `${tshTxt(run.net)} net`, '/app?tab=approvals', 'approval');
-  });
+  return rpc('review_payroll_run', { _id: id, _decision: decision, _comment: comment });
 }
 export function approvePayroll(id: string, decision: 'approve' | 'return', comment: string, verified_by: 'pin' | 'passkey' | null, actor: Actor) {
-  return rpc('approve_payroll_run', { _id: id, _decision: decision, _comment: comment, _verified_by: verified_by }, () => {
-    need(actor.role === 'boss', 'Only the Boss approves payroll');
-    const run = findRun(id);
-    need(run.status === 'reviewed', 'Payroll is not waiting for approval');
-    need(actor.userId !== run.prepared_by && actor.userId !== run.reviewed_by, 'Preparer, reviewer and approver must be different people');
-    if (decision === 'return') { Object.assign(run, { status: 'returned', comment }); notifyRole('finance', `Payroll ${run.period} returned by the Boss`, comment, ''); return; }
-    need(verified_by === 'pin' || verified_by === 'passkey', 'Confirm with your fingerprint or PIN');
-    Object.assign(run, { status: 'approved', approved_by: actor.userId, approved_at: nowIso(), verified_by });
-    notifyRole('finance', `Payroll ${run.period} approved · pay now`, '', '/app?tab=more');
-  });
+  return rpc('approve_payroll_run', { _id: id, _decision: decision, _comment: comment, _verified_by: verified_by });
 }
 export function payPayroll(id: string, reference: string, account_id: string | null, actor: Actor) {
-  return rpc('pay_payroll_run', { _id: id, _reference: reference, _account_id: account_id }, () => {
-    need(actor.role === 'finance', 'Only Finance pays payroll');
-    const run = findRun(id);
-    need(run.status === 'approved', 'Payroll must be approved by the Boss first');
-    need(run.approved_by !== actor.userId, 'The approver cannot also pay');
-    Object.assign(run, { status: 'paid', paid_by: actor.userId, paid_at: nowIso(), paid_reference: reference });
-    demoTable('expenses').push({ id: newId(), created_at: nowIso(), date: today(), amount: Number(run.gross) + Number(run.nssf_employer) + Number(run.wcf) + Number(run.sdl), category: 'Salaries', account_id, project_id: null, budget_line_id: null, request_id: null, payroll_run_id: run.id, payee: 'Staff payroll', description: `Payroll ${run.period} (gross + employer NSSF, WCF, SDL)`, receipt_url: '', petty_cash: false, recorded_by: actor.userId });
-    for (const s of demoTable('payslips')) if (s.run_id === id) void notify(String(s.user_id), `Your payslip for ${run.period} is ready`, `Net pay ${tshTxt(Number(s.net))}`, '/app?tab=more', 'money');
-  });
+  return rpc('pay_payroll_run', { _id: id, _reference: reference, _account_id: account_id });
 }
 export const RUN_STAGES = ['Prepared', 'GM/CFO reviewed', 'Boss approved', 'Paid', 'Payslips released'];
 export function runStage(r: PayrollRun, name: (id?: string | null) => string) {

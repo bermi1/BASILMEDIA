@@ -1,5 +1,5 @@
 // Projects, production & people: shared types, rules and helpers (mirrors 0005_projects.sql).
-import { PROJECT_STAGES } from '@/os/lib/shared-seed';
+export const PROJECT_STAGES = ['Brief', 'Pre-production', 'Shoot', 'Ingest & Backup', 'Edit', 'Internal Review', 'Client Review', 'Revisions', 'Final Delivery', 'Invoice', 'Archive'];
 import type { Person } from '@/os/lib/store';
 import type { Tone } from '@/os/ui';
 

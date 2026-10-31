@@ -118,11 +118,7 @@ export function ProposalDoc() {
   };
   const decide = async (ok: boolean) => {
     try {
-      await rpc('approve_proposal', { _id: p.id, _approve: ok }, () => {
-        const r = demoTable('proposals').find((x) => x.id === p.id)!;
-        if (r.created_by === userId) throw new Error('You cannot approve your own proposal');
-        r.status = ok ? 'approved' : 'draft';
-      });
+      await rpc('approve_proposal', { _id: p.id, _approve: ok });
       await notify(p.created_by, ok ? 'Proposal approved' : 'Proposal sent back', p.title, `/os/growth/proposals/${p.id}`, 'approval');
       toast(ok ? 'Approved' : 'Sent back to draft');
     } catch (e) {

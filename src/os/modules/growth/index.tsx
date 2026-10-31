@@ -5,7 +5,6 @@ import { demoTable } from '@/os/lib/store';
 import { PageTitle } from '@/os/OsLayout';
 import type { AppRole } from '@/lib/types';
 import type { OsModule } from '../types';
-import './seed';
 import { BossCockpit, DecisionLog, MondayBriefing, Scoreboard } from './boss';
 import { Organisations, PipelinePage } from './crm';
 import { ContractsPage, EventsPage, ProposalDoc, ProposalsPage, TendersPage } from './docs';

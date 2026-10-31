@@ -17,7 +17,6 @@ import { RentalAgreement, RentalsPanel } from './rentals';
 import { DeskBoard, ParcelsPanel, RoomsBoard, SignInForm, VisitorLog, WalkInEnquiry } from './reception';
 import { CurrentTrip, TripHistory, TripsList, VehiclePanel } from './transport';
 import { useTable } from '@/os/lib/store';
-import './seed';
 
 function StoreHome() {
   const { rows: gear } = useGear();

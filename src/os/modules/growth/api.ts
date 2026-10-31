@@ -4,7 +4,6 @@
 import { supabase } from '@/lib/supabase';
 import { demoTable, newId, nowIso, persistDemo } from '@/os/lib/store';
 import type { Contract, DealRoom, Proposal, ReferenceItem, Showcase } from './lib';
-import './seed';
 
 export interface PublicShowcase { showcase: Showcase; items: ReferenceItem[] }
 
