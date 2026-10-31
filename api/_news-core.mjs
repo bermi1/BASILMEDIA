@@ -101,10 +101,12 @@ async function sb(base, key, path, init = {}) {
 }
 
 /** Fetch all enabled sources and upsert their items. Returns a per-source report. */
-export async function ingest({ url: base, serviceKey: key, maxAgeDays = 60 }) {
+/** News is kept for 72 hours at most (the site shows the last 48 hours). */
+export const MAX_AGE_HOURS = 72;
+export async function ingest({ url: base, serviceKey: key, maxAgeHours = MAX_AGE_HOURS }) {
   if (!base || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   const sources = await sb(base, key, 'news_sources?enabled=eq.true&select=*');
-  const cutoff = Date.now() - maxAgeDays * 864e5;
+  const cutoff = Date.now() - maxAgeHours * 36e5;
   const report = [];
   for (const s of sources) {
     let kept = 0, error = '';
@@ -144,7 +146,7 @@ export async function ingest({ url: base, serviceKey: key, maxAgeDays = 60 }) {
     await sb(base, key, `news_sources?id=eq.${s.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ last_fetched_at: new Date().toISOString(), last_error: error }) }).catch(() => {});
     report.push({ source: s.name, kept, error });
   }
-  // Keep the table small: drop items older than the window.
+  // Delete everything older than 72 hours, so old news never stays on the site.
   await sb(base, key, `health_feed_items?published_at=lt.${new Date(cutoff).toISOString()}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }).catch(() => {});
   return report;
 }

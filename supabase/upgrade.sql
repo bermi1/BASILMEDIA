@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -1050,4 +1050,24 @@ update public.partners set name = 'Ampola Regency Hospital' where name = 'Ampola
 update public.partners set name = 'CareHealth & Hospitality Services' where name = 'CareHealth Tanzania';
 update public.partners set name = 'SATA · Society of Anaesthesiologists of Tanzania' where name = 'SATA';
 update public.partners set name = 'NEDC · National Enterprise and Development Chamber' where name = 'NEDC';
+
+-- ===================== 0030_news_refresh_schedule.sql =====================
+-- Basil Media OS · 0030 keep the health news fresh every 2 hours, even with no visitors.
+-- Supabase's scheduler (pg_cron) calls the site's /api/news-ingest. That endpoint runs at most once per
+-- 2 hours for unauthenticated calls, so no secret is stored here. Stories older than 72 hours are deleted
+-- on every run. If the extensions are not available (e.g. plain Postgres), this step is skipped.
+do $$
+begin
+  create extension if not exists pg_net;
+  create extension if not exists pg_cron;
+  perform cron.unschedule(jobid) from cron.job where jobname = 'basil-news-refresh';
+  perform cron.schedule('basil-news-refresh', '7 */2 * * *',
+    $job$ select net.http_get('https://basilmedia.vercel.app/api/news-ingest', headers := '{"User-Agent":"BasilMedia-Scheduler"}'::jsonb) $job$);
+  -- and a database-side clean-up, in case the site is unreachable
+  perform cron.unschedule(jobid) from cron.job where jobname = 'basil-news-expire';
+  perform cron.schedule('basil-news-expire', '17 * * * *',
+    $job$ delete from public.health_feed_items where published_at < now() - interval '72 hours' $job$);
+exception when others then
+  raise notice 'News schedule not created (%). The site still refreshes news when visitors open it.', sqlerrm;
+end $$;
 

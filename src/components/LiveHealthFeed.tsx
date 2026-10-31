@@ -1,6 +1,6 @@
 // Live health news from WHO, Africa CDC, ReliefWeb, AllAfrica and more — fetched daily, sorted by zone,
 // outbreaks and emergencies flagged as critical. Headlines link to the original source.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AlertTriangle, ExternalLink, Info, Radio } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
@@ -28,17 +28,31 @@ export function LiveHealthFeed() {
   const [items, setItems] = useState<Item[] | null>(null);
   const [zone, setZone] = useState<(typeof ZONES)[number]['key']>('all');
   const [more, setMore] = useState(false);
+  const refreshed = useRef(false);
   const [sources, setSources] = useState<{ name: string; url: string }[]>([]);
   useEffect(() => {
     supabase.from('news_sources').select('name,url').eq('enabled', true).order('name').then(({ data }) => setSources((data ?? []) as { name: string; url: string }[]));
   }, []);
   useEffect(() => {
-    supabase.from('health_feed_items').select('id,image_url,title,summary,url,zone,source_name,published_at,critical,critical_reason').order('published_at', { ascending: false }).limit(120)
-      .then(({ data }) => setItems((data ?? []) as Item[]));
+    // Only fresh news: the last 48 hours (72 hours on a quiet day). Older stories are deleted by the server.
+    const load = () => supabase.from('health_feed_items').select('id,image_url,title,summary,url,zone,source_name,published_at,critical,critical_reason,fetched_at')
+      .gte('published_at', new Date(Date.now() - 72 * 36e5).toISOString()).order('published_at', { ascending: false }).limit(150)
+      .then(({ data }) => {
+        const all = (data ?? []) as (Item & { fetched_at: string })[];
+        const fresh = all.filter((i) => Date.now() - new Date(i.published_at).getTime() <= 48 * 36e5);
+        setItems(fresh.length >= 5 ? fresh : all);
+        // Feed older than 2 hours? Ask the server to update it (it refuses if someone already did recently).
+        const newest = all.reduce((a, i) => (i.fetched_at > a ? i.fetched_at : a), '');
+        if (!refreshed.current && (!newest || Date.now() - new Date(newest).getTime() > 2 * 36e5)) {
+          refreshed.current = true;
+          fetch('/api/news-ingest').then((r) => (r.ok ? r.json() : null)).then((r) => r?.report && load()).catch(() => {});
+        }
+      });
+    load();
   }, []);
   if (items && !items.length) return null;
 
-  const weekAgo = Date.now() - 7 * 864e5;
+  const weekAgo = Date.now() - 72 * 36e5;
   const critical = (items ?? []).filter((i) => i.critical && new Date(i.published_at).getTime() > weekAgo).slice(0, 3);
   const list = (items ?? []).filter((i) => zone === 'all' || i.zone === zone);
   const shown = list.slice(0, more ? 24 : 8);
@@ -48,7 +62,7 @@ export function LiveHealthFeed() {
     <section aria-labelledby="live-h" className="mt-8 sm:mt-12">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
         <h2 id="live-h" className="m-0 flex items-center gap-2 text-2xl font-extrabold"><Radio size={20} className="text-red-600" />Live health news</h2>
-        {updated && <span className="text-xs text-basil-muted">Latest {updated} · updated daily</span>}
+        {updated && <span className="text-xs text-basil-muted">Latest {updated} · last 48 hours · updated through the day</span>}
       </div>
 
       {critical.length > 0 && (
@@ -78,7 +92,7 @@ export function LiveHealthFeed() {
       {!items ? (
         <div className="flex flex-col gap-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-basil-mist" />)}</div>
       ) : !list.length ? (
-        <p className="rounded-2xl bg-basil-mist p-4 text-sm text-basil-muted">No news for this zone in the last weeks.</p>
+        <p className="rounded-2xl bg-basil-mist p-4 text-sm text-basil-muted">No news for this region in the last 48 hours.</p>
       ) : (
         <ul className="m-0 flex list-none flex-col divide-y divide-basil-line rounded-2xl border border-basil-line bg-white p-0">
           {shown.map((i) => (
@@ -104,8 +118,8 @@ export function LiveHealthFeed() {
       <details className="group mt-4 rounded-2xl border border-basil-line bg-basil-mist/60 p-4 text-[13.5px] leading-relaxed text-[#33465F]">
         <summary className="flex cursor-pointer list-none items-center gap-2 font-bold text-basil-deep"><Info size={16} />How this news feed works and where it comes from</summary>
         <div className="mt-3 flex flex-col gap-2">
-          <p className="m-0">Basil Media does not write these stories. Once a day our system collects headlines from the public news feeds of the organisations listed below and sorts them by region (World, Africa, East Africa, Tanzania) from the places each story mentions.</p>
-          <p className="m-0">We show only the headline, a short summary and picture published by the source itself, the source's name and a link to the full article. All rights remain with the original publisher — please read and cite the original.</p>
+          <p className="m-0">Basil Media does not write these stories. Several times a day our system collects headlines from the public news feeds of the organisations listed below and sorts them by region (World, Africa, East Africa, Tanzania) from the places each story mentions.</p>
+          <p className="m-0">Only news from the last 48 hours is shown, and stories are deleted after 72 hours. We show only the headline, a short summary and picture published by the source itself, the source's name and a link to the full article. All rights remain with the original publisher — please read and cite the original.</p>
           <p className="m-0">The <b>Critical</b> label is added automatically when a story mentions an outbreak, a public-health emergency or a medicine-safety alert. It can be wrong, and nothing here is medical advice — follow the Ministry of Health and your clinician.</p>
           <p className="m-0">See an error, or are you a publisher who wants your content removed? Email <a href="mailto:hello@basilmedia.co.tz">hello@basilmedia.co.tz</a> and we will act within one working day.</p>
           {sources.length > 0 && (
