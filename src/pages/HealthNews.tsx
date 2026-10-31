@@ -1,33 +1,27 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Briefcase, CalendarPlus } from 'lucide-react';
+import { Briefcase } from 'lucide-react';
 import { Check } from 'lucide-react';
 import { useRows } from '@/hooks/useData';
+import { supabase } from '@/lib/supabase';
 import { LiveHealthFeed } from '@/components/LiveHealthFeed';
+import { UpcomingHealthEvents } from '@/components/UpcomingHealthEvents';
 import { useSeo } from '@/hooks/useSeo';
 import { fmtDate } from '@/lib/format';
 import { Media } from '@/components/Media';
 import { Reveal } from '@/components/Reveal';
 import { SubscribeForm } from '@/components/SubscribeForm';
 
-function icsHref(title: string, date: string, where: string) {
-  const d = date.replace(/-/g, '');
-  const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Basil Media//Health Brief//EN', 'BEGIN:VEVENT', `UID:${d}-${title.length}@basilmedia`, `DTSTART;VALUE=DATE:${d}`, `SUMMARY:${title}`, `LOCATION:${where}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-  return `data:text/calendar;charset=utf-8,${encodeURIComponent(body)}`;
-}
-
 export default function HealthNews() {
   useSeo('Basil Health Brief — Health News', 'Policy, research, CPD and opportunities across Tanzania’s health sector, curated weekly by Basil Media.');
   const { rows: stories } = useRows('news_stories', { publishedOnly: true });
   const { rows: opps } = useRows('opportunities', { publishedOnly: true });
-  const { rows: events } = useRows('events', { publishedOnly: true });
   const [tag, setTag] = useState('All');
   const [oppKind, setOppKind] = useState('All');
   const tags = useMemo(() => ['All', ...Array.from(new Set(stories.map((s) => s.tag)))], [stories]);
   const filtered = stories.filter((s) => tag === 'All' || s.tag === tag);
   const featured = filtered.find((s) => s.featured) ?? filtered[0];
   const rest = filtered.filter((s) => s !== featured);
-  const upcoming = events.filter((e) => e.starts_on >= new Date().toISOString().slice(0, 10)).slice(0, 6);
   const oppList = opps.filter((o) => oppKind === 'All' || o.kind === oppKind);
 
   return (
@@ -35,15 +29,11 @@ export default function HealthNews() {
       <section className="relative overflow-hidden text-white" style={{ background: 'radial-gradient(ellipse at 85% 10%, rgba(124,192,245,0.3), transparent 50%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
         <div className="container-bm relative flex flex-wrap items-end gap-5 pb-6 pt-24 sm:gap-8 sm:pb-10 sm:pt-32">
           <div className="min-w-0 flex-[1_1_520px]">
-            <div className="font-mono text-xs tracking-[0.2em] text-basil-haze">HEALTH NEWS · FOR DOCTORS &amp; HEALTH PROFESSIONALS</div>
+            <div className="font-mono text-xs tracking-[0.2em] text-basil-haze">HEALTH NEWS · LIVE FROM VERIFIED SOURCES</div>
             <h1 className="my-2 text-[clamp(26px,4.5vw,56px)] font-bold leading-[1.05] tracking-[-0.02em] sm:my-3">Basil Health <span className="text-basil-sky">Brief</span></h1>
-            <p className="m-0 max-w-[600px] text-[15px] text-basil-frost sm:text-lg">Policy, research, CPD and opportunities across Tanzania’s health sector — curated weekly and delivered the way you prefer: SMS, email or WhatsApp.</p>
+            <p className="m-0 max-w-[620px] text-[15px] text-basil-frost sm:text-lg">Health news from Tanzania, Africa and the world, collected automatically several times a day from trusted newsrooms and health agencies. Only the last 48 hours, only stories with their own photo, always with the source and a link to the original.</p>
           </div>
-          <div className="hidden flex-[0_1_340px] rounded-3xl border border-white/25 bg-white/10 p-6 backdrop-blur-xl sm:block">
-            <div className="text-sm text-basil-haze">Every Monday · 5-minute read</div>
-            <div className="mt-1 font-display text-xl font-extrabold">The week in Tanzanian health, in one brief.</div>
-            <a href="#subscribe" className="mt-4 inline-flex rounded-2xl bg-white px-5 py-3 font-bold text-basil no-underline hover:bg-basil-ice">Subscribe free</a>
-          </div>
+          <NewsStats />
         </div>
         <div className={`container-bm relative pb-6 ${stories.length ? '' : 'hidden'}`}>
           <div role="group" aria-label="Filter by topic" className="scrollbar-none flex gap-2 overflow-x-auto">
@@ -56,9 +46,10 @@ export default function HealthNews() {
         </div>
       </section>
 
-      <div className="container-bm grid gap-8 py-8 sm:gap-10 sm:py-12 lg:grid-cols-[1fr_340px]">
+      <div className="container-bm py-8 sm:py-12">
         <div className="min-w-0">
           <LiveHealthFeed />
+          <div className="mt-10 sm:mt-14"><UpcomingHealthEvents /></div>
           {stories.length > 0 && <h2 className="m-0 mb-4 mt-10 text-2xl font-extrabold sm:mt-14">From Basil Media</h2>}
           {featured && (
             <Reveal>
@@ -91,6 +82,7 @@ export default function HealthNews() {
           {stories.length > 0 && !rest.length && !featured && <p className="text-basil-muted">No stories in this topic yet.</p>}
 
 
+          {opps.length > 0 && (
           <section aria-labelledby="opp-h" className="mt-8 rounded-[22px] bg-basil-mist p-4 sm:mt-12 sm:rounded-[28px] sm:p-8">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
               <div><div className="kicker">OPPORTUNITIES BOARD</div><h2 id="opp-h" className="m-0 mt-1 text-2xl font-extrabold">Jobs, fellowships &amp; calls for abstracts</h2></div>
@@ -113,31 +105,9 @@ export default function HealthNews() {
               {!oppList.length && <p className="m-0 text-basil-muted">Nothing open right now in this category.</p>}
             </div>
           </section>
+          )}
         </div>
 
-        <aside className="flex flex-col gap-5">
-          <section aria-labelledby="cpd-h" className="rounded-[28px] border border-basil-line p-6">
-            <div className="kicker">CALENDAR</div>
-            <h2 id="cpd-h" className="m-0 mb-4 mt-1 text-xl font-extrabold">Upcoming conferences &amp; CPD</h2>
-            <div className="flex flex-col gap-3">
-              {upcoming.map((e) => {
-                const d = new Date(`${e.starts_on}T12:00:00`);
-                return (
-                  <div key={e.id} className="flex items-center gap-3">
-                    <div className="flex w-14 shrink-0 flex-col items-center rounded-2xl bg-basil-ice py-2 text-basil-deep"><span className="text-[11px] font-bold uppercase">{d.toLocaleString('en-GB', { month: 'short' })}</span><span className="font-display text-xl font-extrabold">{d.getDate()}</span></div>
-                    <div className="min-w-0 flex-1"><div className="font-bold leading-snug">{e.title}</div><div className="text-[13px] text-basil-muted">{e.venue} · {e.cpd}</div></div>
-                    <a href={icsHref(e.title, e.starts_on, e.venue)} download={`${e.title}.ics`} aria-label={`Add ${e.title} to calendar`} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-basil-edge text-basil hover:bg-basil-ice"><CalendarPlus size={18} /></a>
-                  </div>
-                );
-              })}
-              {!upcoming.length && <p className="m-0 text-sm text-basil-muted">No upcoming events listed.</p>}
-            </div>
-          </section>
-          <a href="#subscribe" className="flex flex-col gap-1 rounded-[28px] bg-basil p-6 text-white no-underline hover:bg-basil-deep hover:text-white">
-            <span className="font-mono text-[11px] tracking-[0.16em] text-basil-frost">FREE · NO SPONSORED CONTENT</span>
-            <span className="font-display text-xl font-extrabold">Get the brief on your phone every Monday ›</span>
-          </a>
-        </aside>
       </div>
 
       <SubscribeSection />
@@ -162,5 +132,41 @@ export function SubscribeSection({ source = 'health-news', standalone }: { sourc
         <SubscribeForm source={source} />
       </div>
     </section>
+  );
+}
+
+/** Live figures about the news feed, straight from the database. */
+function NewsStats() {
+  const [st, setSt] = useState<{ stories: number; critical: number; sources: number; tz: number; updated: string } | null>(null);
+  useEffect(() => {
+    const since = new Date(Date.now() - 48 * 36e5).toISOString();
+    const head = { count: 'exact' as const, head: true };
+    Promise.all([
+      supabase.from('health_feed_items').select('id', head).gte('published_at', since).neq('image_url', ''),
+      supabase.from('health_feed_items').select('id', head).gte('published_at', since).neq('image_url', '').eq('critical', true),
+      supabase.from('health_feed_items').select('id', head).gte('published_at', since).neq('image_url', '').eq('zone', 'tanzania'),
+      supabase.from('news_sources').select('id', head).eq('enabled', true),
+      supabase.from('news_sources').select('last_fetched_at').eq('enabled', true).order('last_fetched_at', { ascending: false, nullsFirst: false }).limit(1),
+    ]).then(([a, c, t, src, last]) => setSt({ stories: a.count ?? 0, critical: c.count ?? 0, tz: t.count ?? 0, sources: src.count ?? 0, updated: (last.data?.[0] as { last_fetched_at?: string } | undefined)?.last_fetched_at ?? '' }));
+  }, []);
+  const ago = (iso: string) => { if (!iso) return '—'; const m = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000)); return m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
+  const tiles: [string, string][] = [
+    [st ? String(st.stories) : '·', 'stories, last 48 h'],
+    [st ? String(st.tz) : '·', 'from Tanzania'],
+    [st ? String(st.critical) : '·', 'critical alerts'],
+    [st ? String(st.sources) : '·', 'verified sources'],
+  ];
+  return (
+    <div className="w-full flex-[0_1_380px] rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl sm:p-5">
+      <div className="grid grid-cols-4 gap-2 sm:grid-cols-2 sm:gap-3">
+        {tiles.map(([v, l]) => (
+          <div key={l} className="rounded-2xl bg-white/10 px-2 py-2.5 text-center sm:px-3 sm:py-3 sm:text-left">
+            <b className="block font-display text-xl leading-none sm:text-3xl">{v}</b>
+            <span className="mt-1 block text-[10.5px] leading-tight text-basil-haze sm:text-xs">{l}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2 text-[11.5px] text-basil-haze sm:text-xs"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />Updated {st ? ago(st.updated) : '…'} · refreshes every 2 hours</div>
+    </div>
   );
 }

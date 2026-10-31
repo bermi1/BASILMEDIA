@@ -131,13 +131,20 @@ export async function ingest({ url: base, serviceKey: key, maxAgeHours = MAX_AGE
       const unique = [...new Map(rows.map((r) => [r.url, r])).values()];
       // Picture + description from the article itself, only for stories we do not have a picture for yet.
       const known = new Map(((await sb(base, key, `health_feed_items?source_id=eq.${s.id}&select=url,image_url,summary`)) ?? []).map((k) => [k.url, k]));
-      const need = unique.filter((r) => !r.image_url && !known.get(r.url)?.image_url).slice(0, 25);
+      const need = unique.filter((r) => !r.image_url && !known.get(r.url)?.image_url).slice(0, 40);
       await inBatches(need, 6, async (r) => {
         const m = await articleMeta(r.url);
         if (m.image) r.image_url = m.image;
         if (m.description && m.description.length > r.summary.length) r.summary = m.description;
       });
       for (const r of unique) if (!r.image_url && known.get(r.url)?.image_url) r.image_url = known.get(r.url).image_url;
+      // Only stories with a real photo: drop those without one, and a source's generic placeholder
+      // (the same picture used for several different stories).
+      const seen = new Map();
+      for (const r of unique) if (r.image_url) seen.set(r.image_url, (seen.get(r.image_url) ?? 0) + 1);
+      const withPhoto = unique.filter((r) => r.image_url && (seen.get(r.image_url) ?? 0) < 3);
+      unique.length = 0;
+      unique.push(...withPhoto);
       if (unique.length) await sb(base, key, 'health_feed_items?on_conflict=url', { method: 'POST', headers: { Prefer: 'resolution=merge-duplicates,return=minimal' }, body: JSON.stringify(unique) });
       kept = unique.length;
     } catch (e) {

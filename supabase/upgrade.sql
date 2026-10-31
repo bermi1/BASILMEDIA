@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql, 0031_verified_news_sources.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -1070,4 +1070,26 @@ begin
 exception when others then
   raise notice 'News schedule not created (%). The site still refreshes news when visitors open it.', sqlerrm;
 end $$;
+
+-- ===================== 0031_verified_news_sources.sql =====================
+-- Basil Media OS · 0031 verified news only, always with a real photo.
+-- Aggregators (AllAfrica) and photo-less feeds (ReliefWeb) are switched off; Tanzanian newsrooms added.
+update public.news_sources set enabled = false
+where name in ('AllAfrica · Tanzania', 'AllAfrica · Health', 'ReliefWeb · Tanzania', 'ReliefWeb · Epidemics', 'Daily News Tanzania');
+insert into public.news_sources (name, url, format, zone, health_only) values
+  ('The Citizen', 'https://www.thecitizen.co.tz/rss.xml', 'rss', 'tanzania', true),
+  ('Daily News · Health', 'https://dailynews.co.tz/category/health/feed/', 'rss', 'tanzania', false),
+  ('HabariLeo', 'https://habarileo.co.tz/feed/', 'rss', 'tanzania', true),
+  ('TanzaniaInvest · Health', 'https://www.tanzaniainvest.com/health/feed', 'rss', 'tanzania', false),
+  ('The Conversation Africa · Health', 'https://theconversation.com/africa/topics/health-20/articles.atom', 'rss', 'africa', false),
+  ('The Guardian · Global health', 'https://www.theguardian.com/global-development/global-health/rss', 'rss', 'world', false),
+  ('STAT News', 'https://www.statnews.com/feed/', 'rss', 'world', false),
+  ('NPR · Health', 'https://feeds.npr.org/1128/rss.xml', 'rss', 'world', false)
+on conflict (url) do update set enabled = true;
+-- remove stories from switched-off sources and any story without a photo
+delete from public.health_feed_items i using public.news_sources s where i.source_id = s.id and not s.enabled;
+delete from public.health_feed_items where coalesce(image_url, '') = '';
+-- The starter opportunities were sample text, not real openings: hide them (editable in the CMS).
+update public.opportunities set published = false where title in
+  ('Consultant Paediatrician', 'Clinical research fellowship (12 months)', 'Masters scholarship in public health', 'Call for abstracts: community nursing');
 

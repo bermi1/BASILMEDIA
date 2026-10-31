@@ -36,7 +36,7 @@ export function LiveHealthFeed() {
   useEffect(() => {
     // Only fresh news: the last 48 hours (72 hours on a quiet day). Older stories are deleted by the server.
     const load = () => supabase.from('health_feed_items').select('id,image_url,title,summary,url,zone,source_name,published_at,critical,critical_reason,fetched_at')
-      .gte('published_at', new Date(Date.now() - 72 * 36e5).toISOString()).order('published_at', { ascending: false }).limit(150)
+      .gte('published_at', new Date(Date.now() - 72 * 36e5).toISOString()).neq('image_url', '').order('published_at', { ascending: false }).limit(150)
       .then(({ data }) => {
         const all = (data ?? []) as (Item & { fetched_at: string })[];
         const fresh = all.filter((i) => Date.now() - new Date(i.published_at).getTime() <= 48 * 36e5);
@@ -55,7 +55,7 @@ export function LiveHealthFeed() {
   const weekAgo = Date.now() - 72 * 36e5;
   const critical = (items ?? []).filter((i) => i.critical && new Date(i.published_at).getTime() > weekAgo).slice(0, 3);
   const list = (items ?? []).filter((i) => zone === 'all' || i.zone === zone);
-  const shown = list.slice(0, more ? 24 : 8);
+  const shown = list.slice(0, more ? 30 : 9);
   const updated = items?.length ? ago(items.reduce((a, i) => (i.published_at > a ? i.published_at : a), items[0].published_at)) : '';
 
   return (
@@ -94,19 +94,24 @@ export function LiveHealthFeed() {
       ) : !list.length ? (
         <p className="rounded-2xl bg-basil-mist p-4 text-sm text-basil-muted">No news for this region in the last 48 hours.</p>
       ) : (
-        <ul className="m-0 flex list-none flex-col divide-y divide-basil-line rounded-2xl border border-basil-line bg-white p-0">
+        <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
           {shown.map((i) => (
-            <li key={i.id}>
-              <a href={i.url} target="_blank" rel="noreferrer" className="group flex items-start gap-3 p-3.5 text-basil-ink no-underline hover:bg-basil-mist hover:text-basil-ink">
-                {i.image_url
-                  ? <img src={i.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => (e.currentTarget.style.display = 'none')} className="h-[68px] w-[92px] shrink-0 rounded-xl bg-basil-mist object-cover sm:h-20 sm:w-28" />
-                  : <span aria-hidden="true" className="flex h-[68px] w-[92px] shrink-0 items-center justify-center rounded-xl bg-basil-ice text-basil sm:h-20 sm:w-28"><Radio size={20} /></span>}
-                <span className="min-w-0 flex-1">
-                  <b className="line-clamp-2 block text-[15px] leading-snug group-hover:text-basil">{i.critical && <AlertTriangle size={14} className="mr-1 inline align-[-2px] text-red-600" aria-label="Critical" />}{i.title}</b>
-                  {i.summary && <span className="mt-0.5 hidden text-[13px] leading-snug text-basil-muted sm:line-clamp-2">{i.summary}</span>}
-                  <span className="text-xs text-basil-muted">Source: <b className="font-semibold text-basil-deep">{i.source_name}</b> · {host(i.url)} · {ago(i.published_at)}</span>
+            <li key={i.id} className="min-w-0">
+              <a href={i.url} target="_blank" rel="noreferrer" className="group flex h-full flex-col overflow-hidden rounded-2xl border border-basil-line bg-white text-basil-ink no-underline transition hover:-translate-y-0.5 hover:shadow-card hover:text-basil-ink">
+                <span className="relative block aspect-[16/9] bg-basil-ice">
+                  {i.image_url
+                    ? <img src={i.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => (e.currentTarget.style.display = 'none')} className="absolute inset-0 h-full w-full object-cover object-top" />
+                    : <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center text-basil"><Radio size={26} /></span>}
+                  {i.critical && <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white"><AlertTriangle size={11} />Critical</span>}
                 </span>
-                <ExternalLink size={15} className="mt-1 shrink-0 text-basil-muted" />
+                <span className="flex flex-1 flex-col gap-1.5 p-3.5">
+                  <span className="text-[10.5px] font-bold uppercase tracking-wide text-basil">{i.source_name}</span>
+                  <b className="line-clamp-3 text-[14.5px] leading-snug group-hover:text-basil">{i.title}</b>
+                  {i.summary && <span className="line-clamp-2 text-[12.5px] leading-snug text-basil-muted">{i.summary}</span>}
+                  <span className="mt-auto flex items-center justify-between gap-2 pt-1 text-[11.5px] text-basil-muted">
+                    <span className="truncate">Source: {host(i.url)} · {ago(i.published_at)}</span><ExternalLink size={13} className="shrink-0" />
+                  </span>
+                </span>
               </a>
             </li>
           ))}

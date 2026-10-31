@@ -14,24 +14,24 @@ export function UpcomingHealthEvents() {
   const list = rows.filter((e) => e.starts_on >= today && (e.sector || 'Health') === 'Health').sort((a, b) => a.starts_on.localeCompare(b.starts_on));
   return (
     <section aria-labelledby="ev-h">
-      <h2 id="ev-h" className="m-0 mb-3 text-2xl font-extrabold">Upcoming health events</h2>
+      <h2 id="ev-h" className="m-0 mb-3 text-xl font-extrabold sm:text-2xl">Upcoming health events</h2>
       {!list.length ? (
         <p className="m-0 rounded-2xl bg-basil-mist p-4 text-sm text-basil-muted">New conferences and CPD events appear here as soon as they are announced.</p>
       ) : (
-        <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2">
+        <ul className="m-0 grid list-none gap-3 p-0 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((e) => {
             const d = new Date(e.starts_on + 'T00:00:00');
             return (
-              <li key={e.id} className="flex gap-3.5 rounded-2xl border border-basil-line bg-white p-4">
-                <span className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-xl bg-basil text-white">
-                  <b className="font-display text-xl leading-none">{d.getDate()}</b>
-                  <span className="text-[11px] font-bold uppercase">{d.toLocaleDateString('en-GB', { month: 'short' })}</span>
+              <li key={e.id} className="flex min-w-0 gap-3 rounded-2xl border border-basil-line bg-gradient-to-br from-white to-basil-mist/60 p-3.5">
+                <span className="flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl bg-basil text-white">
+                  <b className="font-display text-lg leading-none">{d.getDate()}</b>
+                  <span className="text-[10px] font-bold uppercase">{d.toLocaleDateString('en-GB', { month: 'short' })}</span>
                 </span>
                 <span className="min-w-0 flex-1">
-                  <b className="block leading-snug">{e.title}</b>
-                  {e.venue && <span className="mt-0.5 flex items-center gap-1 text-[13px] text-basil-muted"><MapPin size={13} className="shrink-0" />{e.venue}</span>}
+                  <b className="line-clamp-2 block text-[13.5px] leading-snug">{e.title}</b>
+                  {e.venue && <span className="mt-0.5 flex min-w-0 items-center gap-1 text-[12px] text-basil-muted"><MapPin size={12} className="shrink-0" /><span className="truncate">{e.venue}</span></span>}
                   {e.cpd && <span className="mt-1 inline-block rounded-full bg-basil-ice px-2 py-0.5 text-[11px] font-bold text-basil-deep">CPD · {e.cpd}</span>}
-                  <span className="mt-2 flex flex-wrap gap-3 text-sm font-bold">
+                  <span className="mt-1.5 flex flex-wrap gap-3 text-[12.5px] font-bold">
                     {e.link && <a href={e.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 no-underline">Visit site <ExternalLink size={13} /></a>}
                     <a href={ics(e.title, e.starts_on, e.venue)} download={`${e.title.slice(0, 40)}.ics`} className="inline-flex items-center gap-1 text-basil-muted no-underline hover:text-basil"><CalendarPlus size={14} />Add to calendar</a>
                   </span>
