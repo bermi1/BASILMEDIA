@@ -14,6 +14,7 @@ import { PageHero } from '@/components/PageHero';
 import { useCover } from '@/lib/useCover';
 
 const isPixieset = (u?: string) => !!u && /pixieset\.com/i.test(u);
+const isNew = (d?: string) => !!d && Date.now() - new Date(d).getTime() < 7 * 864e5;
 
 export default function OurWork() {
   const { t } = useI18n();
@@ -131,7 +132,7 @@ export default function OurWork() {
   );
 }
 
-function Card({ p, index, onOpen }: { p: { title: string; category: string; client: string; image_url: string; video_url: string; external_url: string }; index: number; onOpen: () => void }) {
+function Card({ p, index, onOpen }: { p: { title: string; category: string; client: string; image_url: string; video_url: string; external_url: string; created_at?: string }; index: number; onOpen: () => void }) {
   const src = videoLabel(p.video_url);
   const cover = useCover(p.external_url, p.image_url || youtubeThumb(p.video_url));
   return (
@@ -139,6 +140,7 @@ function Card({ p, index, onOpen }: { p: { title: string; category: string; clie
       <Media src={cover} index={index} className="flex h-full flex-col justify-end gap-1 p-3 text-white sm:p-5">
         <span className="absolute left-2.5 top-2.5 flex gap-1 sm:left-4 sm:top-4">
           {src && <span className="rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-extrabold text-basil sm:text-xs">{src}</span>}
+          {isNew(p.created_at) && <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-extrabold text-white sm:text-xs">New</span>}
           {isPixieset(p.external_url) && <span className="rounded-full bg-sun px-2 py-0.5 text-[10px] font-extrabold text-basil-night sm:text-xs">Gallery</span>}
         </span>
         {p.video_url && <span className="absolute right-2.5 top-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 transition group-hover:scale-110 sm:right-4 sm:top-4 sm:h-11 sm:w-11"><Play size={15} /></span>}

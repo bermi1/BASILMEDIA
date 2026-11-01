@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql, 0031_verified_news_sources.sql, 0032_more_partner_logos.sql, 0033_pixieset_galleries.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql, 0031_verified_news_sources.sql, 0032_more_partner_logos.sql, 0033_pixieset_galleries.sql, 0034_publish_gallery.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -1110,4 +1110,27 @@ select v.title, v.client, 'Photo Stories', v.cover, 'Photo collection by Basil M
   ('Ampola doctors', 'Ampola Regency Hospital', '', 'https://basilcreativemedia.pixieset.com/ampoladoctors/', false, -55)
 ) as v(title, client, cover, url, feat, ord)
 where not exists (select 1 from public.projects_public p where p.external_url = v.url);
+
+-- ===================== 0034_publish_gallery.sql =====================
+-- Basil Media OS · 0034 any staff member can publish a finished Pixieset gallery as photography work.
+-- It goes to the top of Our Work, is marked New for 7 days, and the team is notified.
+create or replace function public.publish_gallery(_title text, _client text, _url text, _cover text default '')
+returns uuid language plpgsql security definer set search_path = public as $$
+declare gid uuid; who text;
+begin
+  if not public.is_staff() then raise exception 'Only Basil Media staff can publish galleries'; end if;
+  if coalesce(trim(_title), '') = '' then raise exception 'Add the gallery title'; end if;
+  if _url !~* '^https://[a-z0-9-]+\.pixieset\.com/[a-z0-9_-]+/?' then raise exception 'Paste the Pixieset gallery link (https://….pixieset.com/…)'; end if;
+  if exists (select 1 from public.projects_public where external_url = _url) then raise exception 'This gallery is already on the website'; end if;
+  insert into public.projects_public (title, client, category, image_url, description, external_url, featured, sort_order, published)
+  values (trim(_title), coalesce(trim(_client), ''), 'Photo Stories', coalesce(_cover, ''), 'Photo collection by Basil Media.', _url, true,
+          -extract(epoch from now())::int, true)
+  returning id into gid;
+  select coalesce(nullif(full_name, ''), 'A team member') into who from public.profiles where id = auth.uid();
+  perform public.notify(r.user_id, 'New gallery published', coalesce(who, 'A team member') || ' · ' || trim(_title), _url, 'info')
+    from (select distinct user_id from public.user_roles where role <> 'client' and user_id <> auth.uid()) r;
+  return gid;
+end;
+$$;
+revoke execute on function public.publish_gallery(text, text, text, text) from anon;
 

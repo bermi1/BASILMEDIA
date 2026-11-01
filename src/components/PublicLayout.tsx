@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { NewGalleryPopup } from './NewGalleryPopup';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Header } from './Header';
 import { Footer, WhatsAppButton } from './Footer';
@@ -22,6 +23,7 @@ export function PublicLayout() {
       <AnimatePresence mode="wait" initial={false}>
         <motion.main id="main" key={pathname} className={/^\/($|services|our-work|about|contact|health-news$|subscribe|find-me)/.test(pathname) ? '' : 'pt-24'} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }}>
           <Outlet />
+          <NewGalleryPopup />
         </motion.main>
       </AnimatePresence>
       {/* Phones: only the landing page carries the footer; the tab bar does the rest. */}

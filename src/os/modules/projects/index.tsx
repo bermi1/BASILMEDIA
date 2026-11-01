@@ -1,3 +1,6 @@
+import { Images } from 'lucide-react';
+import { PublishGallery } from '@/os/PublishGallery';
+import { PageTitle } from '@/os/OsLayout';
 import { Briefcase, Clapperboard, Clock, Contact, FileText, Film, HardDrive, Leaf, Lightbulb, ListChecks, Megaphone, Users } from 'lucide-react';
 import { countRows, fetchRows } from '@/os/lib/store';
 import type { AppRole } from '@/lib/types';
@@ -22,6 +25,7 @@ export const projectsModule: OsModule = {
   section: 'WORK',
   nav: [
     { to: '/os/projects', label: 'Projects', icon: Briefcase, roles: WORK },
+    { to: '/os/gallery', label: 'Publish gallery', icon: Images, roles: ALL_STAFF },
     { to: '/os/projects/tasks', label: 'Tasks', icon: ListChecks, roles: CREW },
     { to: '/os/projects/shoots', label: 'Shoots & crew', icon: Clapperboard, roles: WORK },
     { to: '/os/projects/post', label: 'Post-production', icon: Film, roles: CREW },
@@ -36,6 +40,7 @@ export const projectsModule: OsModule = {
   ],
   routes: [
     { path: 'projects', element: <ProjectsBoard /> },
+    { path: 'gallery', element: <div className="mx-auto max-w-lg"><PageTitle tag="WEBSITE · PHOTO WORK" title="Publish a gallery" sub="Paste the Pixieset link when editing is finished." /><PublishGallery /></div> },
     { path: 'projects/tasks', element: <TasksPage /> },
     { path: 'projects/shoots', element: <ShootsPage /> },
     { path: 'projects/post', element: <PostPage /> },

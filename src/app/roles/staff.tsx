@@ -1,3 +1,5 @@
+import { Images } from 'lucide-react';
+import { PublishGallery } from '@/os/PublishGallery';
 import { FileText, Leaf, ListChecks, Sun, Wallet, Receipt } from 'lucide-react';
 import type { PhoneRoleApp } from '@/os/modules/types';
 import { MyMoneyRequests } from '@/os/modules/finance/phone';
@@ -15,6 +17,7 @@ export const app: PhoneRoleApp = {
     { key: 'leave', label: 'Leave', icon: Leaf, element: <LeavePanel /> },
   ],
   more: [
+    { key: 'gallery', label: 'Publish gallery', icon: Images, sub: 'Pixieset link → website', element: <PublishGallery /> },
     { key: 'report', label: 'Weekly report', icon: FileText, sub: 'Due Saturday 18:00', element: <WeeklyReportForm /> },
     { key: 'payslips', label: 'Payslips', icon: Receipt, element: <MyPayslips /> },
   ],
