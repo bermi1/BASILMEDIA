@@ -37,7 +37,9 @@ export default function Home() {
   const s = useSettings();
   const { t } = useI18n();
   useSeo('Basil Media — Video, Photography, Podcasts & Live Streaming in Dar es Salaam', s.hero_subtitle);
-  const { rows: partners } = useRows('partners');
+  const { rows: allPartners } = useRows('partners');
+  // one logo per partner, even if the same partner was saved twice
+  const partners = allPartners.filter((p, i, a) => a.findIndex((q) => q.name.trim().toLowerCase() === p.name.trim().toLowerCase()) === i);
   const { rows: projects } = useRows('projects_public', { publishedOnly: true });
   const { rows: highlights } = useRows('highlights', { publishedOnly: true });
   const { rows: services } = useRows('services', { publishedOnly: true });

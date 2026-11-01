@@ -27,7 +27,8 @@ select v.name, v.logo, v.site, v.ord from (values
   ('CareHealth & Hospitality Services', '', '', 13),
   ('Ampola Regency Hospital', '', '', 14)
 ) as v(name, logo, site, ord)
-where not exists (select 1 from public.partners p where lower(p.name) = lower(v.name));
+-- also matches the longer names given in 0029 (e.g. 'SATA · Society…'), so re-running never adds copies
+where not exists (select 1 from public.partners p where lower(p.name) = lower(v.name) or lower(p.name) like lower(v.name) || ' %');
 
 -- Live health news: the article's own picture and description are fetched and stored.
 alter table public.health_feed_items add column if not exists image_url text not null default '';

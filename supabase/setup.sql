@@ -1,4 +1,4 @@
--- Basil Media OS · complete database setup (generated from 33 migrations).
+-- Basil Media OS · complete database setup (generated from 34 migrations).
 -- Paste into Supabase → SQL Editor on an EMPTY project and press Run.
 
 -- ===================== 0001_foundation.sql =====================
@@ -4237,7 +4237,8 @@ select v.name, v.logo, v.site, v.ord from (values
   ('CareHealth & Hospitality Services', '', '', 13),
   ('Ampola Regency Hospital', '', '', 14)
 ) as v(name, logo, site, ord)
-where not exists (select 1 from public.partners p where lower(p.name) = lower(v.name));
+-- also matches the longer names given in 0029 (e.g. 'SATA · Society…'), so re-running never adds copies
+where not exists (select 1 from public.partners p where lower(p.name) = lower(v.name) or lower(p.name) like lower(v.name) || ' %');
 
 -- Live health news: the article's own picture and description are fetched and stored.
 alter table public.health_feed_items add column if not exists image_url text not null default '';
@@ -4415,4 +4416,11 @@ revoke execute on function public.publish_gallery(text, text, text, text) from a
 update public.partners set logo_url = '/img/partners/carehealth.png' where name ilike 'CareHealth%' and coalesce(logo_url, '') = '';
 update public.partners set logo_url = '/img/partners/nedc.png' where name ilike 'NEDC%' and coalesce(logo_url, '') = '';
 update public.partners set logo_url = '/img/partners/sata.png' where name ilike 'SATA%' and coalesce(logo_url, '') = '';
+
+-- ===================== 0036_partner_duplicates.sql =====================
+-- Remove duplicate partners (same name): keep the oldest row of each name.
+delete from public.partners p
+using public.partners q
+where lower(p.name) = lower(q.name)
+  and (p.created_at, p.id::text) > (q.created_at, q.id::text);
 

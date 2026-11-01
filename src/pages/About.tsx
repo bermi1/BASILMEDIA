@@ -10,7 +10,9 @@ export default function About() {
   const s = useSettings();
   const { t } = useI18n();
   useSeo('About Us', s.mission);
-  const { rows: partners } = useRows('partners');
+  const { rows: allPartners } = useRows('partners');
+  // one logo per partner, even if the same partner was saved twice
+  const partners = allPartners.filter((p, i, a) => a.findIndex((q) => q.name.trim().toLowerCase() === p.name.trim().toLowerCase()) === i);
   const story = (s.about_story || '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
   return (
     <>

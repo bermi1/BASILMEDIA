@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql, 0031_verified_news_sources.sql, 0032_more_partner_logos.sql, 0033_pixieset_galleries.sql, 0034_publish_gallery.sql, 0035_last_partner_logos.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql, 0031_verified_news_sources.sql, 0032_more_partner_logos.sql, 0033_pixieset_galleries.sql, 0034_publish_gallery.sql, 0035_last_partner_logos.sql, 0036_partner_duplicates.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -961,7 +961,8 @@ select v.name, v.logo, v.site, v.ord from (values
   ('CareHealth & Hospitality Services', '', '', 13),
   ('Ampola Regency Hospital', '', '', 14)
 ) as v(name, logo, site, ord)
-where not exists (select 1 from public.partners p where lower(p.name) = lower(v.name));
+-- also matches the longer names given in 0029 (e.g. 'SATA · Society…'), so re-running never adds copies
+where not exists (select 1 from public.partners p where lower(p.name) = lower(v.name) or lower(p.name) like lower(v.name) || ' %');
 
 -- Live health news: the article's own picture and description are fetched and stored.
 alter table public.health_feed_items add column if not exists image_url text not null default '';
@@ -1139,4 +1140,11 @@ revoke execute on function public.publish_gallery(text, text, text, text) from a
 update public.partners set logo_url = '/img/partners/carehealth.png' where name ilike 'CareHealth%' and coalesce(logo_url, '') = '';
 update public.partners set logo_url = '/img/partners/nedc.png' where name ilike 'NEDC%' and coalesce(logo_url, '') = '';
 update public.partners set logo_url = '/img/partners/sata.png' where name ilike 'SATA%' and coalesce(logo_url, '') = '';
+
+-- ===================== 0036_partner_duplicates.sql =====================
+-- Remove duplicate partners (same name): keep the oldest row of each name.
+delete from public.partners p
+using public.partners q
+where lower(p.name) = lower(q.name)
+  and (p.created_at, p.id::text) > (q.created_at, q.id::text);
 
