@@ -156,7 +156,20 @@ export default function Home() {
             </div>
             {/* Justified rows (like a photo library): reels and films share each row at one height, every row
                 is filled edge to edge, nothing is cropped and no row is left half empty. */}
-            <JustifiedRows items={shown} />
+            {/* Phones: one big video, the next three in a small swipe row — no long scrolling */}
+            <div className="sm:hidden">
+              {shown[0] && (
+                <div className="w-full" style={{ aspectRatio: shown[0].shape === 'portrait' ? '4 / 5' : '16 / 9' }}><GlanceCard {...shown[0]} index={0} /></div>
+              )}
+              {shown.length > 1 && (
+                <div className="snap-row mt-3 pb-1">
+                  {shown.slice(1, 4).map((g, i) => (
+                    <div key={g.id} className="w-[44vw] max-w-[200px] shrink-0 snap-start" style={{ aspectRatio: '4 / 3' }}><GlanceCard {...g} index={i + 1} /></div>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="hidden sm:block"><JustifiedRows items={shown} /></div>
           </div>
         </section>
       )}
