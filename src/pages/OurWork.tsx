@@ -138,6 +138,7 @@ function Card({ p, index, onOpen }: { p: { title: string; category: string; clie
   return (
     <button type="button" onClick={onOpen} className="group relative block aspect-[4/5] w-full overflow-hidden rounded-[18px] border-0 p-0 text-left shadow-card ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-14px_rgba(15,110,194,0.55)] hover:ring-basil-sky/60 sm:rounded-[22px]">
       <Media src={cover} index={index} className="flex h-full flex-col justify-end gap-1 p-3 text-white sm:p-5">
+        {!cover && isPixieset(p.external_url) && <span aria-hidden="true" className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/85"><Images size={30} /><span className="text-[10px] font-bold uppercase tracking-[0.18em]">Photo gallery</span></span>}
         <span className="absolute left-2.5 top-2.5 flex gap-1 sm:left-4 sm:top-4">
           {src && <span className="rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-extrabold text-basil sm:text-xs">{src}</span>}
           {isNew(p.created_at) && <span className="rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-extrabold text-white sm:text-xs">New</span>}

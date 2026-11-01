@@ -48,9 +48,13 @@ export default function Home() {
     ...highlights.filter((h) => parseVideo(h.video_url).kind !== 'instagram').map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels', shape: videoOrientation(h.video_url, h.orientation) })),
     ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, link: p.external_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string, shape: videoOrientation(p.video_url, p.orientation) })),
   ];
-  const [cat, setCat] = useState('All');
-  const cats = ['All', ...Array.from(new Set(glance.map((g) => g.cat)))];
-  const shown = glance.filter((g) => cat === 'All' || g.cat === cat).slice(0, 12);
+  // Four simple buttons: Videos · Photos · Live stream · Podcasts (a button shows only when it has items).
+  const kind = (g: { cat: string; title: string; link?: string; url: string }) =>
+    g.cat === 'Photo Stories' || /pixieset\.com/i.test(g.link ?? '') ? 'Photos' : g.cat === 'Podcasts' ? 'Podcasts' : /\blive\b/i.test(g.title) ? 'Live stream' : 'Videos';
+  const cats = ['Videos', 'Photos', 'Live stream', 'Podcasts'].filter((k) => glance.some((g) => kind(g) === k));
+  const [catState, setCat] = useState('Videos');
+  const cat = cats.includes(catState) ? catState : cats[0] ?? 'Videos';
+  const shown = glance.filter((g) => kind(g) === cat).slice(0, 12);
   const { rows: news } = useRows('news_stories', { publishedOnly: true, limit: 3 });
 
   return (
@@ -323,6 +327,7 @@ function GlanceCard({ title, url, link, poster: saved, sub, index, shape }: { ti
       ) : (
         <button type="button" onClick={() => (url ? setOn(true) : link && window.open(link, '_blank', 'noopener'))} aria-label={url ? `Play ${title}` : `Open the ${title} gallery`} title={title} className="group relative block h-full w-full overflow-hidden rounded-2xl border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:ring-white/40" style={{ background: gradient(index) }}>
           {poster && <img src={poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-top" />}
+          {!poster && link && <span aria-hidden="true" className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/85"><Camera size={26} /><span className="text-[10px] font-bold uppercase tracking-[0.18em]">Photo gallery</span></span>}
           {/* minimal overlay: a thin fade at the very bottom, a small play icon in the corner */}
           <span className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/60 to-transparent" />
           {url && <span className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/35 text-white ring-1 ring-white/30 backdrop-blur-md transition group-hover:bg-white group-hover:text-basil-night"><Play size={11} /></span>}

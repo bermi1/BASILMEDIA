@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql, 0031_verified_news_sources.sql, 0032_more_partner_logos.sql, 0033_pixieset_galleries.sql, 0034_publish_gallery.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql, 0031_verified_news_sources.sql, 0032_more_partner_logos.sql, 0033_pixieset_galleries.sql, 0034_publish_gallery.sql, 0035_last_partner_logos.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -1133,4 +1133,10 @@ begin
 end;
 $$;
 revoke execute on function public.publish_gallery(text, text, text, text) from anon;
+
+-- ===================== 0035_last_partner_logos.sql =====================
+-- Basil Media OS · 0035 CareHealth, NEDC and SATA logos (supplied by Basil Media).
+update public.partners set logo_url = '/img/partners/carehealth.png' where name ilike 'CareHealth%' and coalesce(logo_url, '') = '';
+update public.partners set logo_url = '/img/partners/nedc.png' where name ilike 'NEDC%' and coalesce(logo_url, '') = '';
+update public.partners set logo_url = '/img/partners/sata.png' where name ilike 'SATA%' and coalesce(logo_url, '') = '';
 
