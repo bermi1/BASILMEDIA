@@ -11,6 +11,7 @@ import { Media } from '@/components/Media';
 import { VideoEmbed } from '@/components/VideoEmbed';
 import { Play } from '@/components/icons';
 import { PageHero } from '@/components/PageHero';
+import { useCover } from '@/lib/useCover';
 
 const isPixieset = (u?: string) => !!u && /pixieset\.com/i.test(u);
 
@@ -132,9 +133,10 @@ export default function OurWork() {
 
 function Card({ p, index, onOpen }: { p: { title: string; category: string; client: string; image_url: string; video_url: string; external_url: string }; index: number; onOpen: () => void }) {
   const src = videoLabel(p.video_url);
+  const cover = useCover(p.external_url, p.image_url || youtubeThumb(p.video_url));
   return (
     <button type="button" onClick={onOpen} className="group relative block aspect-[4/5] w-full overflow-hidden rounded-[18px] border-0 p-0 text-left shadow-card ring-1 ring-black/5 transition duration-300 hover:-translate-y-1 hover:shadow-[0_24px_50px_-14px_rgba(15,110,194,0.55)] hover:ring-basil-sky/60 sm:rounded-[22px]">
-      <Media src={p.image_url || youtubeThumb(p.video_url)} index={index} className="flex h-full flex-col justify-end gap-1 p-3 text-white sm:p-5">
+      <Media src={cover} index={index} className="flex h-full flex-col justify-end gap-1 p-3 text-white sm:p-5">
         <span className="absolute left-2.5 top-2.5 flex gap-1 sm:left-4 sm:top-4">
           {src && <span className="rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-extrabold text-basil sm:text-xs">{src}</span>}
           {isPixieset(p.external_url) && <span className="rounded-full bg-sun px-2 py-0.5 text-[10px] font-extrabold text-basil-night sm:text-xs">Gallery</span>}

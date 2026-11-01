@@ -5,6 +5,7 @@ import { ArrowRight, Briefcase, CalendarDays, Camera, ChevronDown, HeartPulse, L
 import { useRows, useSettings } from '@/hooks/useData';
 import { useSeo } from '@/hooks/useSeo';
 import { useI18n } from '@/lib/i18n';
+import { useCover } from '@/lib/useCover';
 import { parseVideo, videoLabel, videoOrientation, youtubeThumb, type Orientation } from '@/lib/video';
 import { HeroSlides } from '@/components/HeroSlides';
 import { gradient } from '@/components/Media';
@@ -45,7 +46,7 @@ export default function Home() {
   // Work at a glance: the reels first, then featured projects.
   const glance = [
     ...highlights.filter((h) => parseVideo(h.video_url).kind !== 'instagram').map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels', shape: videoOrientation(h.video_url, h.orientation) })),
-    ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string, shape: videoOrientation(p.video_url, p.orientation) })),
+    ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, link: p.external_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string, shape: videoOrientation(p.video_url, p.orientation) })),
   ];
   const [cat, setCat] = useState('All');
   const cats = ['All', ...Array.from(new Set(glance.map((g) => g.cat)))];
@@ -55,17 +56,17 @@ export default function Home() {
   return (
     <>
       {/* HERO — the picture/video speaks; few words */}
-      <section className="relative isolate flex min-h-[60svh] items-end justify-center overflow-hidden text-center text-white sm:min-h-[80vh]" style={{ background: 'radial-gradient(ellipse at 15% 20%, rgba(124,192,245,0.35), transparent 50%), radial-gradient(ellipse at 90% 85%, rgba(245,185,66,0.2), transparent 45%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
-        <HeroSlides images={photos} video={s.hero_video_url} />
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(6,30,61,0.35) 0%, rgba(6,30,61,0) 35%, rgba(6,30,61,0.6) 72%, rgba(6,30,61,0.92) 100%)' }} />
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="container-bm relative flex flex-col items-center pb-8 pt-24 sm:pb-16">
-          <h1 className="m-0 max-w-[640px] text-[clamp(22px,3.6vw,44px)] font-bold leading-[1.15] tracking-[-0.02em]">
+      <section className="relative isolate flex h-[calc(76px+56.25vw)] items-end justify-center overflow-hidden text-center text-white sm:h-auto sm:min-h-[80vh]" style={{ background: 'radial-gradient(ellipse at 15% 20%, rgba(124,192,245,0.35), transparent 50%), radial-gradient(ellipse at 90% 85%, rgba(245,185,66,0.2), transparent 45%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
+        <div className="absolute inset-x-0 bottom-0 top-[76px] sm:top-0"><HeroSlides images={photos} video={s.hero_video_url} /></div>
+        <div className="absolute inset-x-0 bottom-0 top-[76px] sm:top-0" style={{ background: 'linear-gradient(180deg, rgba(6,30,61,0.35) 0%, rgba(6,30,61,0) 35%, rgba(6,30,61,0.6) 72%, rgba(6,30,61,0.92) 100%)' }} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="container-bm relative flex flex-col items-center pb-3 pt-0 sm:pb-16 sm:pt-24">
+          <h1 className="m-0 max-w-[640px] text-[15px] font-bold leading-[1.2] tracking-[-0.01em] sm:text-[clamp(22px,3.6vw,44px)] sm:leading-[1.15] sm:tracking-[-0.02em]">
             {s.tagline} <span className="text-glow">{s.tagline_highlight}</span>
           </h1>
-          {s.hero_subtitle && <p className="m-0 mt-2 max-w-[440px] text-[13.5px] text-basil-frost sm:mt-3 sm:text-base">{s.hero_subtitle}</p>}
-          <div className="mt-5 flex flex-wrap justify-center gap-2 sm:mt-6 sm:gap-3">
-            <Link to="/#book" className="group flex h-11 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-5 text-[14px] font-semibold text-basil no-underline hover:bg-basil-ice sm:h-12 sm:px-6 sm:text-[15px]">{t('book')}<ArrowRight size={16} className="transition group-hover:translate-x-1" /></Link>
-            <Link to="/our-work" className="flex h-11 items-center gap-1.5 whitespace-nowrap rounded-full border border-white/35 bg-white/10 px-5 text-[14px] font-semibold text-white no-underline backdrop-blur hover:bg-white/20 hover:text-white sm:h-12 sm:px-6 sm:text-[15px]"><Play size={15} color="#FFFFFF" />{t('viewWork')}</Link>
+          {s.hero_subtitle && <p className="m-0 mt-3 hidden max-w-[440px] text-base text-basil-frost sm:block">{s.hero_subtitle}</p>}
+          <div className="mt-2 flex flex-wrap justify-center gap-1.5 sm:mt-6 sm:gap-3">
+            <Link to="/#book" className="group flex h-8 items-center gap-1 whitespace-nowrap rounded-full bg-white px-3.5 text-[12px] font-semibold sm:gap-1.5 text-basil no-underline hover:bg-basil-ice sm:h-12 sm:px-6 sm:text-[15px]">{t('book')}<ArrowRight size={16} className="transition group-hover:translate-x-1" /></Link>
+            <Link to="/our-work" className="flex h-8 items-center gap-1 whitespace-nowrap rounded-full border border-white/35 bg-white/10 px-3.5 text-[12px] font-semibold sm:gap-1.5 text-white no-underline backdrop-blur hover:bg-white/20 hover:text-white sm:h-12 sm:px-6 sm:text-[15px]"><Play size={15} color="#FFFFFF" />{t('viewWork')}</Link>
           </div>
         </motion.div>
         <a href="#trusted" aria-label="Scroll down" className="absolute bottom-[104px] right-5 hidden h-12 w-12 animate-float items-center justify-center rounded-full border border-white/30 text-white no-underline sm:bottom-8 sm:flex"><ChevronDown size={20} /></a>
@@ -260,7 +261,7 @@ function PartnerMark({ name, logo }: { name: string; logo: string }) {
     : <span className="whitespace-nowrap font-display text-[14px] font-bold text-basil-deep sm:text-[15px]">{name}</span>;
 }
 
-type GlanceItem = { id: string; title: string; url: string; poster: string; sub: string; shape: Orientation };
+type GlanceItem = { id: string; title: string; url: string; link?: string; poster: string; sub: string; shape: Orientation };
 function JustifiedRows({ items }: { items: GlanceItem[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
@@ -298,15 +299,16 @@ function JustifiedRows({ items }: { items: GlanceItem[] }) {
   );
 }
 
-function GlanceCard({ title, url, poster, sub, index, shape }: { title: string; url: string; poster: string; sub: string; index: number; shape: Orientation }) {
+function GlanceCard({ title, url, link, poster: saved, sub, index, shape }: { title: string; url: string; link?: string; poster: string; sub: string; index: number; shape: Orientation }) {
   const [on, setOn] = useState(false);
+  const poster = useCover(link, saved);
   const aspect = shape === 'portrait' ? '9 / 16' : '16 / 9';
   return (
     <div className="h-full w-full">
       {on && url ? (
         <div className="h-full overflow-hidden rounded-2xl shadow-card [&>div]:h-full"><VideoEmbed url={url} title={title} autoPlay aspect={aspect} /></div>
       ) : (
-        <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} title={title} className="group relative block h-full w-full overflow-hidden rounded-2xl border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:ring-white/40" style={{ background: gradient(index) }}>
+        <button type="button" onClick={() => (url ? setOn(true) : link && window.open(link, '_blank', 'noopener'))} aria-label={url ? `Play ${title}` : `Open the ${title} gallery`} title={title} className="group relative block h-full w-full overflow-hidden rounded-2xl border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:ring-white/40" style={{ background: gradient(index) }}>
           {poster && <img src={poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover object-top" />}
           {/* minimal overlay: a thin fade at the very bottom, a small play icon in the corner */}
           <span className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/60 to-transparent" />

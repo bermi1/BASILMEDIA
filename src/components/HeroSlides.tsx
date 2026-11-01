@@ -20,10 +20,9 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
   }, [i, images]);
   const v = parseVideo(video);
   if (v.kind === 'file') {
-    // Built-in hero loops (public/media/hero) come in a wide and a tall version: phones get the tall one.
-    const tall = typeof matchMedia !== 'undefined' && matchMedia('(orientation: portrait)').matches;
+    // Built-in hero video: the same wide file on every screen (phones show it at its own 16:9 shape).
     const builtIn = v.src.startsWith('/media/hero/') && v.src.endsWith('.mp4');
-    const src = builtIn && tall ? v.src.replace(/\.mp4$/, '-portrait.mp4') : v.src;
+    const src = v.src;
     const poster = builtIn ? src.replace(/\.mp4$/, '-poster.jpg') : images[0];
     if (reduce) return <img aria-hidden="true" src={poster} alt="" className="absolute inset-0 h-full w-full object-cover" />;
     return <HeroVideo src={src} poster={poster} />;
@@ -70,7 +69,7 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
       {/* light Basil-blue coating: on brand, but the footage keeps its colour */}
       <div aria-hidden="true" className="absolute inset-0 mix-blend-multiply" style={{ background: 'linear-gradient(135deg, rgba(15,110,194,0.28), rgba(10,47,92,0.12) 55%, rgba(43,134,218,0.22))' }} />
       <button type="button" onClick={toggle} aria-pressed={!muted} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
-        className="absolute bottom-4 left-4 z-20 flex h-10 items-center gap-1.5 rounded-full border border-white/30 bg-black/30 px-3.5 text-[13px] font-semibold text-white backdrop-blur-md transition hover:bg-black/50 sm:bottom-6 sm:left-6">
+        className="absolute right-2 top-2 z-20 flex h-7 items-center gap-1 rounded-full border border-white/30 bg-black/30 px-2.5 text-[11px] sm:bottom-6 sm:left-6 sm:right-auto sm:top-auto sm:h-10 sm:gap-1.5 sm:px-3.5 sm:text-[13px] font-semibold text-white backdrop-blur-md transition hover:bg-black/50 sm:bottom-6 sm:left-6">
         {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}{muted ? 'Sound on' : 'Sound off'}
       </button>
     </>

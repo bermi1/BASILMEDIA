@@ -1,5 +1,5 @@
 -- Basil Media OS · UPGRADE for a database that already ran supabase/setup.sql before.
--- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql, 0031_verified_news_sources.sql, 0032_more_partner_logos.sql
+-- Safe to run more than once. Contains: 0011_portal_access.sql, 0012_calendar.sql, 0013_proforma.sql, 0014_rls_fixes.sql, 0015_proposal_log.sql, 0016_video_orientation.sql, 0017_health_feed.sql, 0018_sample_data.sql, 0019_service_photos.sql, 0020_brand_and_team_photos.sql, 0021_partners_ceo_news_meta.sql, 0022_instagram_reels.sql, 0023_hero_video.sql, 0024_health_events.sql, 0025_contact_number.sql, 0026_partner_logos.sql, 0028_youtube_only_and_real_news.sql, 0029_partner_names.sql, 0030_news_refresh_schedule.sql, 0031_verified_news_sources.sql, 0032_more_partner_logos.sql, 0033_pixieset_galleries.sql
 
 -- ===================== 0011_portal_access.sql =====================
 -- Basil Media OS · 0011 portal access
@@ -1097,4 +1097,17 @@ update public.opportunities set published = false where title in
 -- Basil Media OS · 0032 SNOSSA and Ampola Regency Hospital logos (from their own websites).
 update public.partners set logo_url = '/img/partners/snossa.png' where name in ('SNOSSA Conference 2026', 'SNOSSA') and coalesce(logo_url, '') = '';
 update public.partners set logo_url = '/img/partners/ampola-regency-hospital.png' where name in ('Ampola Regency Hospital', 'Ampola Regency') and coalesce(logo_url, '') = '';
+
+-- ===================== 0033_pixieset_galleries.sql =====================
+-- Basil Media OS · 0033 photography work: Basil Media's Pixieset galleries (cards open the full gallery).
+insert into public.projects_public (title, client, category, image_url, description, external_url, featured, sort_order, published)
+select v.title, v.client, 'Photo Stories', v.cover, 'Photo collection by Basil Media.', v.url, v.feat, v.ord, true from (values
+  ('13th Tanzania Health Summit 2026', 'Tanzania Health Summit', '', 'https://basilmedia.pixieset.com/13thtanzaniahealthsummit2026/', true, -60),
+  ('CRDB Bank Marathon 2026', 'CRDB Bank Foundation', 'https://images.pixieset.com/169195021/4729466e9fb22ff08a189993bc5da085-cover.JPG', 'https://basilmedia.pixieset.com/crdbbankmarathon2026-1/', true, -59),
+  ('MUHAS — MD 2026', 'MUHAS', '', 'https://basilmedia.pixieset.com/muhasmd2026/', false, -58),
+  ('Vijana Uchumi Challenge — Grand Finale', 'Vijana Uchumi Challenge', '', 'https://basilmedia.pixieset.com/vijanauchumichallange/', false, -57),
+  ('Smartelite Career Fair 2026', 'Smartelite', '', 'https://basilmedia.pixieset.com/smartelitecareerfair2026/', false, -56),
+  ('Ampola doctors', 'Ampola Regency Hospital', '', 'https://basilcreativemedia.pixieset.com/ampoladoctors/', false, -55)
+) as v(title, client, cover, url, feat, ord)
+where not exists (select 1 from public.projects_public p where p.external_url = v.url);
 
