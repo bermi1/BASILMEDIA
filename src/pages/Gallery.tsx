@@ -136,6 +136,7 @@ export default function Gallery() {
           <img src="/logo.svg" alt="" className="h-8 w-8" />
           <span>Delivered by Basil Media · open until {fmtDate(g.expires_on)}</span>
           <span className="flex gap-4"><Link to="/" className="text-black/60">Website</Link><Link to="/find-me" className="text-black/60">Find my photos</Link><Link to="/contact" className="text-black/60">Prints &amp; albums</Link></span>
+          <Link to={`/remove-me?g=${g.slug}`} className="text-black/40">Remove me from this gallery</Link>
         </footer>
       </main>
 
