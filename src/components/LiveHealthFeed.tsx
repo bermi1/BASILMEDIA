@@ -115,7 +115,7 @@ export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: 
               <a href={i.url} target="_blank" rel="noreferrer" className="group flex h-full flex-col overflow-hidden rounded-2xl border border-basil-line bg-white text-basil-ink no-underline transition hover:-translate-y-0.5 hover:shadow-card hover:text-basil-ink">
                 <span className="relative block aspect-[16/9] bg-basil-ice">
                   {i.image_url
-                    ? <img src={i.image_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => (e.currentTarget.style.display = 'none')} className="absolute inset-0 h-full w-full object-cover object-top" />
+                    ? <img src={i.image_url.replace(/&amp;|&#0?38;/g, '&')} alt="" loading="lazy" referrerPolicy="no-referrer" onError={(e) => (e.currentTarget.style.display = 'none')} className="absolute inset-0 h-full w-full object-cover object-top" />
                     : <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center text-basil"><Radio size={26} /></span>}
                   {i.critical && <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white"><AlertTriangle size={11} />Critical</span>}
                 </span>

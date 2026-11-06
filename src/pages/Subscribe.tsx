@@ -1,18 +1,8 @@
-// Basil Health Brief: health news and health events only — a short sign-up, upcoming events, live news.
+// Basil Brief sign-up: one short form, nothing else (the news itself lives on /health-news).
 import { useSeo } from '@/hooks/useSeo';
 import { SubscribeSection } from './HealthNews';
-import { UpcomingHealthEvents } from '@/components/UpcomingHealthEvents';
-import { LiveHealthFeed } from '@/components/LiveHealthFeed';
 
 export default function Subscribe() {
-  useSeo('Subscribe to the Basil Health Brief', 'Free health news and health events for Tanzanian health workers, on WhatsApp or SMS.');
-  return (
-    <>
-      <SubscribeSection standalone source={new URLSearchParams(location.search).get('src') ?? 'subscribe-page'} />
-      <div className="container-bm flex flex-col gap-10 py-10 sm:py-14">
-        <UpcomingHealthEvents />
-        <LiveHealthFeed />
-      </div>
-    </>
-  );
+  useSeo('Subscribe to the Basil Brief', 'Free news on health, youth opportunities, innovation, business and banking — on WhatsApp, SMS or email.');
+  return <SubscribeSection standalone source={new URLSearchParams(location.search).get('src') ?? 'subscribe-page'} />;
 }

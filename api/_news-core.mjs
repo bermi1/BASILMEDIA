@@ -53,13 +53,16 @@ const linkOf = (block) => {
   return (tag(block, 'link') || atom?.[1] || tag(block, 'guid')).trim();
 };
 
+/** Picture addresses come out of XML/HTML attributes, where & is written &amp; (or &#038;). */
+const amp = (u) => (u ?? '').replace(/&amp;|&#0?38;/g, '&');
+
 /** RSS 2.0, RDF/RSS 1.0 and Atom. */
 export function parseFeed(xml) {
   const blocks = xml.match(/<(item|entry)[\s>][\s\S]*?<\/\1>/gi) ?? [];
   return blocks.map((b) => ({
-    image_url: (b.match(/<media:(?:content|thumbnail)[^>]*url="([^"]+)"/i) ?? b.match(/<enclosure[^>]*url="([^"]+\.(?:jpe?g|png|webp)[^"]*)"/i) ?? b.match(/<img[^>]*src="(https?:[^"]+)"/i) ?? [])[1] ?? '',
+    image_url: amp((b.match(/<media:(?:content|thumbnail)[^>]*url="([^"]+)"/i) ?? b.match(/<enclosure[^>]*url="([^"]+\.(?:jpe?g|png|webp)[^"]*)"/i) ?? b.match(/<img[^>]*src="(https?:[^"]+)"/i) ?? [])[1] ?? ''),
     title: tag(b, 'title'),
-    url: linkOf(b),
+    url: amp(linkOf(b)),
     summary: (tag(b, 'description') || tag(b, 'summary') || tag(b, 'content')).slice(0, 400),
     published_at: tag(b, 'pubDate') || tag(b, 'dc:date') || tag(b, 'published') || tag(b, 'updated'),
   }));

@@ -16,6 +16,11 @@ describe('news fetcher', () => {
     expect(items[0]).toMatchObject({ title: 'Cholera outbreak in Dodoma', url: 'https://news.example/a', image_url: 'https://news.example/a.jpg' });
     expect(items[1].title).toBe('Bank of Tanzania keeps rate');
   });
+  it('decodes &amp; in photo addresses', () => {
+    const [it0] = parseFeed('<rss><item><title>x</title><link>https://n.example/c?a=1&amp;b=2</link><media:content url="https://i.example/p.jpg?fit=2000%2C1062&amp;ssl=1" /></item></rss>');
+    expect(it0.image_url).toBe('https://i.example/p.jpg?fit=2000%2C1062&ssl=1');
+    expect(it0.url).toBe('https://n.example/c?a=1&b=2');
+  });
   it('sorts stories into zones, Tanzania first', () => {
     expect(zoneOf('Clinic opens in Mwanza', 'world')).toBe('tanzania');
     expect(zoneOf('Kenya rolls out vaccine', 'world')).toBe('east_africa');

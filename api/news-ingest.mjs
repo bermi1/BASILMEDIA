@@ -1,16 +1,18 @@
 // Vercel function: GET /api/news-ingest — keeps the health news fresh (stories older than 72 h are deleted).
-// Needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (server-only) in the host's environment.
+// Needs SUPABASE_SERVICE_ROLE_KEY (server-only) in the host's environment; the project address is public and
+// falls back to the one the site itself uses (SUPABASE_URL overrides it).
 // - Vercel cron (vercel.json) calls it daily with CRON_SECRET as a Bearer token: always runs.
 // - The news page calls it when the feed is more than 2 hours old: without the secret it only runs if
 //   nobody has updated in the last 2 hours, so visitors cannot run it more often than that.
 import { ingest } from './_news-core.mjs';
 
 const MIN_GAP_MS = 2 * 36e5;
+const PUBLIC_URL = 'https://vodhxhbjncvhogdgkmfy.supabase.co'; // same as VITE_SUPABASE_URL in .env.production
 
 export default async function handler(req, res) {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || PUBLIC_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-  if (!url || !serviceKey) return res.status(503).json({ ok: false, error: 'SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are not set on the host' });
+  if (!url || !serviceKey) return res.status(503).json({ ok: false, error: 'SUPABASE_SERVICE_ROLE_KEY is not set on the host (Vercel → Settings → Environment Variables)' });
   const secret = process.env.CRON_SECRET;
   const trusted = !!secret && req.headers.authorization === `Bearer ${secret}`;
   try {
