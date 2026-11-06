@@ -5,3 +5,4 @@ import { growthModule } from './growth';
 import type { OsModule } from './types';
 
 export const MODULES: OsModule[] = [growthModule, financeModule, projectsModule, storeModule];
+import { audienceModule } from './audience'; MODULES.push(audienceModule);
