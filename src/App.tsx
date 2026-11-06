@@ -17,6 +17,7 @@ const NewsStory = lazy(() => import('@/pages/NewsStory'));
 const Subscribe = lazy(() => import('@/pages/Subscribe'));
 const Gallery = lazy(() => import('@/pages/Gallery'));
 const FindMe = lazy(() => import('@/pages/FindMe'));
+const RemoveMe = lazy(() => import('@/pages/RemoveMe'));
 const Login = lazy(() => import('@/pages/Login'));
 const Privacy = lazy(() => import('@/pages/Privacy').then((m) => ({ default: m.Privacy })));
 const FacePrivacy = lazy(() => import('@/pages/Privacy').then((m) => ({ default: m.FacePrivacy })));
@@ -44,6 +45,7 @@ export default function App() {
                 <Route path="health-news/:id" element={<NewsStory />} />
                 <Route path="subscribe" element={<Subscribe />} />
                 <Route path="find-me" element={<FindMe />} />
+                <Route path="remove-me" element={<RemoveMe />} />
                 <Route path="privacy" element={<Privacy />} />
                 <Route path="privacy/face-search" element={<FacePrivacy />} />
                 <Route path="*" element={<NotFound />} />

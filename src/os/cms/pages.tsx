@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Download, ExternalLink, ImagePlus, Images, Inbox, Loader2, QrCode, RotateCcw, Users, Video } from 'lucide-react';
+import { Download, ExternalLink, ImagePlus, Images, Inbox, Loader2, QrCode, RotateCcw, ScanFace, Users, Video } from 'lucide-react';
+import { indexGallery, labelCluster, loadClusters, rebuildClusters, type Cluster, type FaceBox, type IndexProgress } from '@/lib/face';
 import { useRows, useSettings } from '@/hooks/useData';
 import { resetDemo, save, saveSettings, remove } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
 import { isDemo } from '@/lib/supabase';
 import { fmtDate } from '@/lib/format';
-import type { Booking, Gallery, SiteSettings, Stat, Subscriber } from '@/lib/types';
+import type { Booking, Gallery, MediaItem, SiteSettings, Stat, Subscriber } from '@/lib/types';
 import { FieldInput, type Field } from './fields';
 import { ResourceManager, IconBtn } from './ResourceManager';
 import { PageTitle } from '../OsLayout';
@@ -336,6 +337,7 @@ function GalleryMedia({ g, onBack }: { g: Gallery; onBack: () => void }) {
           ))}
         </ul>
       )}
+      <FacePanel g={g} rows={rows} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
         {rows.map((m) => (
           <div key={m.id} className="overflow-hidden rounded-2xl border border-basil-line bg-white">
@@ -353,6 +355,71 @@ function GalleryMedia({ g, onBack }: { g: Gallery; onBack: () => void }) {
         ))}
       </div>
     </>
+  );
+}
+
+// Bermi AI face indexing and the internal "People" view. Runs in this browser; only embeddings are stored.
+function FacePanel({ g, rows }: { g: Gallery; rows: MediaItem[] }) {
+  const [prog, setProg] = useState<IndexProgress | null>(null);
+  const [running, setRunning] = useState(false);
+  const [people, setPeople] = useState<Cluster[] | null>(null);
+  const toast = useToast();
+  const byId = new Map(rows.map((m) => [m.id, m]));
+  const run = async () => {
+    if (!confirm('Index faces in this gallery? Only do this with the organiser’s consent — never for children or schools without written consent from the organiser and parents.')) return;
+    setRunning(true);
+    try {
+      const p = await indexGallery(g, rows, setProg);
+      toast(`${p.faces} face(s) found in ${p.done} photo(s)${p.failed ? `, ${p.failed} failed` : ''}`);
+    } catch (e) {
+      toast((e as Error).message);
+    } finally {
+      setRunning(false);
+    }
+  };
+  const showPeople = async (rebuild: boolean) => {
+    try { setPeople(await (rebuild ? rebuildClusters(g.id) : loadClusters(g.id))); } catch (e) { toast((e as Error).message); }
+  };
+  const crop = (b: FaceBox) => {
+    const S = 72, iw = S / Math.max(b.w, 0.01), ih = iw / (b.ar || 1);
+    return { width: iw, height: ih, left: -b.x * iw, top: -b.y * ih };
+  };
+  return (
+    <div className="mb-5 rounded-3xl border border-basil-line bg-white p-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <ScanFace size={20} className="text-basil" />
+        <b className="mr-auto">Find Me · Bermi AI</b>
+        <button type="button" className="btn-primary" disabled={running || !g.face_search_enabled} onClick={run}>{running ? <Loader2 size={16} className="animate-spin" /> : <ScanFace size={16} />}Index faces</button>
+        <button type="button" className="btn-outline" disabled={running} onClick={() => showPeople(!people)}><Users size={16} />{people ? 'Re-group people' : 'People'}</button>
+      </div>
+      {!g.face_search_enabled && <p className="mb-0 mt-2 text-xs text-amber-800">Turn on “Find Me (face search)” for this gallery first. Never for children or schools without the organiser’s written consent.</p>}
+      {prog && (
+        <div className="mt-3 text-xs text-basil-muted">
+          {prog.done}/{prog.total} new photos · {prog.faces} faces · {prog.skipped} already indexed{prog.failed ? ` · ${prog.failed} failed (check the photo allows cross-origin loading)` : ''}
+          <div className="mt-1 h-1 rounded bg-basil-line"><div className="h-1 rounded bg-basil" style={{ width: `${prog.total ? (prog.done / prog.total) * 100 : 100}%` }} /></div>
+        </div>
+      )}
+      {people && (
+        <div className="mt-4">
+          <p className="mb-2 mt-0 text-xs text-basil-muted">Internal only — groups of similar faces. Labels are never shown to visitors.</p>
+          {!people.length && <p className="m-0 text-sm text-basil-muted">No faces indexed yet.</p>}
+          <ul className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-4 lg:grid-cols-6">
+            {people.map((c) => {
+              const m = byId.get(c.cover.media_id);
+              return (
+                <li key={c.id} className="flex flex-col items-center gap-1.5 rounded-2xl border border-basil-line p-2 text-center">
+                  <div className="relative h-[72px] w-[72px] overflow-hidden rounded-full bg-basil-line">
+                    {m?.url && <img src={m.url} alt="" className="absolute max-w-none" style={crop(c.cover.box)} />}
+                  </div>
+                  <span className="text-xs text-basil-muted">{c.size} photo{c.size === 1 ? '' : 's'}</span>
+                  <input aria-label="Person label" defaultValue={c.label ?? ''} placeholder="Name (internal)" onBlur={(e) => e.target.value !== (c.label ?? '') && labelCluster(c.id, e.target.value).then(() => toast('Label saved'), (er: Error) => toast(er.message))} className="h-9 w-full rounded-lg border border-basil-edge px-2 text-xs" />
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
