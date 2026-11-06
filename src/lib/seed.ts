@@ -72,55 +72,17 @@ export const SEED_SERVICES: Service[] = SV.map(([title, short, description, deli
   icon: ICONS[i], image_url: '', video_url: '', sort_order: i + 1, published: true,
 }));
 
-// Real Basil Media productions (titles and cover stills). Videos are published on Instagram:
-// paste each reel link into the project in the CMS and it plays inside the page.
-// Titles are the published video titles; "client" is the organisation or event named in the video
-// title or thumbnail (the subject of the production), not a confirmed commercial contract.
-// Sources and evidence: docs/CONTENT_SOURCES.md.
-const PJ: [string, Project['category'], string, string, string, string][] = [
-  ['#LIVE: The 2026 PAT Scientific Conference — Mwanza', 'Corporate', 'Paediatric Association of Tanzania (PAT)', 'em1S7s6k7BI', 'pat-scientific-conference-2026-live',
-    'Live stream of the 2026 PAT Scientific Conference, 15 July 2026, Malaika Beach Resort, Mwanza. Theme: “Resilient Health Systems for Every Child: Innovation, Equity and Quality of Care”.'],
-  ['#LIVE: National Medical Congress 2026 — UDSM', 'Corporate', 'Medical Association of Tanzania (MAT)', '3T0PnVtU2Bo', 'national-medical-congress-2026-live',
-    'Live stream of the National Medical Congress 2026 presented by the Medical Association of Tanzania, 17 June 2026, UDSM, Dar es Salaam. Theme: “Tanzania Vision 2050: The Healthcare We Want”.'],
-  ['Kutoka kilo 145 ➝ 75: safari ya Said Shukuru', 'Films & Documentaries', 'Aga Khan Hospital, Dar es Salaam', 'tAXCUSfM5u4', 'said-shukuru-145-to-75-kilo-journey',
-    'Said Shukuru’s journey from 145 kg to 75 kg — a real-life health story connected to Aga Khan Hospital, Dar es Salaam.'],
-  ['Sikiliza historia ya Tanzania Health Summit — Dr Omary Chillo', 'Podcasts', 'Tanzania Health Summit', 'T_vtw0pTr-g', 'tanzania-health-summit-dr-omary-chillo',
-    'Dr Omary Chillo on the history of the Tanzania Health Summit, its achievements and its challenges.'],
-  ['Inasisimua: Mama Sabrina na mwanae mwenye sickle cell', 'Films & Documentaries', 'Basil Media', 'EWZAkKlRjXs', 'mama-sabrina-sickle-cell',
-    'The story of Mama Sabrina and how she fights for her child living with sickle cell disease.'],
-  ['Fahamu kuhusu tiba asili — Chuo Kikuu cha Muhimbili', 'Films & Documentaries', 'Muhimbili University of Health and Allied Sciences (MUHAS)', '6PaY6FeT9nQ', 'muhas-tiba-asili',
-    'Traditional medicine explained, from Muhimbili University of Health and Allied Sciences.'],
-  ['The Pharmacist — Ep 03: Afya Fiesta 2025 with TAMSA', 'Podcasts', 'TAMSA', 'TCKvCDgxR_o', 'the-pharmacist-ep03-afya-fiesta-tamsa',
-    'Episode 3 of The Pharmacist, recorded in the Basil Media (BTV) studio: Afya Fiesta 2025 with TAMSA.'],
-  ['Prof Karim Manji — niko MUHAS kwa mwaka wa 37', 'Films & Documentaries', 'Muhimbili University of Health and Allied Sciences (MUHAS)', 'cKksPy5U6-8', 'prof-karim-manji-muhas',
-    'Prof Karim Manji on 37 years at MUHAS.'],
-  ['Uzinduzi wa kongamano la kwanza la wanataaluma wa famasi Tanzania', 'Corporate', 'Basil Media', '0d5FagVEtdQ', 'pharmacy-professionals-congress-launch',
-    'The launch of the first congress of pharmacy professionals in Tanzania.'],
-  ['The Medics — Ep 05: Vifo vyenye utata', 'Podcasts', 'Basil Media', 'ctyRynHmDuo', 'the-medics-ep05',
-    'Episode 5 of The Medics, a Basil Media health talk show.'],
-  ['Sip & Talk — Ep 04: Namna ya kuondokana na msongo wa mawazo', 'Podcasts', 'Basil Media', '2Y-j-_JU-6s', 'sip-and-talk-ep04',
-    'Episode 4 of Sip & Talk: how to overcome stress.'],
-  ['Unistar Talk — Ep 02', 'Podcasts', 'Basil Media', '_1EyWRBbb30', 'unistar-talk-ep02',
-    'Episode 2 of Unistar Talk, recorded in the Basil Media (BTV) studio.'],
-  ['Fahamu kuhusu uwekezaji wa hisa', 'Films & Documentaries', 'Basil Media', 'dU3h7hwNt8Q', 'uwekezaji-wa-hisa',
-    'An explainer on investing in shares — one of the most-watched videos on the Basil Media Tz channel.'],
-  ['Mambo usiyoyafahamu kuhusu safari ya kwenda mwezini', 'Films & Documentaries', 'Basil Media', 'CqO0Z2ee144', 'safari-ya-kwenda-mwezini',
-    'What you did not know about the journey to the moon — a science explainer.'],
-];
+// Our Work: a few hand-picked films (no labels on the site). Add more in the CMS — upload an MP4 or paste an
+// Instagram reel link. These three live in the Supabase storage bucket "media".
+const FILE = (n: string) => `https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/${n}`;
 export const SEED_PROJECTS: Project[] = [
-  ...PJ.map(([title, category, client, , img, description], i): Project => ({
-    id: id('prj'), title, category, client, image_url: `/media/${img}.webp`, video_url: '', external_url: '',
-    description, featured: i < 6, sort_order: i + 1, published: true,
-  })),
-  // Placeholders kept until real photo stories are published (no public photo work found yet).
-  ...([['Graduation day', 'University of Health Sciences'], ['Delegates of the summit', 'Tanzania Health Summit']] as const).map(
-    ([title, client], i): Project => ({
-      id: id('prj'), title, category: 'Photo Stories', client, image_url: '', video_url: '', external_url: '',
-      description: 'Project summary written in the admin: the brief, what we made, and the result for the client.',
-      featured: false, sort_order: PJ.length + i + 1, published: true,
-    }),
-  ),
-];
+  ['SNOSSA 2026 — opening ceremony highlights', 'work-1'],
+  ['Event highlights — Inspirenyua', 'work-2'],
+  ['Event arrival highlights', 'work-3'],
+].map(([title, n], i): Project => ({
+  id: id('prj'), title, category: 'Corporate', client: '', image_url: FILE(`${n}-poster.jpg`), video_url: FILE(`${n}.mp4`),
+  external_url: '', description: '', featured: true, sort_order: i + 1, published: true,
+}));
 
 // Real partner logos are added by the admin (CMS → Partners); none are invented here.
 export const SEED_PARTNERS: Partner[] = [];

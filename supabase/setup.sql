@@ -1,4 +1,4 @@
--- Basil Media OS · complete database setup (generated from 9 migrations).
+-- Basil Media OS · complete database setup (generated from 10 migrations).
 -- Paste into Supabase → SQL Editor on an EMPTY project and press Run.
 
 -- ===================== 0001_foundation.sql =====================
@@ -217,6 +217,8 @@ create table public.team (
   role text not null default '',
   photo_url text not null default '',
   bio text not null default '',
+  instagram_url text not null default '',
+  linkedin_url text not null default '',
   sort_order int not null default 0,
   published boolean not null default true,
   created_at timestamptz not null default now()
@@ -464,22 +466,9 @@ insert into public.services (title, slug, short, description, deliverables, icon
   ('Corporate Content', 'corporate-content', 'Monthly content for social, web and internal use.', 'A monthly retainer: a year calendar of shoots and posts, approvals in your portal, and a report every month.', array['Year calendar', 'Monthly allowance', 'Post approvals', 'Monthly report']::text[], 'briefcase', '', '', 6, true);
 
 insert into public.projects_public (title, category, client, image_url, video_url, external_url, description, featured, sort_order, published) values
-  ('#LIVE: The 2026 PAT Scientific Conference — Mwanza', 'Corporate', 'Paediatric Association of Tanzania (PAT)', '/media/pat-scientific-conference-2026-live.webp', '', '', 'Live stream of the 2026 PAT Scientific Conference, 15 July 2026, Malaika Beach Resort, Mwanza. Theme: “Resilient Health Systems for Every Child: Innovation, Equity and Quality of Care”.', true, 1, true),
-  ('#LIVE: National Medical Congress 2026 — UDSM', 'Corporate', 'Medical Association of Tanzania (MAT)', '/media/national-medical-congress-2026-live.webp', '', '', 'Live stream of the National Medical Congress 2026 presented by the Medical Association of Tanzania, 17 June 2026, UDSM, Dar es Salaam. Theme: “Tanzania Vision 2050: The Healthcare We Want”.', true, 2, true),
-  ('Kutoka kilo 145 ➝ 75: safari ya Said Shukuru', 'Films & Documentaries', 'Aga Khan Hospital, Dar es Salaam', '/media/said-shukuru-145-to-75-kilo-journey.webp', '', '', 'Said Shukuru’s journey from 145 kg to 75 kg — a real-life health story connected to Aga Khan Hospital, Dar es Salaam.', true, 3, true),
-  ('Sikiliza historia ya Tanzania Health Summit — Dr Omary Chillo', 'Podcasts', 'Tanzania Health Summit', '/media/tanzania-health-summit-dr-omary-chillo.webp', '', '', 'Dr Omary Chillo on the history of the Tanzania Health Summit, its achievements and its challenges.', true, 4, true),
-  ('Inasisimua: Mama Sabrina na mwanae mwenye sickle cell', 'Films & Documentaries', 'Basil Media', '/media/mama-sabrina-sickle-cell.webp', '', '', 'The story of Mama Sabrina and how she fights for her child living with sickle cell disease.', true, 5, true),
-  ('Fahamu kuhusu tiba asili — Chuo Kikuu cha Muhimbili', 'Films & Documentaries', 'Muhimbili University of Health and Allied Sciences (MUHAS)', '/media/muhas-tiba-asili.webp', '', '', 'Traditional medicine explained, from Muhimbili University of Health and Allied Sciences.', true, 6, true),
-  ('The Pharmacist — Ep 03: Afya Fiesta 2025 with TAMSA', 'Podcasts', 'TAMSA', '/media/the-pharmacist-ep03-afya-fiesta-tamsa.webp', '', '', 'Episode 3 of The Pharmacist, recorded in the Basil Media (BTV) studio: Afya Fiesta 2025 with TAMSA.', false, 7, true),
-  ('Prof Karim Manji — niko MUHAS kwa mwaka wa 37', 'Films & Documentaries', 'Muhimbili University of Health and Allied Sciences (MUHAS)', '/media/prof-karim-manji-muhas.webp', '', '', 'Prof Karim Manji on 37 years at MUHAS.', false, 8, true),
-  ('Uzinduzi wa kongamano la kwanza la wanataaluma wa famasi Tanzania', 'Corporate', 'Basil Media', '/media/pharmacy-professionals-congress-launch.webp', '', '', 'The launch of the first congress of pharmacy professionals in Tanzania.', false, 9, true),
-  ('The Medics — Ep 05: Vifo vyenye utata', 'Podcasts', 'Basil Media', '/media/the-medics-ep05.webp', '', '', 'Episode 5 of The Medics, a Basil Media health talk show.', false, 10, true),
-  ('Sip & Talk — Ep 04: Namna ya kuondokana na msongo wa mawazo', 'Podcasts', 'Basil Media', '/media/sip-and-talk-ep04.webp', '', '', 'Episode 4 of Sip & Talk: how to overcome stress.', false, 11, true),
-  ('Unistar Talk — Ep 02', 'Podcasts', 'Basil Media', '/media/unistar-talk-ep02.webp', '', '', 'Episode 2 of Unistar Talk, recorded in the Basil Media (BTV) studio.', false, 12, true),
-  ('Fahamu kuhusu uwekezaji wa hisa', 'Films & Documentaries', 'Basil Media', '/media/uwekezaji-wa-hisa.webp', '', '', 'An explainer on investing in shares — one of the most-watched videos on the Basil Media Tz channel.', false, 13, true),
-  ('Mambo usiyoyafahamu kuhusu safari ya kwenda mwezini', 'Films & Documentaries', 'Basil Media', '/media/safari-ya-kwenda-mwezini.webp', '', '', 'What you did not know about the journey to the moon — a science explainer.', false, 14, true),
-  ('Graduation day', 'Photo Stories', 'University of Health Sciences', '', '', '', 'Project summary written in the admin: the brief, what we made, and the result for the client.', false, 15, true),
-  ('Delegates of the summit', 'Photo Stories', 'Tanzania Health Summit', '', '', '', 'Project summary written in the admin: the brief, what we made, and the result for the client.', false, 16, true);
+  ('SNOSSA 2026 — opening ceremony highlights', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-1-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-1.mp4', '', '', true, 1, true),
+  ('Event highlights — Inspirenyua', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-2-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-2.mp4', '', '', true, 2, true),
+  ('Event arrival highlights', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-3-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-3.mp4', '', '', true, 3, true);
 
 insert into public.team (name, role, photo_url, bio, sort_order, published) values
   ('Emmanuel', 'Chief Executive Officer', '', '', 1, true),
@@ -492,39 +481,39 @@ insert into public.team (name, role, photo_url, bio, sort_order, published) valu
 insert into public.news_stories (title, dek, tag, featured, body, sector, image_url, read_minutes, published, published_at) values
   ('New national guidelines on antibiotic stewardship for referral hospitals', 'What changes on the ward from next quarter, and the reporting each facility now owes the regulator.', 'Policy', true, 'What changes on the ward from next quarter, and the reporting each facility now owes the regulator.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 3, true, '2026-10-31'),
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 3, true, '2026-11-06'),
   ('Registration renewals: council deadline moves to 31 December', 'Practitioners renewing licences this year should upload CPD points before the new cut-off.', 'Regulation', false, 'Practitioners renewing licences this year should upload CPD points before the new cut-off.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 4, true, '2026-10-29'),
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 4, true, '2026-11-04'),
   ('Local study: shorter TB regimens hold up in Tanzanian clinics', 'A multi-site trial reports outcomes in line with WHO findings across four regions.', 'Research', false, 'A multi-site trial reports outcomes in line with WHO findings across four regions.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 5, true, '2026-10-27'),
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 5, true, '2026-11-02'),
   ('Paediatric oncology unit opens second ward', 'Bed capacity doubles, with a family hostel built alongside.', 'Facilities', false, 'Bed capacity doubles, with a family hostel built alongside.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 3, true, '2026-10-25'),
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 3, true, '2026-10-31'),
   ('Nurses’ conference calls for abstracts on community care', 'Submissions close next month; selected papers present in Dodoma.', 'Events', false, 'Submissions close next month; selected papers present in Dodoma.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 4, true, '2026-10-23'),
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 4, true, '2026-10-29'),
   ('Drug alert: recall of one batch of an oral antibiotic', 'The regulator lists the affected batch number and the return process for pharmacies.', 'Alert', false, 'The regulator lists the affected batch number and the return process for pharmacies.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 5, true, '2026-10-21');
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 5, true, '2026-10-27');
 
 insert into public.opportunities (title, org, location, kind, closes_on, link, published) values
-  ('Consultant Paediatrician', 'Regional Referral Hospital', 'Mwanza', 'Job', '2026-11-21', '', true),
-  ('Clinical research fellowship (12 months)', 'Health Research Institute', 'Dar es Salaam', 'Fellowship', '2026-11-30', '', true),
-  ('Masters scholarship in public health', 'Bank Foundation', 'Tanzania', 'Scholarship', '2026-12-15', '', true),
-  ('Call for abstracts: community nursing', 'Nurses’ Association', 'Dodoma', 'Call for abstracts', '2026-11-28', '', true);
+  ('Consultant Paediatrician', 'Regional Referral Hospital', 'Mwanza', 'Job', '2026-11-27', '', true),
+  ('Clinical research fellowship (12 months)', 'Health Research Institute', 'Dar es Salaam', 'Fellowship', '2026-12-06', '', true),
+  ('Masters scholarship in public health', 'Bank Foundation', 'Tanzania', 'Scholarship', '2026-12-21', '', true),
+  ('Call for abstracts: community nursing', 'Nurses’ Association', 'Dodoma', 'Call for abstracts', '2026-12-04', '', true);
 
 insert into public.events (title, venue, starts_on, cpd, sector, link, published) values
-  ('Tanzania Health Summit', 'JNICC, Dar es Salaam', '2026-11-14', '12 CPD points', 'Health', '', true),
-  ('Cardiology update for clinicians', 'Online', '2026-11-22', '4 CPD points', 'Health', '', true),
-  ('East African Paediatrics Congress', 'Arusha', '2026-12-10', '16 CPD points', 'Health', '', true),
-  ('Pharmacy practice workshop', 'Dodoma', '2026-12-25', '6 CPD points', 'Health', '', true),
-  ('Nursing leadership forum', 'Mwanza', '2027-01-09', '8 CPD points', 'Health', '', true);
+  ('Tanzania Health Summit', 'JNICC, Dar es Salaam', '2026-11-20', '12 CPD points', 'Health', '', true),
+  ('Cardiology update for clinicians', 'Online', '2026-11-28', '4 CPD points', 'Health', '', true),
+  ('East African Paediatrics Congress', 'Arusha', '2026-12-16', '16 CPD points', 'Health', '', true),
+  ('Pharmacy practice workshop', 'Dodoma', '2026-12-31', '6 CPD points', 'Health', '', true),
+  ('Nursing leadership forum', 'Mwanza', '2027-01-15', '8 CPD points', 'Health', '', true);
 
 with g as (
 insert into public.galleries (slug, title, client_name, event_date, location, cover_url, collections, access_mode, pin, expires_on, allow_downloads, selection_limit, face_search_enabled, published) values
-  ('graduation-2026', 'Graduation 2026', 'University of Health Sciences', '2026-10-25', 'Upanga, Dar es Salaam', '', array['Ceremony', 'Portraits', 'Booth', 'Candid']::text[], 'public', '', '2027-01-29', true, 30, false, true)
+  ('graduation-2026', 'Graduation 2026', 'University of Health Sciences', '2026-10-25', 'Upanga, Dar es Salaam', '', array['Ceremony', 'Portraits', 'Booth', 'Candid']::text[], 'public', '', '2027-02-04', true, 30, false, true)
   returning id
 )
 insert into public.media_items (gallery_id, kind, url, thumb_url, collection, caption, sort_order)
@@ -3299,4 +3288,9 @@ update public.site_settings set
   home_about_text = case when home_about_text = '' then 'Basil Media is a Dar es Salaam studio telling the stories that move Tanzania forward: the clinicians, innovators and young people shaping what comes next.' else home_about_text end,
   address = '2 Mataka Street, Upanga, Dar es Salaam, Tanzania'
 where id = 'site';
+
+-- ===================== 0011_team_socials.sql =====================
+-- Basil Media OS · 0011 Instagram and LinkedIn links on team profiles (About page).
+alter table public.team add column if not exists instagram_url text not null default '';
+alter table public.team add column if not exists linkedin_url text not null default '';
 

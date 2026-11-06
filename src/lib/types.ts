@@ -102,6 +102,8 @@ export interface TeamMember {
   role: string;
   photo_url: string;
   bio: string;
+  instagram_url?: string;
+  linkedin_url?: string;
   sort_order: number;
   published: boolean;
 }

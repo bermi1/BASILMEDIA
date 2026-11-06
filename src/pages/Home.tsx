@@ -1,16 +1,14 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowRight, Briefcase, Camera, ChevronDown, HeartPulse, Lightbulb, Mic, Radio, Sparkles, Star, Users, Video } from 'lucide-react';
 import { useRows, useSettings } from '@/hooks/useData';
 import { useSeo } from '@/hooks/useSeo';
 import { useI18n } from '@/lib/i18n';
-import { videoLabel, youtubeThumb } from '@/lib/video';
 import { HeroSlides } from '@/components/HeroSlides';
 import { gradient } from '@/components/Media';
-import { VideoEmbed } from '@/components/VideoEmbed';
 import { Reveal } from '@/components/Reveal';
 import { BookingForm } from '@/components/BookingForm';
+import { WatchMore, WorkGrid } from '@/components/WorkVideos';
 import { Play } from '@/components/icons';
 
 const ICONS: Record<string, typeof Video> = { video: Video, camera: Camera, mic: Mic, radio: Radio, sparkles: Sparkles, briefcase: Briefcase };
@@ -35,14 +33,11 @@ export default function Home() {
   const { rows: services } = useRows('services', { publishedOnly: true });
   const { rows: testimonials } = useRows('testimonials', { publishedOnly: true, columns: 'id,company,quote,rating,sort_order,published' });
   const photos = s.hero_images?.length ? s.hero_images : s.hero_image_url ? [s.hero_image_url] : [];
-  // Work at a glance: the reels first, then featured projects.
-  const glance = [
-    ...highlights.map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels' })),
-    ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string })),
-  ];
-  const [cat, setCat] = useState('All');
-  const cats = ['All', ...Array.from(new Set(glance.map((g) => g.cat)))];
-  const shown = glance.filter((g) => cat === 'All' || g.cat === cat).slice(0, 12);
+  // Work at a glance: a few films, no labels.
+  const films = [
+    ...highlights.map((h) => ({ id: h.id, title: h.title, video_url: h.video_url, image_url: h.thumbnail_url })),
+    ...projects.filter((p) => p.featured), ...projects.filter((p) => !p.featured),
+  ].filter((p) => p.video_url);
   const { rows: news } = useRows('news_stories', { publishedOnly: true, limit: 3 });
 
   return (
@@ -108,21 +103,15 @@ export default function Home() {
       </section>
 
       {/* WORK AT A GLANCE — swipe */}
-      {glance.length > 0 && (
+      {films.length > 0 && (
         <section className="section relative overflow-hidden bg-basil-night">
           <div aria-hidden="true" className="bg-dots-dark fade-mask absolute inset-0" />
           <div aria-hidden="true" className="aurora -left-20 top-0 h-80 w-80 bg-basil" />
           <div aria-hidden="true" className="aurora -right-16 bottom-0 h-64 w-64 bg-sun/60 [animation-delay:-4s]" />
           <div className="container-bm relative">
-            <Head dark kicker="OUR WORK AT A GLANCE" title="Swipe through the stories" to="/our-work" link="All work" />
-            <div role="tablist" aria-label="Filter work" className="scrollbar-none -mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-              {cats.map((c) => (
-                <button key={c} type="button" role="tab" aria-selected={cat === c} onClick={() => setCat(c)} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium transition ${cat === c ? 'border-0 bg-white text-basil-night shadow-[0_0_24px_rgba(124,192,245,0.55)]' : 'border border-white/20 bg-white/[0.06] text-white/80 backdrop-blur hover:bg-white/15'}`}>{c}</button>
-              ))}
-            </div>
-            <div className="snap-row pb-1">
-              {shown.map((g, i) => <GlanceCard key={g.id} {...g} index={i} />)}
-            </div>
+            <Head dark kicker="OUR WORK AT A GLANCE" title="A few frames from the field" to="/our-work" link="Our work" />
+            <WorkGrid items={films} max={4} />
+            <WatchMore dark />
           </div>
         </section>
       )}
@@ -184,26 +173,5 @@ export default function Home() {
         <Reveal><BookingForm /></Reveal>
       </section>
     </>
-  );
-}
-
-function GlanceCard({ title, url, poster, sub, index }: { title: string; url: string; poster: string; sub: string; index: number }) {
-  const [on, setOn] = useState(false);
-  return (
-    <div className="w-[46vw] max-w-[230px] shrink-0 snap-start">
-      {on && url ? (
-        <div className="overflow-hidden rounded-[20px] shadow-card"><VideoEmbed url={url} title={title} autoPlay aspect="9 / 16" /></div>
-      ) : (
-        <button type="button" onClick={() => setOn(true)} aria-label={`Play ${title}`} className="group relative block w-full overflow-hidden rounded-[20px] border-0 p-0 ring-1 ring-white/10 transition duration-300 hover:-translate-y-1 hover:ring-basil-sky/60 hover:shadow-[0_0_40px_-6px_rgba(124,192,245,0.55)]" style={{ aspectRatio: '9 / 16', background: gradient(index) }}>
-          {poster && <img src={poster} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105" />}
-          <span className="absolute inset-0 bg-gradient-to-t from-basil-night/85 via-transparent to-transparent" />
-          {url && <span className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 transition group-hover:scale-110"><Play size={18} /></span>}
-          <span className="absolute inset-x-3 bottom-3 text-left text-white">
-            {sub && <span className="block text-[10.5px] font-bold uppercase tracking-wide text-basil-haze">{sub}</span>}
-            <b className="line-clamp-2 text-[13px] leading-tight sm:text-[14.5px]">{title}</b>
-          </span>
-        </button>
-      )}
-    </div>
   );
 }

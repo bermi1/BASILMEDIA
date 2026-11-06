@@ -83,6 +83,8 @@ export const TeamCms = () => (
       { key: 'name', label: 'Name', type: 'text', required: true },
       { key: 'role', label: 'Role', type: 'text' },
       { key: 'photo_url', label: 'Photo', type: 'image', folder: 'team' },
+      { key: 'instagram_url', label: 'Instagram profile', type: 'url' },
+      { key: 'linkedin_url', label: 'LinkedIn profile', type: 'url' },
       { key: 'bio', label: 'Short bio', type: 'textarea' },
       { key: 'published', label: 'Published', type: 'boolean' },
     ]}

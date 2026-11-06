@@ -88,6 +88,8 @@ create table public.team (
   role text not null default '',
   photo_url text not null default '',
   bio text not null default '',
+  instagram_url text not null default '',
+  linkedin_url text not null default '',
   sort_order int not null default 0,
   published boolean not null default true,
   created_at timestamptz not null default now()
