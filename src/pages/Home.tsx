@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, Briefcase, CalendarDays, Camera, ChevronDown, HeartPulse, Lightbulb, Mic, Radio, Sparkles, Star, Users, Video } from 'lucide-react';
 import { useRows, useSettings } from '@/hooks/useData';
 import { useSeo } from '@/hooks/useSeo';
+import { useMeasuredShapes } from '@/lib/videoShape';
 import { useI18n } from '@/lib/i18n';
 import { useCover } from '@/lib/useCover';
 import { parseVideo, videoLabel, videoOrientation, youtubeThumb, type Orientation } from '@/lib/video';
@@ -45,10 +46,13 @@ export default function Home() {
   const { rows: services } = useRows('services', { publishedOnly: true });
   const { rows: testimonials } = useRows('testimonials', { publishedOnly: true, columns: 'id,company,quote,rating,sort_order,published' });
   const photos = s.hero_images?.length ? s.hero_images : s.hero_image_url ? [s.hero_image_url] : [];
-  // Work at a glance: the reels first, then featured projects.
+  // Work at a glance: the reels first, then featured projects. Uploaded files are measured so a
+  // vertical film is laid out (and plays) vertically unless the CMS says otherwise.
+  const measured = useMeasuredShapes([...highlights.map((h) => h.video_url), ...projects.map((p) => p.video_url)]);
+  const shapeOf = (url: string, override?: string | null) => (override === 'portrait' || override === 'landscape' ? override : measured[url] ?? videoOrientation(url, override));
   const glance = [
-    ...highlights.filter((h) => parseVideo(h.video_url).kind !== 'instagram').map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels', shape: videoOrientation(h.video_url, h.orientation) })),
-    ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, link: p.external_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string, shape: videoOrientation(p.video_url, p.orientation) })),
+    ...highlights.filter((h) => parseVideo(h.video_url).kind !== 'instagram').map((h) => ({ id: h.id, title: h.title, url: h.video_url, poster: h.thumbnail_url || youtubeThumb(h.video_url), sub: videoLabel(h.video_url) || 'Reel', cat: 'Reels', shape: shapeOf(h.video_url, h.orientation) })),
+    ...projects.map((p) => ({ id: p.id, title: p.title, url: p.video_url, link: p.external_url, poster: p.image_url || youtubeThumb(p.video_url), sub: p.category, cat: p.category as string, shape: shapeOf(p.video_url, p.orientation) })),
   ];
   // Four simple buttons: Videos · Photos · Live stream · Podcasts (a button shows only when it has items).
   const kind = (g: { cat: string; title: string; link?: string; url: string }) =>
@@ -180,40 +184,27 @@ export default function Home() {
         </section>
       )}
 
-      {/* SERVICES — photo cards: a swipe row on phones, a grid with one large lead card on desktop */}
+      {/* SERVICES — clean icon cards (no photos): 2 columns on phones, 4 on desktop, last row always full */}
       <section className="relative">
         <div aria-hidden="true" className="bg-dots fade-mask absolute inset-0 opacity-70" />
         <div className="container-bm section relative">
           <Head kicker={t('services').toUpperCase()} title={t('servicesTitle')} to="/services" link="All" />
-          <div className="snap-row pb-1 lg:grid lg:auto-rows-[220px] lg:grid-cols-4 lg:gap-4 lg:overflow-visible">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4 lg:gap-4">
             {services.map((x, i) => {
               const Icon = ICONS[x.icon] ?? Video;
-              const lead = i === 0;
-              // the last card stretches so the desktop grid never ends with an empty slot
-              const gap = (4 - ((services.length + 3) % 4)) % 4;
-              const stretch = i === services.length - 1 && i > 0 ? (['', 'lg:col-span-2', 'lg:col-span-3', 'lg:col-span-4'][gap] ?? '') : '';
+              const odd2 = services.length % 2 === 1 && i === services.length - 1 ? 'col-span-2 lg:col-span-1' : '';
+              const gap4 = (4 - (services.length % 4)) % 4;
+              const stretch = i === services.length - 1 ? (['', 'lg:col-span-2', 'lg:col-span-3', 'lg:col-span-4'][gap4] ?? '') : '';
               return (
-                <Link key={x.id} to={`/services#${x.slug}`}
-                  className={`group relative block w-[72vw] max-w-[300px] shrink-0 snap-start overflow-hidden rounded-[22px] text-white no-underline hover:text-white lg:w-auto lg:max-w-none ${lead ? 'lg:col-span-2 lg:row-span-2' : stretch}`}
-                  style={{ background: gradient(i) }}>
-                  <div className="aspect-[4/5] lg:aspect-auto lg:h-full">
-                    {x.image_url && <img src={x.image_url} alt={x.title} loading="lazy" className="absolute inset-0 h-full w-full object-cover object-top" />}
-                    <span className="absolute inset-0 bg-gradient-to-t from-basil-night/90 via-basil-night/30 to-transparent" />
-                    <span className="absolute left-3 top-3 flex h-10 w-10 items-center justify-center rounded-xl bg-white/90 text-basil backdrop-blur"><Icon size={19} /></span>
-                    <span className="absolute inset-x-4 bottom-4 flex flex-col gap-1.5">
-                      <b className={`font-display font-bold leading-tight ${lead ? 'text-[20px] lg:text-[30px]' : 'text-[19px]'}`}>{x.title}</b>
-                      <span className={`text-[13.5px] leading-snug text-white/85 ${lead ? 'lg:max-w-md lg:text-base' : 'line-clamp-2'}`}>{x.short}</span>
-                      {lead && x.deliverables?.length > 0 && (
-                        <span className="mt-1 hidden flex-wrap gap-1.5 lg:flex">{x.deliverables.slice(0, 4).map((d) => <span key={d} className="rounded-full bg-white/15 px-2.5 py-1 text-xs backdrop-blur">{d}</span>)}</span>
-                      )}
-                      <span className="mt-1 inline-flex items-center gap-1 text-sm font-bold text-basil-sky">Learn more <ArrowRight size={15} className="transition group-hover:translate-x-0.5" /></span>
-                    </span>
-                  </div>
+                <Link key={x.id} to={`/services#${x.slug}`} className={`glow-card group flex flex-col gap-2.5 rounded-[20px] border border-basil-line bg-white/90 p-4 text-basil-ink no-underline backdrop-blur hover:text-basil-ink sm:p-5 ${odd2} ${stretch}`}>
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-basil-ice text-basil transition group-hover:bg-basil group-hover:text-white"><Icon size={21} /></span>
+                  <b className="font-display text-[15px] font-semibold leading-tight sm:text-[17px]">{x.title}</b>
+                  <span className="line-clamp-2 text-[13px] leading-snug text-basil-muted sm:text-[14px]">{x.short}</span>
+                  <span className="mt-auto inline-flex items-center gap-1 pt-1 text-[13px] font-bold text-basil">Learn more <ArrowRight size={14} className="transition group-hover:translate-x-0.5" /></span>
                 </Link>
               );
             })}
           </div>
-
           {/* How we work */}
           <div className="mt-6 rounded-[22px] border border-basil-line bg-white/90 p-4 backdrop-blur sm:mt-8 sm:p-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -281,7 +272,7 @@ function PartnerMark({ name, logo }: { name: string; logo: string }) {
 }
 
 type GlanceItem = { id: string; title: string; url: string; link?: string; poster: string; sub: string; shape: Orientation };
-function JustifiedRows({ items }: { items: GlanceItem[] }) {
+export function JustifiedRows({ items }: { items: GlanceItem[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
   useEffect(() => {
@@ -318,7 +309,7 @@ function JustifiedRows({ items }: { items: GlanceItem[] }) {
   );
 }
 
-function GlanceCard({ title, url, link, poster: saved, sub, index, shape }: { title: string; url: string; link?: string; poster: string; sub: string; index: number; shape: Orientation }) {
+export function GlanceCard({ title, url, link, poster: saved, sub, index, shape }: { title: string; url: string; link?: string; poster: string; sub: string; index: number; shape: Orientation }) {
   const [on, setOn] = useState(false);
   const poster = useCover(link, saved);
   const aspect = shape === 'portrait' ? '9 / 16' : '16 / 9';

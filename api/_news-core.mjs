@@ -101,12 +101,14 @@ async function sb(base, key, path, init = {}) {
 }
 
 /** Fetch all enabled sources and upsert their items. Returns a per-source report. */
-/** News is kept for 72 hours at most (the site shows the last 48 hours). */
+/** How long stories are kept, per desk. Health is the most time-sensitive. */
 export const MAX_AGE_HOURS = 72;
+export const DESK_MAX_AGE_HOURS = { health: 72, business: 168, innovation: 168, banking: 168, youth: 336 };
 export async function ingest({ url: base, serviceKey: key, maxAgeHours = MAX_AGE_HOURS }) {
   if (!base || !key) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   const sources = await sb(base, key, 'news_sources?enabled=eq.true&select=*');
   const cutoff = Date.now() - maxAgeHours * 36e5;
+  const cutoffFor = (desk) => Date.now() - (DESK_MAX_AGE_HOURS[desk] ?? maxAgeHours) * 36e5;
   const report = [];
   for (const s of sources) {
     let kept = 0, error = '';
@@ -122,11 +124,12 @@ export async function ingest({ url: base, serviceKey: key, maxAgeHours = MAX_AGE
         if (!it.title || !/^https?:\/\//.test(it.url)) continue;
         const text = `${it.title} ${it.summary}`;
         if (s.health_only && !HEALTH.test(text)) continue;
+        if (s.keywords && !new RegExp(s.keywords, 'i').test(text)) continue;
         const when = new Date(it.published_at || Date.now());
         const at = isNaN(when.getTime()) ? new Date() : when;
-        if (at.getTime() < cutoff) continue;
-        const why = criticalOf(text, s.format);
-        rows.push({ source_id: s.id, source_name: s.name, title: it.title.slice(0, 300), summary: it.summary, url: it.url, image_url: it.image_url ?? '', zone: zoneOf(text, s.zone), published_at: at.toISOString(), critical: !!why, critical_reason: why, fetched_at: new Date().toISOString() });
+        if (at.getTime() < cutoffFor(s.desk ?? 'health')) continue;
+        const why = (s.desk ?? 'health') === 'health' ? criticalOf(text, s.format) : '';
+        rows.push({ source_id: s.id, source_name: s.name, title: it.title.slice(0, 300), summary: it.summary, url: it.url, image_url: it.image_url ?? '', zone: zoneOf(text, s.zone), published_at: at.toISOString(), critical: !!why, critical_reason: why, fetched_at: new Date().toISOString(), ...(s.desk ? { desk: s.desk } : {}) });
       }
       const unique = [...new Map(rows.map((r) => [r.url, r])).values()];
       // Picture + description from the article itself, only for stories we do not have a picture for yet.
@@ -153,7 +156,15 @@ export async function ingest({ url: base, serviceKey: key, maxAgeHours = MAX_AGE
     await sb(base, key, `news_sources?id=eq.${s.id}`, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ last_fetched_at: new Date().toISOString(), last_error: error }) }).catch(() => {});
     report.push({ source: s.name, kept, error });
   }
-  // Delete everything older than 72 hours, so old news never stays on the site.
-  await sb(base, key, `health_feed_items?published_at=lt.${new Date(cutoff).toISOString()}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }).catch(() => {});
+  // Delete old stories so stale news never stays on the site: per desk when desks exist, else 72 hours for all.
+  const hasDesks = sources.some((s) => 'desk' in s);
+  if (hasDesks) {
+    for (const [desk, hours] of Object.entries(DESK_MAX_AGE_HOURS)) {
+      const before = new Date(Date.now() - hours * 36e5).toISOString();
+      await sb(base, key, `health_feed_items?desk=eq.${desk}&published_at=lt.${before}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }).catch(() => {});
+    }
+  } else {
+    await sb(base, key, `health_feed_items?published_at=lt.${new Date(cutoff).toISOString()}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }).catch(() => {});
+  }
   return report;
 }

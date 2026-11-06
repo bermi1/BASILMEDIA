@@ -24,22 +24,34 @@ function ago(iso: string) {
   return d === 1 ? 'yesterday' : `${d} days ago`;
 }
 
-export function LiveHealthFeed() {
+/** How far back each desk looks (hours): [preferred window, fallback window on a quiet day]. */
+const WINDOW: Record<string, [number, number]> = { health: [48, 72], business: [96, 168], innovation: [96, 168], banking: [120, 168], youth: [168, 336] };
+
+export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: { desk?: string; title?: string }) {
   const [items, setItems] = useState<Item[] | null>(null);
   const [zone, setZone] = useState<(typeof ZONES)[number]['key']>('all');
   const [more, setMore] = useState(false);
   const refreshed = useRef(false);
   const [sources, setSources] = useState<{ name: string; url: string }[]>([]);
   useEffect(() => {
-    supabase.from('news_sources').select('name,url').eq('enabled', true).order('name').then(({ data }) => setSources((data ?? []) as { name: string; url: string }[]));
-  }, []);
+    supabase.from('news_sources').select('name,url').eq('enabled', true).eq('desk', desk).order('name').then(({ data, error }) =>
+      // Databases without desks yet: every source is a health source.
+      error ? (desk === 'health' ? supabase.from('news_sources').select('name,url').eq('enabled', true).order('name').then(({ data: d }) => setSources((d ?? []) as { name: string; url: string }[])) : setSources([])) : setSources((data ?? []) as { name: string; url: string }[]));
+  }, [desk]);
   useEffect(() => {
     // Only fresh news: the last 48 hours (72 hours on a quiet day). Older stories are deleted by the server.
-    const load = () => supabase.from('health_feed_items').select('id,image_url,title,summary,url,zone,source_name,published_at,critical,critical_reason,fetched_at')
-      .gte('published_at', new Date(Date.now() - 72 * 36e5).toISOString()).neq('image_url', '').order('published_at', { ascending: false }).limit(150)
+    const [win, maxWin] = WINDOW[desk] ?? WINDOW.health;
+    const query = (withDesk: boolean) => {
+      let q = supabase.from('health_feed_items').select('id,image_url,title,summary,url,zone,source_name,published_at,critical,critical_reason,fetched_at')
+        .gte('published_at', new Date(Date.now() - maxWin * 36e5).toISOString()).neq('image_url', '').order('published_at', { ascending: false }).limit(150);
+      if (withDesk) q = q.eq('desk', desk);
+      return q;
+    };
+    const load = () => query(true)
+      .then(async (res) => (res.error ? (desk === 'health' ? await query(false) : { data: [] }) : res))
       .then(({ data }) => {
         const all = (data ?? []) as (Item & { fetched_at: string })[];
-        const fresh = all.filter((i) => Date.now() - new Date(i.published_at).getTime() <= 48 * 36e5);
+        const fresh = all.filter((i) => Date.now() - new Date(i.published_at).getTime() <= win * 36e5);
         setItems(fresh.length >= 5 ? fresh : all);
         // Feed older than 2 hours? Ask the server to update it (it refuses if someone already did recently).
         const newest = all.reduce((a, i) => (i.fetched_at > a ? i.fetched_at : a), '');
@@ -48,12 +60,15 @@ export function LiveHealthFeed() {
           fetch('/api/news-ingest').then((r) => (r.ok ? r.json() : null)).then((r) => r?.report && load()).catch(() => {});
         }
       });
+    setItems(null);
     load();
-  }, []);
-  if (items && !items.length) return null;
+  }, [desk]);
+  if (items && !items.length) {
+    return <p className="mt-8 rounded-2xl border border-dashed border-basil-edge bg-basil-mist p-6 text-center text-sm text-basil-muted">Stories for this desk appear here as soon as the next update runs (several times a day).</p>;
+  }
 
   const weekAgo = Date.now() - 72 * 36e5;
-  const critical = (items ?? []).filter((i) => i.critical && new Date(i.published_at).getTime() > weekAgo).slice(0, 3);
+  const critical = desk === 'health' ? (items ?? []).filter((i) => i.critical && new Date(i.published_at).getTime() > weekAgo).slice(0, 3) : [];
   const list = (items ?? []).filter((i) => zone === 'all' || i.zone === zone);
   const shown = list.slice(0, more ? 30 : 9);
   const updated = items?.length ? ago(items.reduce((a, i) => (i.published_at > a ? i.published_at : a), items[0].published_at)) : '';
@@ -61,8 +76,8 @@ export function LiveHealthFeed() {
   return (
     <section aria-labelledby="live-h" className="mt-8 sm:mt-12">
       <div className="mb-3 flex flex-wrap items-end justify-between gap-2">
-        <h2 id="live-h" className="m-0 flex items-center gap-2 text-2xl font-extrabold"><Radio size={20} className="text-red-600" />Live health news</h2>
-        {updated && <span className="text-xs text-basil-muted">Latest {updated} · last 48 hours · updated through the day</span>}
+        <h2 id="live-h" className="m-0 flex items-center gap-2 text-2xl font-extrabold"><Radio size={20} className="text-red-600" />{title}</h2>
+        {updated && <span className="text-xs text-basil-muted">Latest {updated} · updated through the day</span>}
       </div>
 
       {critical.length > 0 && (

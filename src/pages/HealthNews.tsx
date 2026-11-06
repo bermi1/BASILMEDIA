@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Briefcase } from 'lucide-react';
 import { Check } from 'lucide-react';
@@ -12,13 +12,23 @@ import { Media } from '@/components/Media';
 import { Reveal } from '@/components/Reveal';
 import { SubscribeForm } from '@/components/SubscribeForm';
 
+const DESKS = [
+  { key: 'health', label: 'Health', title: 'Live health news' },
+  { key: 'youth', label: 'Youth & Opportunities', title: 'Opportunities for young people' },
+  { key: 'innovation', label: 'Innovation', title: 'Innovation & startups' },
+  { key: 'business', label: 'Capital & Business', title: 'Capital & business' },
+  { key: 'banking', label: 'Banking for Youth', title: 'Banking & money' },
+] as const;
+type DeskKey = (typeof DESKS)[number]['key'];
+
 export default function HealthNews() {
-  useSeo('Basil Health Brief — Health News', 'Policy, research, CPD and opportunities across Tanzania’s health sector, curated weekly by Basil Media.');
+  useSeo('Basil Brief — News', 'Health, youth opportunities, innovation, capital & business and banking news, collected live from verified newsrooms.');
   const { rows: stories } = useRows('news_stories', { publishedOnly: true });
   const { rows: opps } = useRows('opportunities', { publishedOnly: true });
-  const [tag, setTag] = useState('All');
+  const [desk, setDesk] = useState<DeskKey>('health');
+  const cur = DESKS.find((d) => d.key === desk)!;
+  const [tag] = useState('All');
   const [oppKind, setOppKind] = useState('All');
-  const tags = useMemo(() => ['All', ...Array.from(new Set(stories.map((s) => s.tag)))], [stories]);
   const filtered = stories.filter((s) => tag === 'All' || s.tag === tag);
   const featured = filtered.find((s) => s.featured) ?? filtered[0];
   const rest = filtered.filter((s) => s !== featured);
@@ -27,20 +37,21 @@ export default function HealthNews() {
   return (
     <>
       <section className="relative overflow-hidden text-white" style={{ background: 'radial-gradient(ellipse at 85% 10%, rgba(124,192,245,0.3), transparent 50%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
-        <div className="container-bm relative flex flex-wrap items-end gap-5 pb-6 pt-24 sm:gap-8 sm:pb-10 sm:pt-32">
+        <div className="container-bm relative flex flex-wrap items-end gap-5 pb-6 pt-24 sm:gap-8 sm:pb-8 sm:pt-32">
           <div className="min-w-0 flex-[1_1_520px]">
-            <div className="font-mono text-xs tracking-[0.2em] text-basil-haze">HEALTH NEWS · LIVE FROM VERIFIED SOURCES</div>
-            <h1 className="my-2 text-[clamp(26px,4.5vw,56px)] font-bold leading-[1.05] tracking-[-0.02em] sm:my-3">Basil Health <span className="text-basil-sky">Brief</span></h1>
-            <p className="m-0 max-w-[620px] text-[15px] text-basil-frost sm:text-lg">Health news from Tanzania, Africa and the world, collected automatically several times a day from trusted newsrooms and health agencies. Only the last 48 hours, only stories with their own photo, always with the source and a link to the original.</p>
+            <div className="font-mono text-[11px] tracking-[0.2em] text-basil-haze">BASIL BRIEF · LIVE FROM VERIFIED NEWSROOMS</div>
+            <h1 className="my-2 text-[clamp(26px,4.2vw,50px)] font-bold leading-[1.05] tracking-[-0.02em]">News that moves <span className="text-basil-sky">Tanzania forward.</span></h1>
+            <p className="m-0 max-w-[600px] text-[14.5px] text-basil-frost sm:text-base">Collected automatically through the day from trusted newsrooms: only recent stories, only with their own photo, always credited and linked to the original.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link to="/subscribe" className="flex h-11 items-center rounded-full bg-white px-5 text-[14px] font-semibold text-basil no-underline hover:bg-basil-ice">Subscribe free</Link>
+            </div>
           </div>
           <NewsStats />
         </div>
-        <div className={`container-bm relative pb-6 ${stories.length ? '' : 'hidden'}`}>
-          <div role="group" aria-label="Filter by topic" className="scrollbar-none flex gap-2 overflow-x-auto">
-            {tags.map((t) => (
-              <button key={t} type="button" aria-pressed={tag === t} onClick={() => setTag(t)} className={`min-h-[44px] shrink-0 rounded-full px-4 text-sm font-semibold ${tag === t ? 'border-0 bg-white text-basil' : 'border border-white/35 bg-transparent text-white hover:bg-white/10'}`}>
-                {t} <span className="opacity-60">{t === 'All' ? stories.length : stories.filter((s) => s.tag === t).length}</span>
-              </button>
+        <div className="container-bm relative pb-5">
+          <div role="tablist" aria-label="News desks" className="scrollbar-none -mx-4 flex gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+            {DESKS.map((d) => (
+              <button key={d.key} type="button" role="tab" aria-selected={desk === d.key} onClick={() => setDesk(d.key)} className={`h-10 shrink-0 whitespace-nowrap rounded-full px-4 text-[13.5px] font-semibold transition ${desk === d.key ? 'border-0 bg-white text-basil' : 'border border-white/30 bg-white/5 text-white hover:bg-white/15'}`}>{d.label}</button>
             ))}
           </div>
         </div>
@@ -48,8 +59,8 @@ export default function HealthNews() {
 
       <div className="container-bm py-8 sm:py-12">
         <div className="min-w-0">
-          <LiveHealthFeed />
-          <div className="mt-10 sm:mt-14"><UpcomingHealthEvents /></div>
+          <LiveHealthFeed key={desk} desk={desk} title={cur.title} />
+          {desk === 'health' && <div className="mt-10 sm:mt-14"><UpcomingHealthEvents /></div>}
           {stories.length > 0 && <h2 className="m-0 mb-4 mt-10 text-2xl font-extrabold sm:mt-14">From Basil Media</h2>}
           {featured && (
             <Reveal>
@@ -82,7 +93,7 @@ export default function HealthNews() {
           {stories.length > 0 && !rest.length && !featured && <p className="text-basil-muted">No stories in this topic yet.</p>}
 
 
-          {opps.length > 0 && (
+          {opps.length > 0 && (desk === 'youth' || desk === 'business') && (
           <section aria-labelledby="opp-h" className="mt-8 rounded-[22px] bg-basil-mist p-4 sm:mt-12 sm:rounded-[28px] sm:p-8">
             <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
               <div><div className="kicker">OPPORTUNITIES BOARD</div><h2 id="opp-h" className="m-0 mt-1 text-2xl font-extrabold">Jobs, fellowships &amp; calls for abstracts</h2></div>
@@ -110,7 +121,6 @@ export default function HealthNews() {
 
       </div>
 
-      <SubscribeSection />
     </>
   );
 }
