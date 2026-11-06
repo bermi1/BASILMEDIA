@@ -16,12 +16,12 @@ export default function About() {
   const story = (s.about_story || '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
   return (
     <>
-      <PageHero kicker={t('about').toUpperCase()} image="/img/team/crew-on-set.jpg" title={<>A Dar es Salaam studio that <span className="text-glow">tells Tanzania’s stories.</span></>} sub="Health, innovation and youth — told on film, in photographs and on air, by one crew from Upanga." />
+      <PageHero kicker={t('about').toUpperCase()} image="/img/team/crew-on-set.webp" title={<>A Dar es Salaam studio that <span className="text-glow">tells Tanzania’s stories.</span></>} sub="Health, innovation and youth — told on film, in photographs and on air, by one crew from Upanga." />
 
       {/* Intro: the whole team photo (never cropped) beside the opening of our story */}
       <section className="container-bm section grid items-center gap-6 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
         <Reveal>
-          <img src={s.about_image_url || '/img/team/basil-media-team.jpg'} alt="The Basil Media team" className="block h-auto w-full rounded-[24px] shadow-card" />
+          <img src={s.about_image_url || '/img/team/basil-media-team.webp'} alt="The Basil Media team" className="block h-auto w-full rounded-[24px] shadow-card" />
         </Reveal>
         <Reveal>
           <div className="font-mono text-[11px] tracking-[0.18em] text-basil">WHO WE ARE</div>
@@ -51,10 +51,10 @@ export default function About() {
           <h2 className="h-section m-0 mb-5">{t('team')}</h2>
           <div className="grid gap-2.5 sm:gap-4 lg:grid-cols-[2fr_1fr]">
             <figure className="relative m-0 overflow-hidden rounded-[22px]">
-              <img src="/img/services/event-coverage-team.jpg" alt="Basil Media crew covering an outdoor event" loading="lazy" className="aspect-[16/10] w-full object-cover object-top lg:h-full lg:aspect-auto" />
+              <img src="/img/services/event-coverage-team.webp" alt="Basil Media crew covering an outdoor event" loading="lazy" className="aspect-[16/10] w-full object-cover object-top lg:h-full lg:aspect-auto" />
               <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-basil-night/85 to-transparent p-4 pt-12 text-white sm:p-6"><b className="font-display text-lg sm:text-2xl">One crew, from brief to final cut</b><span className="block text-sm text-white/85">Filmmakers, photographers, editors and producers in Dar es Salaam.</span></figcaption>
             </figure>
-            <img src="/img/team/crew-on-set.jpg" alt="Basil Media crew filming at a conference" loading="lazy" className="hidden w-full rounded-[22px] object-cover object-top lg:block lg:aspect-[3/4]" />
+            <img src="/img/team/crew-on-set.webp" alt="Basil Media crew filming at a conference" loading="lazy" className="hidden w-full rounded-[22px] object-cover object-top lg:block lg:aspect-[3/4]" />
           </div>
         </div>
       </section>

@@ -23,7 +23,7 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
     // Built-in hero video: the same wide file on every screen (phones show it at its own 16:9 shape).
     const builtIn = v.src.startsWith('/media/hero/') && v.src.endsWith('.mp4');
     const src = v.src;
-    const poster = builtIn ? src.replace(/\.mp4$/, '-poster.jpg') : images[0];
+    const poster = builtIn ? src.replace(/\.mp4$/, '-poster.webp') : images[0];
     if (reduce) return <img aria-hidden="true" src={poster} alt="" className="absolute inset-0 h-full w-full object-cover" />;
     return <HeroVideo src={src} poster={poster} />;
   }

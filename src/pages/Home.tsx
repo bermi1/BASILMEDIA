@@ -13,6 +13,7 @@ import { gradient } from '@/components/Media';
 import { VideoEmbed } from '@/components/VideoEmbed';
 import { Reveal } from '@/components/Reveal';
 import { BookingForm } from '@/components/BookingForm';
+import { WorkShowcase } from '@/components/WorkShowcase';
 import { Play } from '@/components/icons';
 
 const CEO_MESSAGE = 'We started Basil Media to make health information something people actually want to watch. Every film, photo and podcast we make is built with clinicians and told for the people it is meant to help. Thank you for trusting us with your stories — let us keep telling them, together.';
@@ -152,35 +153,21 @@ export default function Home() {
         </Reveal>
       </section>
 
-      {/* WORK AT A GLANCE — masonry of reels and films */}
+      {/* WORK AT A GLANCE — an interactive showcase */}
       {glance.length > 0 && (
         <section className="section relative overflow-hidden bg-basil-night">
           <div aria-hidden="true" className="bg-dots-dark fade-mask absolute inset-0" />
           <div aria-hidden="true" className="aurora -left-20 top-0 h-80 w-80 bg-basil" />
           <div aria-hidden="true" className="aurora -right-16 bottom-0 h-64 w-64 bg-sun/60 [animation-delay:-4s]" />
           <div className="container-bm relative">
-            <Head dark kicker="OUR WORK AT A GLANCE" title="Swipe through the stories" to="/our-work" link="All work" />
+            <Head dark kicker="OUR WORK AT A GLANCE" title="Stories we have told" to="/our-work" link="All work" />
             <div role="tablist" aria-label="Filter work" className="scrollbar-none -mx-4 mb-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
               {cats.map((c) => (
                 <button key={c} type="button" role="tab" aria-selected={cat === c} onClick={() => setCat(c)} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium transition ${cat === c ? 'border-0 bg-white text-basil-night shadow-[0_0_24px_rgba(124,192,245,0.55)]' : 'border border-white/20 bg-white/[0.06] text-white/80 backdrop-blur hover:bg-white/15'}`}>{c}</button>
               ))}
             </div>
-            {/* Justified rows (like a photo library): reels and films share each row at one height, every row
-                is filled edge to edge, nothing is cropped and no row is left half empty. */}
-            {/* Phones: one big video, the next three in a small swipe row — no long scrolling */}
-            <div className="sm:hidden">
-              {shown[0] && (
-                <div className="w-full" style={{ aspectRatio: shown[0].shape === 'portrait' ? '4 / 5' : '16 / 9' }}><GlanceCard {...shown[0]} index={0} /></div>
-              )}
-              {shown.length > 1 && (
-                <div className="snap-row mt-3 pb-1">
-                  {shown.slice(1, 4).map((g, i) => (
-                    <div key={g.id} className="w-[44vw] max-w-[200px] shrink-0 snap-start" style={{ aspectRatio: '4 / 3' }}><GlanceCard {...g} index={i + 1} /></div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="hidden sm:block"><JustifiedRows items={shown} /></div>
+            {/* One stage plays the selected piece; the rail (desktop) or a swipe (phones) moves through the rest */}
+            <WorkShowcase key={cat} items={shown.slice(0, 8)} />
           </div>
         </section>
       )}
