@@ -25,6 +25,8 @@ export default function FindMe() {
   const q = code.trim().toLowerCase();
   const list = q ? open.filter((x) => x.title.toLowerCase().includes(q) || x.slug.includes(q) || x.client_name.toLowerCase().includes(q)) : open;
 
+  // Bermi AI downloads while the visitor reads the consent note, so the camera step starts almost at once.
+  useEffect(() => { if (step === 'consent') loadModel().catch(() => undefined); }, [step]);
   if (step === 'results' && g) return <Results g={g} matches={matches} onRetry={() => setStep('camera')} />;
   if (step !== 'list' && g) {
     return (
@@ -120,6 +122,7 @@ function CameraStep({ g, onBack, onDone }: { g: Gallery; onBack: () => void; onD
       const v = video.current!;
       v.srcObject = stream;
       await v.play().catch(() => undefined);
+      setStatus('Loading Bermi AI — the first time takes a few seconds…');
       await loadModel().catch(() => {
         throw new Error('Face matching could not load on this device.');
       });
@@ -145,6 +148,7 @@ function CameraStep({ g, onBack, onDone }: { g: Gallery; onBack: () => void; onD
       <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[28px] bg-black">
         <video ref={video} autoPlay playsInline muted className="h-full w-full -scale-x-100 object-cover" />
         <div className="pointer-events-none absolute inset-[13%_19%] rounded-[50%] border border-white/70" />
+        {busy && <motion.span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-1 origin-left bg-basil-sky" initial={{ scaleX: 0.05 }} animate={{ scaleX: 0.92 }} transition={{ duration: 12, ease: [0.1, 0.7, 0.3, 1] }} />}
         {busy && <motion.div aria-hidden="true" initial={{ top: '14%' }} animate={{ top: ['14%', '84%', '14%'] }} transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }} className="pointer-events-none absolute left-[19%] right-[19%] h-px bg-basil-sky shadow-[0_0_14px_#7CC0F5]" />}
         <span className="absolute left-3 top-3 text-[10px] uppercase tracking-[0.2em] text-white/70">On device · Bermi AI</span>
       </div>

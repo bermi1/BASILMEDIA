@@ -25,11 +25,16 @@
   .glow-card::before { content: ''; position: absolute; inset: -1px; z-index: -1; border-radius: inherit; padding: 1px; opacity: 0; transition: opacity .35s;
     background: conic-gradient(from 180deg, #7CC0F5, #0F6EC2, #F5B942, #7CC0F5);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
-  .glow-card:hover { transform: translateY(-4px); box-shadow: 0 22px 50px -12px rgba(15,110,194,0.35); }
+  .glow-card:hover { transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-4px); box-shadow: 0 22px 50px -12px rgba(15,110,194,0.35); }
   .glow-card:hover::before { opacity: 1; }
+  .glow-card:active { transform: scale(0.98); }
+  /* a soft light that follows the pointer across the card */
+  .glow-card::after { content: ''; position: absolute; inset: 0; z-index: 1; border-radius: inherit; pointer-events: none; opacity: 0; transition: opacity .35s;
+    background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(124,192,245,0.18), transparent 60%); }
+  .glow-card:hover::after { opacity: 1; }
   .container-bm { @apply mx-auto w-full max-w-[1280px] px-4 sm:px-6; }
   .kicker { @apply font-mono text-[10.5px] tracking-[0.18em] text-basil sm:text-xs; }
-  .h-section { @apply font-display text-[clamp(21px,2.8vw,36px)] font-bold leading-[1.15] tracking-[-0.015em]; }
+  .h-section { @apply font-display text-[clamp(19px,2.3vw,30px)] font-bold leading-[1.15] tracking-[-0.015em]; }
   .section { @apply py-10 sm:py-14 lg:py-16; }
   .snap-row { @apply scrollbar-none -mx-4 flex snap-x snap-mandatory scroll-pl-4 gap-3 overflow-x-auto px-4 sm:mx-0 sm:px-0; }
   .btn { @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl px-5 font-bold no-underline transition; }

@@ -60,9 +60,9 @@ export default function Home() {
     g.cat === 'Photo Stories' || /pixieset\.com/i.test(g.link ?? '') ? 'Photos' : g.cat === 'Podcasts' ? 'Podcasts' : /\blive\b/i.test(g.title) ? 'Live stream' : 'Videos';
   const cats = ['Videos', 'Photos', 'Live stream', 'Podcasts'].filter((k) => glance.some((g) => kind(g) === k));
   const [catState, setCat] = useState('Videos');
+  const [more, setMore] = useState(false);
   const cat = cats.includes(catState) ? catState : cats[0] ?? 'Videos';
   const shown = glance.filter((g) => kind(g) === cat).slice(0, 12);
-  const { rows: news } = useRows('news_stories', { publishedOnly: true, limit: 3 });
 
   return (
     <>
@@ -71,7 +71,7 @@ export default function Home() {
         <div className="absolute inset-x-0 bottom-0 top-[76px] sm:top-0"><HeroSlides images={photos} video={s.hero_video_url} /></div>
         <div className="absolute inset-x-0 bottom-0 top-[76px] sm:top-0" style={{ background: 'linear-gradient(180deg, rgba(6,30,61,0.35) 0%, rgba(6,30,61,0) 35%, rgba(6,30,61,0.6) 72%, rgba(6,30,61,0.92) 100%)' }} />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="container-bm relative flex flex-col items-center pb-3 pt-0 sm:pb-16 sm:pt-24">
-          <h1 className="m-0 max-w-[640px] text-[15px] font-bold leading-[1.2] tracking-[-0.01em] sm:text-[clamp(22px,3.6vw,44px)] sm:leading-[1.15] sm:tracking-[-0.02em]">
+          <h1 className="m-0 max-w-[640px] text-[15px] font-bold leading-[1.2] tracking-[-0.01em] sm:text-[clamp(20px,3vw,36px)] sm:leading-[1.15] sm:tracking-[-0.02em]">
             {s.tagline} <span className="text-glow">{s.tagline_highlight}</span>
           </h1>
           {s.hero_subtitle && <p className="m-0 mt-3 hidden max-w-[440px] text-base text-basil-frost sm:block">{s.hero_subtitle}</p>}
@@ -111,8 +111,8 @@ export default function Home() {
         <Reveal className="grid items-center gap-6 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
           <div>
             <div className="kicker">WHO WE ARE</div>
-            <h2 className="mb-0 mt-2 font-display text-[clamp(20px,2.6vw,34px)] font-bold leading-[1.2] tracking-[-0.015em]">{s.home_about_title}</h2>
-            <p className="m-0 mt-3 max-w-[560px] text-[14.5px] leading-relaxed text-basil-muted sm:text-[17px]">{s.home_about_text}</p>
+            <h2 className="mb-0 mt-2 font-display text-[clamp(18px,2.2vw,28px)] font-bold leading-[1.2] tracking-[-0.015em]">{s.home_about_title}</h2>
+            <p className="m-0 mt-3 max-w-[560px] text-[14px] leading-relaxed text-basil-muted sm:text-[15.5px]">{s.home_about_text}</p>
             <div className="mt-5 flex flex-wrap items-center gap-2">
               {PILLARS.map(([label, Icon]) => <span key={label} className="flex items-center gap-1.5 rounded-full bg-basil-ice px-3 py-1.5 text-[13px] font-semibold text-basil-deep"><Icon size={16} className="text-basil" />{label}</span>)}
               <Link to="/about" className="ml-1 flex items-center gap-1 text-sm font-bold no-underline">Our story <ArrowRight size={15} /></Link>
@@ -141,13 +141,16 @@ export default function Home() {
                   : <span className="flex aspect-[4/5] w-24 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 sm:w-36"><img src="/logo-reverse.svg" alt="" className="h-12 w-12 sm:h-16 sm:w-16" /></span>}
                 <figcaption className="leading-tight">
                   <span className="block font-mono text-[10.5px] tracking-[0.18em] text-basil-haze">A WORD FROM OUR CEO</span>
-                  <b className="mt-1 block font-display text-xl sm:text-2xl">{s.ceo_name || 'Emmanuel Basil'}</b>
+                  <b className="mt-1 block font-display text-lg sm:text-xl">{s.ceo_name || 'Emmanuel Basil'}</b>
                   <span className="text-sm text-basil-haze">{s.ceo_title || 'Founder & CEO, Basil Media'}</span>
                 </figcaption>
               </div>
-              <blockquote className="m-0 text-[15.5px] leading-relaxed text-white/90 sm:text-[19px] sm:leading-[1.6]">
+              <div>
+              <blockquote className={`m-0 text-[14.5px] leading-relaxed text-white/90 sm:text-[17px] sm:leading-[1.6] ${more ? '' : 'line-clamp-5 sm:line-clamp-none'}`}>
                 <span aria-hidden="true" className="mr-1 font-display text-4xl leading-none text-basil-sky">“</span>{(s.ceo_message || CEO_MESSAGE).replace(/”[^”]*$/, (tail) => (s.ceo_name && tail.includes(s.ceo_name.split(' ')[0]) ? '”' : tail))}
               </blockquote>
+              {!more && <button type="button" onClick={() => setMore(true)} className="mt-2 border-0 bg-transparent p-0 text-[13px] font-semibold text-basil-sky sm:hidden">Read more</button>}
+              </div>
             </div>
           </figure>
         </Reveal>
@@ -184,10 +187,10 @@ export default function Home() {
               const gap4 = (4 - (services.length % 4)) % 4;
               const stretch = i === services.length - 1 ? (['', 'lg:col-span-2', 'lg:col-span-3', 'lg:col-span-4'][gap4] ?? '') : '';
               return (
-                <Link key={x.id} to={`/services#${x.slug}`} className={`glow-card group flex flex-col gap-2.5 rounded-[20px] border border-basil-line bg-white/90 p-4 text-basil-ink no-underline backdrop-blur hover:text-basil-ink sm:p-5 ${odd2} ${stretch}`}>
+                <Link key={x.id} to={`/services#${x.slug}`} data-tilt className={`glow-card group flex flex-col gap-2.5 rounded-[20px] border border-basil-line bg-white/90 p-4 text-basil-ink no-underline backdrop-blur hover:text-basil-ink sm:p-5 ${odd2} ${stretch}`}>
                   <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-basil-ice text-basil transition group-hover:bg-basil group-hover:text-white"><Icon size={21} /></span>
-                  <b className="font-display text-[15px] font-semibold leading-tight sm:text-[17px]">{x.title}</b>
-                  <span className="line-clamp-2 text-[13px] leading-snug text-basil-muted sm:text-[14px]">{x.short}</span>
+                  <b className="font-display text-[14px] font-semibold leading-tight sm:text-[15.5px]">{x.title}</b>
+                  <span className="line-clamp-2 text-[12.5px] leading-snug text-basil-muted sm:text-[13.5px]">{x.short}</span>
                   <span className="mt-auto inline-flex items-center gap-1 pt-1 text-[13px] font-bold text-basil">Learn more <ArrowRight size={14} className="transition group-hover:translate-x-0.5" /></span>
                 </Link>
               );
@@ -196,17 +199,10 @@ export default function Home() {
           {/* How we work */}
           <div className="mt-6 rounded-[22px] border border-basil-line bg-white/90 p-4 backdrop-blur sm:mt-8 sm:p-6">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-              <b className="font-display text-lg">How we work</b>
+              <b className="font-display text-base">How we work</b>
               <Link to="/#book" className="inline-flex h-10 items-center gap-1.5 whitespace-nowrap rounded-full bg-basil px-4 text-sm font-bold text-white no-underline hover:bg-basil-deep hover:text-white">{t('book')} <ArrowRight size={15} /></Link>
             </div>
-            <ol className="m-0 grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-4">
-              {STEPS.map(([title, line], i) => (
-                <li key={title} className="flex gap-3">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-basil-ice font-display text-sm font-extrabold text-basil">{i + 1}</span>
-                  <span className="min-w-0"><b className="block text-[14px]">{title}</b><span className="text-[12.5px] leading-snug text-basil-muted">{line}</span></span>
-                </li>
-              ))}
-            </ol>
+            <Steps />
           </div>
         </div>
       </section>
@@ -219,26 +215,9 @@ export default function Home() {
             {testimonials.map((x) => (
               <figure key={x.id} className="m-0 flex w-[72vw] max-w-[300px] shrink-0 snap-start flex-col rounded-[18px] border border-basil-line bg-white p-4 sm:w-auto sm:max-w-none sm:p-5">
                 <div className="flex gap-0.5 text-sun-deep" aria-label={`${x.rating} out of 5 stars`}>{Array.from({ length: 5 }, (_, i) => <Star key={i} size={13} fill={i < x.rating ? 'currentColor' : 'none'} />)}</div>
-                <blockquote className="mx-0 my-2 line-clamp-4 text-[13.5px] leading-snug sm:text-[15px] sm:leading-relaxed">“{x.quote}”</blockquote>
+                <blockquote className="mx-0 my-2 line-clamp-4 text-[13px] leading-snug sm:text-[14px] sm:leading-relaxed">“{x.quote}”</blockquote>
                 <figcaption className="mt-auto text-[12.5px] font-bold text-basil-muted sm:text-sm">{x.company}</figcaption>
               </figure>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {news.length > 0 && (
-        <section className="container-bm pb-10 sm:pb-16">
-          <Head kicker="BASIL HEALTH BRIEF" title="Latest from the newsroom" to="/health-news" link="All news" />
-          <div className="snap-row sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible">
-            {news.map((n, i) => (
-              <Link key={n.id} to={`/health-news/${n.id}`} className="glow-card group flex w-[72vw] max-w-[300px] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-basil-line bg-white text-basil-ink no-underline hover:text-basil-ink sm:w-auto sm:max-w-none">
-                <div className="aspect-[16/9] w-full" style={{ background: n.image_url ? `center/cover url(${n.image_url})` : gradient(i) }} />
-                <div className="flex flex-1 flex-col gap-1 p-3.5">
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-basil">{n.tag}</span>
-                  <b className="line-clamp-2 text-[14px] leading-snug group-hover:text-basil">{n.title}</b>
-                </div>
-              </Link>
             ))}
           </div>
         </section>
@@ -251,11 +230,36 @@ export default function Home() {
   );
 }
 
+/** How we work: the four steps light up one after another; point at (or tap) a step to hold it. */
+function Steps() {
+  const [on, setOn] = useState(0);
+  const [hold, setHold] = useState(false);
+  useEffect(() => {
+    if (hold) return;
+    const t = setInterval(() => setOn((n) => (n + 1) % STEPS.length), 2600);
+    return () => clearInterval(t);
+  }, [hold]);
+  return (
+    <ol className="m-0 grid list-none grid-cols-2 gap-2 p-0 sm:grid-cols-4" onMouseLeave={() => setHold(false)}>
+      {STEPS.map(([title, line], i) => (
+        <li key={title}>
+          <button type="button" onMouseEnter={() => (setOn(i), setHold(true))} onClick={() => (setOn(i), setHold(true))} aria-pressed={on === i}
+            className={`relative flex h-full w-full gap-2.5 overflow-hidden rounded-2xl border-0 p-2.5 text-left transition duration-300 ${on === i ? 'bg-basil-ice' : 'bg-transparent'}`}>
+            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full font-display text-sm font-extrabold transition duration-300 ${on === i ? 'scale-110 bg-basil text-white shadow-glow' : 'bg-basil-ice text-basil'}`}>{i + 1}</span>
+            <span className="min-w-0"><b className="block text-[13px] text-basil-ink">{title}</b><span className="block text-[12px] leading-snug text-basil-muted">{line}</span></span>
+            {on === i && !hold && <motion.span aria-hidden="true" className="absolute inset-x-0 bottom-0 h-0.5 origin-left bg-basil" initial={{ scaleX: 0 }} animate={{ scaleX: 1 }} transition={{ duration: 2.6, ease: 'linear' }} />}
+          </button>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 /** Partner logo, or the name as a badge if there is no logo or it fails to load (never a broken image). */
 function PartnerMark({ name, logo }: { name: string; logo: string }) {
   const [failed, setFailed] = useState(false);
   return logo && !failed
-    ? <img src={logo} alt={name} loading="lazy" onError={() => setFailed(true)} className="h-11 max-w-[160px] object-contain sm:h-[54px]" />
+    ? <img src={logo} alt={name} loading="lazy" onError={() => setFailed(true)} className="h-11 max-w-[160px] object-contain transition duration-300 sm:h-[54px] md:opacity-70 md:grayscale md:hover:opacity-100 md:hover:grayscale-0" />
     : <span className="whitespace-nowrap font-display text-[14px] font-bold text-basil-deep sm:text-[15px]">{name}</span>;
 }
 

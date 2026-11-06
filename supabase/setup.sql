@@ -1,4 +1,4 @@
--- Basil Media OS · complete database setup (generated from 42 migrations).
+-- Basil Media OS · complete database setup (generated from 43 migrations).
 -- Paste into Supabase → SQL Editor on an EMPTY project and press Run.
 
 -- ===================== 0001_foundation.sql =====================
@@ -5338,12 +5338,13 @@ insert into public.news_sources (name, url, format, zone, health_only, desk, key
   ('Opportunities for Africans', 'https://www.opportunitiesforafricans.com/feed/', 'rss', 'africa', false, 'youth', ''),
   ('Opportunity Desk', 'https://opportunitydesk.org/feed/', 'rss', 'world', false, 'youth', 'africa|african|tanzania|youth|young|student|graduate|fellowship|scholarship|grant|internship'),
   ('TechCabal', 'https://techcabal.com/feed/', 'rss', 'africa', false, 'innovation', ''),
-  ('Disrupt Africa', 'https://disruptafrica.com/feed/', 'rss', 'africa', false, 'innovation', ''),
+  ('TechMoran', 'https://techmoran.com/feed/', 'rss', 'africa', false, 'innovation', ''),
   ('WeeTracker', 'https://weetracker.com/feed/', 'rss', 'africa', false, 'innovation', ''),
-  ('Daily News · Business', 'https://dailynews.co.tz/category/business/feed/', 'rss', 'tanzania', false, 'business', ''),
+  ('Daily News · Business', 'https://dailynews.co.tz/feed/', 'rss', 'tanzania', false, 'business', 'business|economy|economic|invest|trade|export|import|market|bank|tax|revenue|budget|shilling|\mtzs\M|company|companies|industr|agricultur|mining|tourism|\msme|entrepreneur|startup'),
   ('HabariLeo · Biashara', 'https://habarileo.co.tz/category/biashara/feed/', 'rss', 'tanzania', false, 'business', ''),
   ('TanzaniaInvest', 'https://www.tanzaniainvest.com/feed', 'rss', 'tanzania', false, 'business', ''),
-  ('TanzaniaInvest · Finance', 'https://www.tanzaniainvest.com/finance/feed', 'rss', 'tanzania', false, 'banking', 'bank|banking|loan|credit|mobile money|m-pesa|tigo pesa|airtel money|stock exchange|\mdse\M|bond|sacco|microfinance|sme|youth|account|interest rate|fintech|bot\M|bank of tanzania')
+  ('TanzaniaInvest · Finance', 'https://www.tanzaniainvest.com/finance/feed', 'rss', 'tanzania', false, 'banking', 'bank|banking|loan|credit|mobile money|m-pesa|tigo pesa|airtel money|stock exchange|\mdse\M|bond|sacco|microfinance|sme|youth|account|interest rate|fintech|bot\M|bank of tanzania'),
+  ('TechCabal · Fintech', 'https://techcabal.com/category/fintech/feed/', 'rss', 'africa', false, 'banking', 'bank|banking|loan|credit|mobile money|m-pesa|savings|account|youth|young')
 on conflict (url) do update set desk = excluded.desk, keywords = excluded.keywords, enabled = true;
 
 -- Expiry per desk: health after 72 hours; business, innovation and banking after 7 days; opportunities after 14 days.
@@ -5374,4 +5375,15 @@ update public.partners set logo_url = regexp_replace(logo_url, '^(/img/.*)\.(jpe
 update public.services set image_url = regexp_replace(image_url, '^(/img/.*)\.(jpe?g|png)$', '\1.webp', 'i') where image_url ~* '^/img/.*\.(jpe?g|png)$';
 update public.team set photo_url = regexp_replace(photo_url, '^(/img/.*)\.(jpe?g|png)$', '\1.webp', 'i') where photo_url ~* '^/img/.*\.(jpe?g|png)$';
 update public.projects_public set image_url = regexp_replace(image_url, '(/media/work/work-\d+-poster)\.jpg$', '\1.webp') where image_url ~ '/media/work/work-\d+-poster\.jpg$';
+
+-- ===================== 0045_partners_crdb_bank_aga_khan.sql =====================
+-- Basil Media OS · 0045 partners: CRDB Bank beside the CRDB Bank Foundation, the Aga Khan Hospital (Dar es Salaam)
+-- logo without the Arabic line, and one SATA card instead of four duplicates.
+insert into public.partners (division_id, name, logo_url, website, sort_order)
+select 'basil-media', 'CRDB Bank', '/img/partners/crdb-bank.svg', 'https://crdbbank.co.tz', 0
+where not exists (select 1 from public.partners where lower(name) = 'crdb bank');
+update public.partners set name = 'The Aga Khan Hospital, Dar es Salaam', logo_url = '/img/partners/aga-khan-hospital-dar.svg'
+ where name ilike 'aga khan hospital%' or logo_url like '%aga-khan-hospital.svg';
+delete from public.partners p using public.partners q
+ where p.name ilike 'SATA%' and q.name = p.name and q.created_at < p.created_at;
 

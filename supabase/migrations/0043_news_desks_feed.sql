@@ -14,12 +14,13 @@ insert into public.news_sources (name, url, format, zone, health_only, desk, key
   ('Opportunities for Africans', 'https://www.opportunitiesforafricans.com/feed/', 'rss', 'africa', false, 'youth', ''),
   ('Opportunity Desk', 'https://opportunitydesk.org/feed/', 'rss', 'world', false, 'youth', 'africa|african|tanzania|youth|young|student|graduate|fellowship|scholarship|grant|internship'),
   ('TechCabal', 'https://techcabal.com/feed/', 'rss', 'africa', false, 'innovation', ''),
-  ('Disrupt Africa', 'https://disruptafrica.com/feed/', 'rss', 'africa', false, 'innovation', ''),
+  ('TechMoran', 'https://techmoran.com/feed/', 'rss', 'africa', false, 'innovation', ''),
   ('WeeTracker', 'https://weetracker.com/feed/', 'rss', 'africa', false, 'innovation', ''),
-  ('Daily News · Business', 'https://dailynews.co.tz/category/business/feed/', 'rss', 'tanzania', false, 'business', ''),
+  ('Daily News · Business', 'https://dailynews.co.tz/feed/', 'rss', 'tanzania', false, 'business', 'business|economy|economic|invest|trade|export|import|market|bank|tax|revenue|budget|shilling|\mtzs\M|company|companies|industr|agricultur|mining|tourism|\msme|entrepreneur|startup'),
   ('HabariLeo · Biashara', 'https://habarileo.co.tz/category/biashara/feed/', 'rss', 'tanzania', false, 'business', ''),
   ('TanzaniaInvest', 'https://www.tanzaniainvest.com/feed', 'rss', 'tanzania', false, 'business', ''),
-  ('TanzaniaInvest · Finance', 'https://www.tanzaniainvest.com/finance/feed', 'rss', 'tanzania', false, 'banking', 'bank|banking|loan|credit|mobile money|m-pesa|tigo pesa|airtel money|stock exchange|\mdse\M|bond|sacco|microfinance|sme|youth|account|interest rate|fintech|bot\M|bank of tanzania')
+  ('TanzaniaInvest · Finance', 'https://www.tanzaniainvest.com/finance/feed', 'rss', 'tanzania', false, 'banking', 'bank|banking|loan|credit|mobile money|m-pesa|tigo pesa|airtel money|stock exchange|\mdse\M|bond|sacco|microfinance|sme|youth|account|interest rate|fintech|bot\M|bank of tanzania'),
+  ('TechCabal · Fintech', 'https://techcabal.com/category/fintech/feed/', 'rss', 'africa', false, 'banking', 'bank|banking|loan|credit|mobile money|m-pesa|savings|account|youth|young')
 on conflict (url) do update set desk = excluded.desk, keywords = excluded.keywords, enabled = true;
 
 -- Expiry per desk: health after 72 hours; business, innovation and banking after 7 days; opportunities after 14 days.

@@ -3,11 +3,21 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
+import qrcode from 'qrcode-generator';
 import { useSettings } from '@/hooks/useData';
 import { isProfileUrl, waLink } from '@/lib/format';
 import { Instagram, WhatsApp } from './icons';
 
-const qr = (data: string) => `https://api.qrserver.com/v1/create-qr-code/?size=320x320&margin=8&color=0A2F5C&data=${encodeURIComponent(data)}`;
+// QR drawn on the device as an SVG (no outside service sees who opens the chat)
+function qr(data: string) {
+  const q = qrcode(0, 'M');
+  q.addData(data);
+  q.make();
+  const n = q.getModuleCount();
+  let d = '';
+  for (let y = 0; y < n; y++) for (let x = 0; x < n; x++) if (q.isDark(y, x)) d += `M${x} ${y}h1v1h-1z`;
+  return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="-2 -2 ${n + 4} ${n + 4}" shape-rendering="crispEdges"><rect x="-2" y="-2" width="${n + 4}" height="${n + 4}" fill="#fff"/><path d="${d}" fill="#0A2F5C"/></svg>`)}`;
+}
 
 export function ChatWidget() {
   const s = useSettings();
@@ -15,7 +25,9 @@ export function ChatWidget() {
   const wa = s.whatsapp || s.phone;
   const waUrl = wa ? waLink(wa, 'Hello Basil Media, ') : '';
   const ig = isProfileUrl(s.socials?.instagram) ? s.socials.instagram! : '';
-  const [scan, setScan] = useState<'instagram' | 'whatsapp'>(ig ? 'instagram' : 'whatsapp');
+  // Instagram first once the settings have loaded, unless the visitor picked a tab
+  const [picked, setScan] = useState<'instagram' | 'whatsapp' | null>(null);
+  const scan = picked ?? (ig ? 'instagram' : 'whatsapp');
   useEffect(() => {
     if (!open) return;
     const k = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);

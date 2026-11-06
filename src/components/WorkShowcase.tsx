@@ -11,6 +11,14 @@ import { VideoEmbed } from '@/components/VideoEmbed';
 
 export type ShowItem = { id: string; title: string; url: string; link?: string; poster: string; sub: string; shape: Orientation };
 const DWELL = 7000;
+// Silent previews play on their own only on a computer with no data-saver; on phones the poster shows
+// until someone taps, so nobody's bundle is spent on video they did not ask for.
+const autoPreview = () => {
+  if (typeof window === 'undefined') return false;
+  const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  if (c?.saveData || /(^|-)2g|3g/.test(c?.effectiveType ?? '')) return false;
+  return window.matchMedia('(min-width: 1024px) and (hover: hover)').matches;
+};
 
 export function WorkShowcase({ items }: { items: ShowItem[] }) {
   const [i, setI] = useState(0);
@@ -69,7 +77,7 @@ export function WorkShowcase({ items }: { items: ShowItem[] }) {
               <Thumb item={x} index={k} />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[10.5px] font-bold uppercase tracking-[0.14em] text-basil-sky">{x.sub}</span>
-                <span className={`line-clamp-2 text-[13.5px] font-medium leading-snug ${k === i ? 'text-white' : 'text-white/70 group-hover:text-white'}`}>{x.title}</span>
+                <span className={`line-clamp-2 text-[13px] font-medium leading-snug ${k === i ? 'text-white' : 'text-white/70 group-hover:text-white'}`}>{x.title}</span>
               </span>
               {k === i && (
                 <span className="absolute inset-x-0 bottom-0 h-[2px] bg-white/10">
@@ -90,7 +98,8 @@ function Stage({ item, index, sound, onSound }: { item: ShowItem; index: number;
   const portrait = item.shape === 'portrait';
   const vid = useRef<HTMLVideoElement>(null);
   // iOS only autoplays when the element is muted before it starts
-  useEffect(() => { const el = vid.current; if (el) { el.defaultMuted = true; el.muted = true; el.play().catch(() => {}); } }, [item.url]);
+  const [preview] = useState(autoPreview);
+  useEffect(() => { const el = vid.current; if (el) { el.defaultMuted = true; el.muted = true; if (preview) el.play().catch(() => {}); } }, [item.url, preview]);
   const media = portrait ? 'h-full w-auto max-w-full aspect-[9/16] object-cover' : 'h-full w-full object-cover';
 
   if (sound && item.url) {
@@ -104,8 +113,8 @@ function Stage({ item, index, sound, onSound }: { item: ShowItem; index: number;
     <div className="relative flex h-full w-full items-center justify-center" style={{ background: gradient(index) }}>
       {/* soft backdrop from the poster, so portrait films and odd photos never leave bare bars */}
       {poster && <img src={poster} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-2xl" />}
-      {v.kind === 'file'
-        ? <video ref={vid} src={v.src} poster={poster || undefined} muted loop autoPlay playsInline preload="metadata" className={`relative ${media}`} />
+      {v.kind === 'file' && (preview || !poster)
+        ? <video ref={vid} src={v.src} poster={poster || undefined} muted loop autoPlay={preview} playsInline preload="metadata" className={`relative ${media}`} />
         : poster
           ? <img src={poster} alt="" className={`relative ${media} object-top`} />
           : <span className="relative flex flex-col items-center gap-1 text-white/85"><Camera size={30} /><span className="text-[10px] font-bold uppercase tracking-[0.18em]">Photo gallery</span></span>}
@@ -113,10 +122,10 @@ function Stage({ item, index, sound, onSound }: { item: ShowItem; index: number;
       <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 p-4 sm:p-6">
         <div className="min-w-0 text-left">
           <span className="block text-[10.5px] font-bold uppercase tracking-[0.16em] text-basil-sky">{item.sub}</span>
-          <b className="mt-0.5 line-clamp-2 font-display text-[17px] font-semibold leading-tight text-white sm:text-[22px]">{item.title}</b>
+          <b className="mt-0.5 line-clamp-2 font-display text-[15px] font-semibold leading-tight text-white sm:text-[19px]">{item.title}</b>
         </div>
         {item.url
-          ? <button type="button" onClick={onSound} className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-0 bg-white px-4 text-[13px] font-semibold text-basil-night shadow-[0_0_28px_rgba(124,192,245,0.5)] transition hover:scale-105"><Volume2 size={15} />{v.kind === 'file' ? 'Watch with sound' : 'Play'}</button>
+          ? <button type="button" onClick={onSound} className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-0 bg-white px-4 text-[13px] font-semibold text-basil-night shadow-[0_0_28px_rgba(124,192,245,0.5)] transition hover:scale-105"><Volume2 size={15} />{v.kind === 'file' && preview ? 'Watch with sound' : 'Play'}</button>
           : item.link && <a href={item.link} target="_blank" rel="noreferrer" className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-4 text-[13px] font-semibold text-basil-night no-underline transition hover:scale-105 hover:text-basil-night"><ExternalLink size={14} />View photos</a>}
       </div>
     </div>

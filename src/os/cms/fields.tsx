@@ -91,6 +91,8 @@ export function UploadInput({ kind, folder, value, onChange }: { kind: 'image' |
   const pick = async (file?: File) => {
     if (!file) return;
     setErr('');
+    // Supabase Storage refuses files over 50 MB: say so plainly instead of failing half-way
+    if (file.size > 50 * 1024 * 1024) return setErr(`This file is ${Math.round(file.size / 1048576)} MB — the limit is 50 MB. Export the video at 1080p (or shorter), or paste a link instead.`);
     setBusy(0);
     try {
       onChange(await uploadFile(file, folder, setBusy));

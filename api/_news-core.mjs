@@ -21,6 +21,12 @@ const TZ = /\b(tanzania|dar es salaam|dodoma|zanzibar|arusha|mwanza|mbeya|tanga|
 const EAST = /\b(kenya|uganda|rwanda|burundi|south sudan|ethiopia|somalia|drc|congo|mozambique|malawi|zambia|east africa)\b/i;
 const AFRICA = /\b(africa|african|nigeria|ghana|sudan|angola|cameroon|senegal|mali|niger|chad|guinea|sierra leone|liberia|zimbabwe|madagascar|egypt|morocco|south africa|botswana|namibia|côte d'ivoire|ivory coast)\b/i;
 
+/** A source's keyword filter is written once as a Postgres regex (also used in SQL), where \m and \M mark word
+ *  edges; JavaScript spells both \b. An empty filter keeps every story. */
+export function keywordMatch(keywords, text) {
+  return !keywords || new RegExp(keywords.replace(/\\[mM]/g, '\\b'), 'i').test(text);
+}
+
 export function zoneOf(text, fallback) {
   if (TZ.test(text)) return 'tanzania';
   if (EAST.test(text)) return fallback === 'tanzania' ? 'tanzania' : 'east_africa';
@@ -124,7 +130,7 @@ export async function ingest({ url: base, serviceKey: key, maxAgeHours = MAX_AGE
         if (!it.title || !/^https?:\/\//.test(it.url)) continue;
         const text = `${it.title} ${it.summary}`;
         if (s.health_only && !HEALTH.test(text)) continue;
-        if (s.keywords && !new RegExp(s.keywords, 'i').test(text)) continue;
+        if (!keywordMatch(s.keywords, text)) continue;
         const when = new Date(it.published_at || Date.now());
         const at = isNaN(when.getTime()) ? new Date() : when;
         if (at.getTime() < cutoffFor(s.desk ?? 'health')) continue;

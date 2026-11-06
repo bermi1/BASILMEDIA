@@ -17,12 +17,17 @@ export default defineConfig(({ mode }) => {
   plugins: [react()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   build: {
+    chunkSizeWarningLimit: 700,
     rollupOptions: {
       output: {
-        manualChunks: {
-          react: ['react', 'react-dom', 'react-router-dom'],
-          supabase: ['@supabase/supabase-js'],
-          motion: ['framer-motion'],
+        // Libraries apart so they stay cached between releases. The back office stays one file on purpose:
+        // its modules import each other, and splitting them makes circular chunks. Only staff ever load it.
+        manualChunks(id) {
+          if (/node_modules\/(react|react-dom|react-router|react-router-dom|scheduler|@remix-run)\//.test(id)) return 'react';
+          if (id.includes('node_modules/@supabase/')) return 'supabase';
+          if (id.includes('node_modules/framer-motion/')) return 'motion';
+          if (id.includes('node_modules/lucide-react/')) return 'icons';
+          return undefined;
         },
       },
     },
