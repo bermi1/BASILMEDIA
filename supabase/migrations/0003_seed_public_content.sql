@@ -20,8 +20,11 @@ insert into public.services (title, slug, short, description, deliverables, icon
 
 insert into public.projects_public (title, category, client, image_url, video_url, external_url, description, featured, sort_order, published) values
   ('SNOSSA 2026 — opening ceremony highlights', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-1-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-1.mp4', '', '', true, 1, true),
-  ('Event highlights — Inspirenyua', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-2-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-2.mp4', '', '', true, 2, true),
-  ('Event arrival highlights', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-3-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-3.mp4', '', '', true, 3, true);
+  ('Inspirenyua × CRDB Bank — Smatisha Biashara activation', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-2-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-2.mp4', '', '', true, 2, true),
+  ('On location — arriving at the venue', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-3-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-3.mp4', '', '', true, 3, true),
+  ('Presenter intro — Inspirenyua', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-4-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-4.mp4', '', '', false, 4, true),
+  ('Health Summit — voices on health sovereignty', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-5-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-5.mp4', '', '', true, 5, true),
+  ('89th annual meeting — conference coverage', 'Corporate', '', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-6-poster.jpg', 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/work-6.mp4', '', '', false, 6, true);
 
 insert into public.team (name, role, photo_url, bio, sort_order, published) values
   ('Emmanuel', 'Chief Executive Officer', '', '', 1, true),

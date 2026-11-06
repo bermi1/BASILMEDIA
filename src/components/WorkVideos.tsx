@@ -1,4 +1,4 @@
-// A few hand-picked films, shown without labels: they play silently in place while on screen,
+// A few hand-picked films, each with a short label: they play silently in place while on screen,
 // and open full screen with sound on tap. Instagram/YouTube links open in the player instead.
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -40,7 +40,7 @@ function Tile({ v, i, onOpen }: { v: WorkVideo; i: number; onOpen: () => void })
   );
 }
 
-export function WorkGrid({ items, max = 8 }: { items: WorkVideo[]; max?: number }) {
+export function WorkGrid({ items, max = 8, dark = false }: { items: WorkVideo[]; max?: number; dark?: boolean }) {
   const [open, setOpen] = useState<WorkVideo | null>(null);
   const list = items.filter((v) => v.video_url).slice(0, max);
   useEffect(() => {
@@ -55,9 +55,10 @@ export function WorkGrid({ items, max = 8 }: { items: WorkVideo[]; max?: number 
     <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4">
         {list.map((v, i) => (
-          <div key={v.id} className={odd && i === 0 ? 'sm:col-span-2' : ''}>
+          <figure key={v.id} className={`m-0 ${odd && i === 0 ? 'sm:col-span-2' : ''}`}>
             <Tile v={v} i={i} onOpen={() => setOpen(v)} />
-          </div>
+            <figcaption className={`mt-2 px-1 text-[13.5px] font-medium leading-snug ${dark ? 'text-white/85' : 'text-basil-ink'}`}>{v.title}</figcaption>
+          </figure>
         ))}
       </div>
       <AnimatePresence>

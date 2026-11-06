@@ -110,7 +110,7 @@ export default function Home() {
           <div aria-hidden="true" className="aurora -right-16 bottom-0 h-64 w-64 bg-sun/60 [animation-delay:-4s]" />
           <div className="container-bm relative">
             <Head dark kicker="OUR WORK AT A GLANCE" title="A few frames from the field" to="/our-work" link="Our work" />
-            <WorkGrid items={films} max={4} />
+            <WorkGrid items={films} max={4} dark />
             <WatchMore dark />
           </div>
         </section>

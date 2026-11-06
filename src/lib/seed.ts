@@ -72,16 +72,19 @@ export const SEED_SERVICES: Service[] = SV.map(([title, short, description, deli
   icon: ICONS[i], image_url: '', video_url: '', sort_order: i + 1, published: true,
 }));
 
-// Our Work: a few hand-picked films (no labels on the site). Add more in the CMS — upload an MP4 or paste an
+// Our Work: a few hand-picked films, each with a short label. Add more in the CMS — upload an MP4 or paste an
 // Instagram reel link. These three live in the Supabase storage bucket "media".
 const FILE = (n: string) => `https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/${n}`;
 export const SEED_PROJECTS: Project[] = [
-  ['SNOSSA 2026 — opening ceremony highlights', 'work-1'],
-  ['Event highlights — Inspirenyua', 'work-2'],
-  ['Event arrival highlights', 'work-3'],
-].map(([title, n], i): Project => ({
-  id: id('prj'), title, category: 'Corporate', client: '', image_url: FILE(`${n}-poster.jpg`), video_url: FILE(`${n}.mp4`),
-  external_url: '', description: '', featured: true, sort_order: i + 1, published: true,
+  ['SNOSSA 2026 — opening ceremony highlights', 'work-1', true],
+  ['Inspirenyua × CRDB Bank — Smatisha Biashara activation', 'work-2', true],
+  ['On location — arriving at the venue', 'work-3', true],
+  ['Presenter intro — Inspirenyua', 'work-4', false],
+  ['Health Summit — voices on health sovereignty', 'work-5', true],
+  ['89th annual meeting — conference coverage', 'work-6', false],
+].map(([title, n, featured], i): Project => ({
+  id: id('prj'), title: title as string, category: 'Corporate', client: '', image_url: FILE(`${n}-poster.jpg`), video_url: FILE(`${n}.mp4`),
+  external_url: '', description: '', featured: featured as boolean, sort_order: i + 1, published: true,
 }));
 
 // Real partner logos are added by the admin (CMS → Partners); none are invented here.

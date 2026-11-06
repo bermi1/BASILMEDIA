@@ -72,7 +72,7 @@ export function Footer() {
         </div>
         <nav aria-label="Footer" className="flex flex-col gap-2 text-sm">
           <b className="font-display text-white">{t('explore')}</b>
-          {[['/services', t('services')], ['/our-work', t('ourWork')], ['/about', t('about')], ['/health-news', t('healthNews')], ['/find-me', t('findPhotos')], ['/contact', t('contact')]].map(([to, l]) => (
+          {[['/services', t('services')], ['/our-work', t('ourWork')], ['/about', t('about')], ['/find-me', t('findPhotos')], ['/contact', t('contact')]].map(([to, l]) => (
             <Link key={to} to={to} className="text-basil-haze no-underline hover:text-white">{l}</Link>
           ))}
         </nav>
