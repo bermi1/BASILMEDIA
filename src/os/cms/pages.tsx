@@ -56,6 +56,7 @@ const GROUPS: { title: string; fields: Field[] }[] = [
     { key: 'hero_images', label: 'Hero photos (team, office, studio)', type: 'images', folder: 'hero', help: 'They rotate behind the home page headline. Landscape photos of the team and office work best.' },
     { key: 'hero_image_url', label: 'Fallback hero picture', type: 'image', folder: 'site' },
     { key: 'live_ticker', label: 'Live ticker card', type: 'text', wide: true, help: 'e.g. “Gallery delivered · Tanzania Health Summit · 2,431 photos”. Leave empty to hide.' },
+    { key: 'gallery_popup', label: 'New photos pop-up', type: 'boolean', help: 'When on, visitors see a small pop-up for a photo gallery published in the last 7 days. Off by default.' },
     { key: 'services_mega_image_url', label: 'Services menu feature picture', type: 'image', folder: 'site' },
   ] },
   { title: 'Brand', fields: [

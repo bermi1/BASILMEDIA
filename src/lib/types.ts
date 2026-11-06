@@ -37,6 +37,8 @@ export interface SiteSettings {
   ceo_name: string;
   ceo_title: string;
   ceo_message: string;
+  /** Show the "New photos" pop-up for freshly published galleries (off by default). */
+  gallery_popup?: boolean;
   ceo_photo_url: string;
   vision: string;
   company_profile_url: string;

@@ -35,3 +35,6 @@ begin
 exception when others then
   raise notice 'Expiry schedule not updated (%).', sqlerrm;
 end $$;
+
+-- "New photos" pop-up for freshly published galleries: off until switched on in CMS → Site settings.
+alter table public.site_settings add column if not exists gallery_popup boolean not null default false;

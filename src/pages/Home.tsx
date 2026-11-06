@@ -130,21 +130,22 @@ export default function Home() {
       {/* A WORD FROM OUR CEO */}
       <section className="container-bm section">
         <Reveal>
-          <figure className="relative m-0 overflow-hidden rounded-[28px] bg-gradient-to-br from-basil-deep to-basil-night p-6 text-white sm:p-12">
+          <figure className="relative m-0 overflow-hidden rounded-[24px] bg-gradient-to-br from-basil-deep to-basil-night p-5 text-white sm:p-8">
             <div aria-hidden="true" className="aurora -right-16 -top-16 h-64 w-64 bg-basil" />
-            <div className="relative grid items-center gap-6 lg:grid-cols-[auto_1fr] lg:gap-12">
-              <div className="flex items-center gap-4 lg:flex-col lg:items-start">
+            <div className="relative grid items-center gap-5 sm:grid-cols-[auto_1fr] sm:gap-8">
+              <div className="flex items-center gap-4 sm:flex-col sm:items-start">
+                {/* Founder photo: a clean rectangular portrait card */}
                 {s.ceo_photo_url
-                  ? <img src={s.ceo_photo_url} alt={s.ceo_name} className="h-20 w-20 rounded-full object-cover object-top ring-4 ring-white/15 sm:h-32 sm:w-32" />
-                  : <span className="flex h-20 w-20 items-center justify-center rounded-full bg-white/10 ring-4 ring-white/15 sm:h-32 sm:w-32"><img src="/logo-reverse.svg" alt="" className="h-12 w-12 sm:h-20 sm:w-20" /></span>}
+                  ? <img src={s.ceo_photo_url} alt={s.ceo_name} className="aspect-[4/5] w-24 shrink-0 rounded-2xl object-cover object-top shadow-[0_18px_40px_-14px_rgba(0,0,0,0.6)] ring-1 ring-white/15 sm:w-36" />
+                  : <span className="flex aspect-[4/5] w-24 shrink-0 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 sm:w-36"><img src="/logo-reverse.svg" alt="" className="h-12 w-12 sm:h-16 sm:w-16" /></span>}
                 <figcaption className="leading-tight">
                   <span className="block font-mono text-[10.5px] tracking-[0.18em] text-basil-haze">A WORD FROM OUR CEO</span>
                   <b className="mt-1 block font-display text-xl sm:text-2xl">{s.ceo_name || 'Emmanuel Basil'}</b>
                   <span className="text-sm text-basil-haze">{s.ceo_title || 'Founder & CEO, Basil Media'}</span>
                 </figcaption>
               </div>
-              <blockquote className="m-0 text-[17px] leading-relaxed text-white/90 sm:text-[22px] sm:leading-[1.55]">
-                <span aria-hidden="true" className="mr-1 font-display text-4xl leading-none text-basil-sky">“</span>{s.ceo_message || CEO_MESSAGE}
+              <blockquote className="m-0 text-[15.5px] leading-relaxed text-white/90 sm:text-[19px] sm:leading-[1.6]">
+                <span aria-hidden="true" className="mr-1 font-display text-4xl leading-none text-basil-sky">“</span>{(s.ceo_message || CEO_MESSAGE).replace(/”[^”]*$/, (tail) => (s.ceo_name && tail.includes(s.ceo_name.split(' ')[0]) ? '”' : tail))}
               </blockquote>
             </div>
           </figure>
@@ -271,8 +272,8 @@ function PartnerMark({ name, logo }: { name: string; logo: string }) {
     : <span className="whitespace-nowrap font-display text-[14px] font-bold text-basil-deep sm:text-[15px]">{name}</span>;
 }
 
-type GlanceItem = { id: string; title: string; url: string; link?: string; poster: string; sub: string; shape: Orientation };
-export function JustifiedRows({ items }: { items: GlanceItem[] }) {
+export type GlanceItem = { id: string; title: string; url: string; link?: string; poster: string; sub: string; shape: Orientation };
+export function JustifiedRows({ items, keepAll = false }: { items: GlanceItem[]; keepAll?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const [w, setW] = useState(0);
   useEffect(() => {
@@ -294,11 +295,14 @@ export function JustifiedRows({ items }: { items: GlanceItem[] }) {
   }
   // A short leftover row would either stretch huge or leave a gap — keep it only if it is the only row.
   if (row.length && (!rows.length || row.reduce((a, x) => a + ar(x), 0) * target + gap * (row.length - 1) >= w * 0.75)) rows.push(row);
+  // keepAll: never drop work — a short last row is shown at its natural height, centred.
+  const leftover = keepAll && row.length && rows[rows.length - 1] !== row ? row : null;
+  if (leftover) rows.push(leftover);
   return (
     <div ref={ref} className="flex flex-col" style={{ gap }}>
       {w > 0 && rows.map((r, ri) => {
         const sum = r.reduce((a, x) => a + ar(x), 0);
-        const h = Math.min((w - gap * (r.length - 1)) / sum, target * 1.6);
+        const h = r === leftover ? Math.min(target, (w - gap * (r.length - 1)) / sum) : Math.min((w - gap * (r.length - 1)) / sum, target * 1.6);
         return (
           <div key={ri} className="flex justify-center" style={{ gap, height: h }}>
             {r.map((g, i) => <div key={g.id} style={{ width: ar(g) * h, height: h }}><GlanceCard {...g} index={ri * 4 + i} /></div>)}

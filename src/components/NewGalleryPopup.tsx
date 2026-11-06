@@ -4,14 +4,18 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Images, X } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useCover } from '@/lib/useCover';
+import { useSettings } from '@/hooks/useData';
 
 interface G { id: string; title: string; client: string; image_url: string; external_url: string }
 const KEY = 'basil-gallery-seen';
 
 export function NewGalleryPopup() {
+  // Off unless switched on in CMS → Site settings ("New photos pop-up").
+  const enabled = useSettings().gallery_popup === true;
   const [g, setG] = useState<G | null>(null);
   const cover = useCover(g?.external_url, g?.image_url ?? '');
   useEffect(() => {
+    if (!enabled) return;
     const t = setTimeout(() => {
       supabase.from('projects_public').select('id,title,client,image_url,external_url').eq('published', true).eq('category', 'Photo Stories')
         .like('external_url', '%pixieset.com%').gte('created_at', new Date(Date.now() - 7 * 864e5).toISOString())
@@ -24,8 +28,9 @@ export function NewGalleryPopup() {
         });
     }, 2500);
     return () => clearTimeout(t);
-  }, []);
+  }, [enabled]);
   const close = () => { try { if (g) localStorage.setItem(KEY, g.id); } catch { /* ignore */ } setG(null); };
+  if (!enabled) return null;
   return (
     <AnimatePresence>
       {g && (

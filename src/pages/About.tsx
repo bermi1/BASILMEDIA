@@ -16,7 +16,7 @@ export default function About() {
   const story = (s.about_story || '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
   return (
     <>
-      <PageHero kicker={t('about').toUpperCase()} title={<>A Dar es Salaam studio that <span className="text-glow">tells Tanzania’s stories.</span></>} />
+      <PageHero kicker={t('about').toUpperCase()} image="/img/team/crew-on-set.jpg" title={<>A Dar es Salaam studio that <span className="text-glow">tells Tanzania’s stories.</span></>} sub="Health, innovation and youth — told on film, in photographs and on air, by one crew from Upanga." />
 
       {/* Intro: the whole team photo (never cropped) beside the opening of our story */}
       <section className="container-bm section grid items-center gap-6 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
@@ -60,10 +60,11 @@ export default function About() {
       </section>
       <section className="container-bm section flex flex-wrap items-center justify-between gap-5">
         <div className="w-full">
-          <h2 className="m-0 mb-3.5 text-[22px] font-extrabold sm:text-3xl">{t('partnersWith')}</h2>
-          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+          <h2 className="m-0 mb-3.5 text-center text-[22px] font-extrabold sm:text-3xl">{t('partnersWith')}</h2>
+          {/* Centred, wrapping rows: the last row is balanced instead of leaving empty cells */}
+          <div className="flex flex-wrap justify-center gap-2.5 sm:gap-4">
             {partners.map((p) => (
-              <span key={p.id} className="flex h-20 items-center justify-center rounded-[16px] border border-basil-line bg-white px-3 text-center text-sm font-bold text-basil-deep">
+              <span key={p.id} className="glow-card flex h-20 w-[calc((100%-0.625rem)/2)] items-center justify-center rounded-[16px] border border-basil-line bg-white px-3 text-center text-sm font-bold text-basil-deep sm:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-4rem)/5)]">
                 <Logo name={p.name} src={p.logo_url} />
               </span>
             ))}
