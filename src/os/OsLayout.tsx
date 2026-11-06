@@ -21,7 +21,7 @@ const CMS_NAV = [
   { to: '/os/website/team', label: 'Team', Icon: UsersRound },
   { to: '/os/website/testimonials', label: 'Testimonials', Icon: MessageSquareQuote },
   { to: '/os/website/galleries', label: 'Galleries', Icon: Images },
-  { to: '/os/website/news', label: 'Health news', Icon: Newspaper },
+  { to: '/os/website/news', label: 'News', Icon: Newspaper },
   { to: '/os/website/opportunities', label: 'Opportunities', Icon: BookOpen },
   { to: '/os/website/events', label: 'Events', Icon: CalendarRange },
   { to: '/os/website/bookings', label: 'Bookings', Icon: Inbox },

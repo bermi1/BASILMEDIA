@@ -1,6 +1,6 @@
 // Field definitions for each website content type managed in the CMS.
 import { ResourceManager } from './ResourceManager';
-import { WORK_CATEGORIES, SECTORS } from '@/lib/types';
+import { WORK_CATEGORIES, SECTORS, NEWS_DESKS, OPPORTUNITY_KINDS } from '@/lib/types';
 import { fmtDate } from '@/lib/format';
 import { youtubeThumb } from '@/lib/video';
 
@@ -111,12 +111,12 @@ export const TestimonialsCms = () => (
 
 export const NewsCms = () => (
   <ResourceManager
-    table="news_stories" tag="AUDIENCE · HEALTH BRIEF" title="Health news" sub="Nothing goes live until an editor publishes it." publishable
+    table="news_stories" tag="AUDIENCE · BASIL BRIEF" title="News" sub="Nothing goes live until an editor publishes it." publishable
     fields={[
       { key: 'title', label: 'Headline', type: 'text', required: true, wide: true },
       { key: 'dek', label: 'Summary line', type: 'text', wide: true },
-      { key: 'tag', label: 'Topic', type: 'select', options: ['Policy', 'Regulation', 'Research', 'Facilities', 'Events', 'Alert', 'Opportunities'] },
-      { key: 'sector', label: 'Sector', type: 'select', options: SECTORS },
+      { key: 'tag', label: 'Topic', type: 'select', options: ['Policy', 'Regulation', 'Research', 'Facilities', 'Events', 'Alert', 'Opportunities', 'Startups', 'Funding', 'Markets', 'Banking', 'Skills'] },
+      { key: 'sector', label: 'Desk', type: 'select', options: NEWS_DESKS },
       { key: 'published_at', label: 'Publish date', type: 'date' },
       { key: 'read_minutes', label: 'Read time (minutes)', type: 'number' },
       { key: 'featured', label: 'Featured', type: 'boolean' },
@@ -137,7 +137,7 @@ export const OpportunitiesCms = () => (
       { key: 'title', label: 'Title', type: 'text', required: true },
       { key: 'org', label: 'Organisation', type: 'text' },
       { key: 'location', label: 'Location', type: 'text' },
-      { key: 'kind', label: 'Type', type: 'select', options: ['Job', 'Fellowship', 'Scholarship', 'Call for abstracts'] },
+      { key: 'kind', label: 'Type', type: 'select', options: OPPORTUNITY_KINDS },
       { key: 'closes_on', label: 'Closing date', type: 'date' },
       { key: 'link', label: 'Apply link', type: 'url' },
       { key: 'published', label: 'Published', type: 'boolean' },

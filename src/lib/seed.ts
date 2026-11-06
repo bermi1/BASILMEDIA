@@ -114,7 +114,7 @@ export const SEED_NEWS: NewsStory[] = [
 ].map(([title, dek, tag, featured], i) => ({
   id: id('news'), title: title as string, dek: dek as string, tag: tag as string, featured: featured as boolean,
   body: `${dek}\n\nFull story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.`,
-  sector: 'Health', image_url: '', read_minutes: 3 + (i % 3), published: true, published_at: plus(-i * 2),
+  sector: 'Health', image_url: '', read_minutes: 3 + (i % 3), published: false, published_at: plus(-i * 2),
 }));
 
 export const SEED_OPPORTUNITIES: Opportunity[] = [
@@ -124,7 +124,7 @@ export const SEED_OPPORTUNITIES: Opportunity[] = [
   ['Call for abstracts: community nursing', 'Nurses’ Association', 'Dodoma', 'Call for abstracts', 28],
 ].map(([title, org, location, kind, d]) => ({
   id: id('opp'), title: title as string, org: org as string, location: location as string,
-  kind: kind as Opportunity['kind'], closes_on: plus(d as number), link: '', published: true,
+  kind: kind as Opportunity['kind'], closes_on: plus(d as number), link: '', published: false,
 }));
 
 export const SEED_EVENTS: EventItem[] = [
@@ -135,7 +135,7 @@ export const SEED_EVENTS: EventItem[] = [
   ['Nursing leadership forum', 'Mwanza', 70, '8 CPD points'],
 ].map(([title, venue, d, cpd]) => ({
   id: id('evt'), title: title as string, venue: venue as string, starts_on: plus(d as number),
-  cpd: cpd as string, sector: 'Health', link: '', published: true,
+  cpd: cpd as string, sector: 'Health', link: '', published: false,
 }));
 
 export const SEED_GALLERIES: Gallery[] = [

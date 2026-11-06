@@ -15,7 +15,7 @@ const DICT = {
   ready: ['READY WHEN YOU ARE', 'TUKO TAYARI'],
   readyTitle: ["Let's create your next moment.", 'Tuunde tukio lako lijalo.'],
   explore: ['Explore', 'Gundua'],
-  healthNews: ['Health News', 'Habari za Afya'],
+  healthNews: ['News', 'Habari'],
   login: ['Staff & client login', 'Ingia (wafanyakazi na wateja)'],
   privacy: ['Privacy', 'Faragha'],
   faceData: ['Face search & your data', 'Utafutaji wa uso na data yako'],

@@ -1,4 +1,4 @@
--- Basil Media OS · complete database setup (generated from 14 migrations).
+-- Basil Media OS · complete database setup (generated from 15 migrations).
 -- Paste into Supabase → SQL Editor on an EMPTY project and press Run.
 
 -- ===================== 0001_foundation.sql =====================
@@ -484,35 +484,35 @@ insert into public.team (name, role, photo_url, bio, sort_order, published) valu
 insert into public.news_stories (title, dek, tag, featured, body, sector, image_url, read_minutes, published, published_at) values
   ('New national guidelines on antibiotic stewardship for referral hospitals', 'What changes on the ward from next quarter, and the reporting each facility now owes the regulator.', 'Policy', true, 'What changes on the ward from next quarter, and the reporting each facility now owes the regulator.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 3, true, '2026-11-06'),
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 3, false, '2026-11-06'),
   ('Registration renewals: council deadline moves to 31 December', 'Practitioners renewing licences this year should upload CPD points before the new cut-off.', 'Regulation', false, 'Practitioners renewing licences this year should upload CPD points before the new cut-off.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 4, true, '2026-11-04'),
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 4, false, '2026-11-04'),
   ('Local study: shorter TB regimens hold up in Tanzanian clinics', 'A multi-site trial reports outcomes in line with WHO findings across four regions.', 'Research', false, 'A multi-site trial reports outcomes in line with WHO findings across four regions.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 5, true, '2026-11-02'),
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 5, false, '2026-11-02'),
   ('Paediatric oncology unit opens second ward', 'Bed capacity doubles, with a family hostel built alongside.', 'Facilities', false, 'Bed capacity doubles, with a family hostel built alongside.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 3, true, '2026-10-31'),
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 3, false, '2026-10-31'),
   ('Nurses’ conference calls for abstracts on community care', 'Submissions close next month; selected papers present in Dodoma.', 'Events', false, 'Submissions close next month; selected papers present in Dodoma.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 4, true, '2026-10-29'),
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 4, false, '2026-10-29'),
   ('Drug alert: recall of one batch of an oral antibiotic', 'The regulator lists the affected batch number and the return process for pharmacies.', 'Alert', false, 'The regulator lists the affected batch number and the return process for pharmacies.
 
-Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 5, true, '2026-10-27');
+Full story text is written and approved by a Basil Media editor in the CMS. Nothing is published without human review.', 'Health', '', 5, false, '2026-10-27');
 
 insert into public.opportunities (title, org, location, kind, closes_on, link, published) values
-  ('Consultant Paediatrician', 'Regional Referral Hospital', 'Mwanza', 'Job', '2026-11-27', '', true),
-  ('Clinical research fellowship (12 months)', 'Health Research Institute', 'Dar es Salaam', 'Fellowship', '2026-12-06', '', true),
-  ('Masters scholarship in public health', 'Bank Foundation', 'Tanzania', 'Scholarship', '2026-12-21', '', true),
-  ('Call for abstracts: community nursing', 'Nurses’ Association', 'Dodoma', 'Call for abstracts', '2026-12-04', '', true);
+  ('Consultant Paediatrician', 'Regional Referral Hospital', 'Mwanza', 'Job', '2026-11-27', '', false),
+  ('Clinical research fellowship (12 months)', 'Health Research Institute', 'Dar es Salaam', 'Fellowship', '2026-12-06', '', false),
+  ('Masters scholarship in public health', 'Bank Foundation', 'Tanzania', 'Scholarship', '2026-12-21', '', false),
+  ('Call for abstracts: community nursing', 'Nurses’ Association', 'Dodoma', 'Call for abstracts', '2026-12-04', '', false);
 
 insert into public.events (title, venue, starts_on, cpd, sector, link, published) values
-  ('Tanzania Health Summit', 'JNICC, Dar es Salaam', '2026-11-20', '12 CPD points', 'Health', '', true),
-  ('Cardiology update for clinicians', 'Online', '2026-11-28', '4 CPD points', 'Health', '', true),
-  ('East African Paediatrics Congress', 'Arusha', '2026-12-16', '16 CPD points', 'Health', '', true),
-  ('Pharmacy practice workshop', 'Dodoma', '2026-12-31', '6 CPD points', 'Health', '', true),
-  ('Nursing leadership forum', 'Mwanza', '2027-01-15', '8 CPD points', 'Health', '', true);
+  ('Tanzania Health Summit', 'JNICC, Dar es Salaam', '2026-11-20', '12 CPD points', 'Health', '', false),
+  ('Cardiology update for clinicians', 'Online', '2026-11-28', '4 CPD points', 'Health', '', false),
+  ('East African Paediatrics Congress', 'Arusha', '2026-12-16', '16 CPD points', 'Health', '', false),
+  ('Pharmacy practice workshop', 'Dodoma', '2026-12-31', '6 CPD points', 'Health', '', false),
+  ('Nursing leadership forum', 'Mwanza', '2027-01-15', '8 CPD points', 'Health', '', false);
 
 with g as (
 insert into public.galleries (slug, title, client_name, event_date, location, cover_url, collections, access_mode, pin, expires_on, allow_downloads, selection_limit, face_search_enabled, published) values
@@ -4179,4 +4179,11 @@ end $$;
 -- Basil Media OS · 0015 make gallery PIN functions find pgcrypto (Supabase keeps it in the "extensions" schema).
 alter function public.stash_gallery_pin() set search_path = public, extensions;
 alter function public.gallery_media(text, text) set search_path = public, extensions;
+
+-- ===================== 0016_news_desks.sql =====================
+-- Basil Media OS · 0016 news desks (Health, Youth & Opportunities, Innovation, Capital & Business, Banking for Youth)
+-- and more opportunity types for young people.
+alter table public.opportunities drop constraint if exists opportunities_kind_check;
+alter table public.opportunities add constraint opportunities_kind_check
+  check (kind in ('Job', 'Internship', 'Fellowship', 'Scholarship', 'Grant', 'Funding', 'Competition', 'Training', 'Call for abstracts'));
 

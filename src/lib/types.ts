@@ -131,6 +131,9 @@ export interface Booking {
 }
 
 export const SECTORS = ['Health', 'Education', 'Finance', 'Agribusiness', 'Government', 'NGOs'] as const;
+/** News desks of the Basil Brief (stored in news_stories.sector). */
+export const NEWS_DESKS = ['Health', 'Youth & Opportunities', 'Innovation', 'Capital & Business', 'Banking for Youth'] as const;
+export const OPPORTUNITY_KINDS = ['Job', 'Internship', 'Fellowship', 'Scholarship', 'Grant', 'Funding', 'Competition', 'Training', 'Call for abstracts'] as const;
 
 export interface NewsStory {
   id: ID;
@@ -151,7 +154,7 @@ export interface Opportunity {
   title: string;
   org: string;
   location: string;
-  kind: 'Job' | 'Fellowship' | 'Scholarship' | 'Call for abstracts';
+  kind: (typeof OPPORTUNITY_KINDS)[number];
   closes_on: string;
   link: string;
   published: boolean;

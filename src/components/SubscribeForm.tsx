@@ -4,13 +4,15 @@ import { Check, CheckCircle2 } from 'lucide-react';
 import { submit } from '@/lib/db';
 import { isEmail, normaliseTzPhone } from '@/lib/format';
 
-const TITLES = ['Dr', 'Prof', 'Nurse', 'Pharmacist', 'Lab Scientist', 'Administrator'];
+const TITLES = ['Mr', 'Ms', 'Dr', 'Prof', 'Student', 'Entrepreneur', 'Nurse', 'Pharmacist', 'Other'];
+const DESKS = ['Health', 'Youth & Opportunities', 'Innovation', 'Capital & Business', 'Banking for Youth'];
 const SPECS = ['Cardiology', 'Paediatrics', 'Oncology', 'Nephrology', 'Obstetrics & Gynaecology', 'Orthopaedics', 'Public health', 'Pharmacy', 'Nursing', 'Laboratory', 'Dental', 'Mental health', 'ICT in health'];
 const REGIONS = ['Dar es Salaam', 'Arusha', 'Dodoma', 'Mwanza', 'Mbeya', 'Kilimanjaro', 'Tanga', 'Morogoro', 'Zanzibar', 'Other region'];
 const CHANNELS = [['sms', 'SMS'], ['whatsapp', 'WhatsApp'], ['email', 'Email']] as const;
 
 export function SubscribeForm({ source = 'website' }: { source?: string }) {
-  const [f, setF] = useState({ title: 'Dr', full_name: '', region: 'Dar es Salaam', phone: '', email: '', institution: '' });
+  const [desks, setDesks] = useState<string[]>([]);
+  const [f, setF] = useState({ title: 'Mr', full_name: '', region: 'Dar es Salaam', phone: '', email: '', institution: '' });
   const [specs, setSpecs] = useState<string[]>([]);
   const [channel, setChannel] = useState<'sms' | 'whatsapp' | 'email'>('sms');
   const [language, setLanguage] = useState<'en' | 'sw'>('en');
@@ -23,7 +25,7 @@ export function SubscribeForm({ source = 'website' }: { source?: string }) {
   const go = async () => {
     const phone = f.phone ? normaliseTzPhone(f.phone.startsWith('0') || f.phone.startsWith('+') ? f.phone : `0${f.phone}`) : null;
     if (f.full_name.trim().length < 2) return setErr('Please add your full name.');
-    if (!specs.length) return setErr('Choose at least one specialty.');
+    if (!desks.length) return setErr('Choose at least one topic you want to receive.');
     if (channel !== 'email' && !phone) return setErr('Enter a valid Tanzanian mobile number (7XX XXX XXX).');
     if (channel === 'email' && !isEmail(f.email)) return setErr('Enter a valid email address.');
     if (!consent) return setErr('Please tick the consent box so we may send you updates.');
@@ -31,8 +33,8 @@ export function SubscribeForm({ source = 'website' }: { source?: string }) {
     setState('sending');
     try {
       await submit('subscribers', {
-        full_name: f.full_name.trim(), title: f.title, profession: f.title, specialties: specs, institution: f.institution.trim(),
-        region: f.region, phone: phone ?? '', email: f.email.trim(), language, channel, sector: 'Health', source,
+        full_name: f.full_name.trim(), title: f.title, profession: f.title, specialties: [...desks, ...specs], institution: f.institution.trim(),
+        region: f.region, phone: phone ?? '', email: f.email.trim(), language, channel, sector: desks.join(', '), source,
         consent: true, consent_at: new Date().toISOString(), status: 'pending',
       });
       setState('done');
@@ -49,7 +51,7 @@ export function SubscribeForm({ source = 'website' }: { source?: string }) {
           <motion.div key="ok" initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} role="status" className="flex flex-col items-center gap-3 py-10 text-center">
             <CheckCircle2 size={56} className="text-basil" />
             <h3 className="m-0 text-2xl font-extrabold">Karibu, {f.title} {f.full_name.split(' ')[0]}!</h3>
-            <p className="m-0 max-w-sm text-basil-muted">We will send a confirmation {channel === 'email' ? 'email' : 'message'}. Your first Basil Health Brief arrives on Monday.</p>
+            <p className="m-0 max-w-sm text-basil-muted">We will send a confirmation {channel === 'email' ? 'email' : 'message'}. Your first Basil Brief arrives on Monday.</p>
           </motion.div>
         ) : (
           <motion.form key="f" exit={{ opacity: 0 }} onSubmit={(e) => (e.preventDefault(), go())} noValidate className="flex flex-col gap-5">
@@ -62,20 +64,29 @@ export function SubscribeForm({ source = 'website' }: { source?: string }) {
               </label>
             </div>
             <div>
-              <div className="mb-2 text-sm font-bold text-[#33465F]">Specialties <span className="font-normal text-basil-muted">· {specs.length} chosen</span></div>
+              <div className="mb-2 text-sm font-bold text-[#33465F]">What would you like to receive?</div>
+              <div role="group" aria-label="Topics" className="flex flex-wrap gap-2">
+                {DESKS.map((d) => {
+                  const on = desks.includes(d);
+                  return <button key={d} type="button" aria-pressed={on} onClick={() => setDesks(on ? desks.filter((x) => x !== d) : [...desks, d])} className={pill(on)}>{d}</button>;
+                })}
+              </div>
+            </div>
+            {desks.includes('Health') && <div>
+              <div className="mb-2 text-sm font-bold text-[#33465F]">Health specialties <span className="font-normal text-basil-muted">· optional</span></div>
               <div role="group" aria-label="Specialties" className="flex flex-wrap gap-2">
                 {SPECS.map((sp) => {
                   const on = specs.includes(sp);
                   return <button key={sp} type="button" aria-pressed={on} onClick={() => setSpecs(on ? specs.filter((x) => x !== sp) : [...specs, sp])} className={pill(on)}>{sp}</button>;
                 })}
               </div>
-            </div>
+            </div>}
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-sm font-bold text-[#33465F]">Region
                 <select className="field-light" value={f.region} onChange={(e) => setF({ ...f, region: e.target.value })}>{REGIONS.map((x) => <option key={x}>{x}</option>)}</select>
               </label>
               <label className="flex flex-col gap-1.5 text-sm font-bold text-[#33465F]">Institution <span className="sr-only">(optional)</span>
-                <input className="field-light" value={f.institution} onChange={(e) => setF({ ...f, institution: e.target.value })} placeholder="Hospital, clinic or university" />
+                <input className="field-light" value={f.institution} onChange={(e) => setF({ ...f, institution: e.target.value })} placeholder="School, company, hospital…" />
               </label>
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -98,7 +109,7 @@ export function SubscribeForm({ source = 'website' }: { source?: string }) {
               <span>I agree to receive updates from Basil Media and know I can stop anytime. <span className="text-basil-muted">Processed under the Tanzania Personal Data Protection Act, 2022.</span></span>
             </button>
             {err && <div role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm font-bold text-red-800">{err}</div>}
-            <button type="submit" disabled={state === 'sending'} className="h-14 rounded-2xl border-0 bg-basil text-base font-bold text-white shadow-glow hover:bg-basil-deep disabled:opacity-70">{state === 'sending' ? 'Subscribing…' : 'Subscribe to the Basil Health Brief'}</button>
+            <button type="submit" disabled={state === 'sending'} className="h-14 rounded-2xl border-0 bg-basil text-base font-bold text-white shadow-glow hover:bg-basil-deep disabled:opacity-70">{state === 'sending' ? 'Subscribing…' : 'Subscribe to the Basil Brief'}</button>
           </motion.form>
         )}
       </AnimatePresence>

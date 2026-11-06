@@ -84,8 +84,8 @@ export function Footer() {
           {s.office_hours && <span className="text-xs">{s.office_hours}</span>}
         </div>
         <div className="col-span-2 flex flex-col gap-2.5 lg:col-span-1">
-          <b className="font-display text-white">Basil Health Brief</b>
-          <span className="text-sm">Weekly health news for clinicians · English or Kiswahili.</span>
+          <b className="font-display text-white">Basil Brief</b>
+          <span className="text-sm">Health, youth, innovation &amp; business — every Monday.</span>
           <form onSubmit={(e) => (e.preventDefault(), quickSubscribe())} className="flex gap-2 rounded-2xl border border-basil-haze/25 bg-white/[0.08] p-1.5">
             <label className="sr-only" htmlFor="foot-sub">{t('phoneOrEmail')}</label>
             <input id="foot-sub" value={contact} onChange={(e) => setContact(e.target.value)} placeholder={t('phoneOrEmail')} className="min-w-0 flex-1 border-0 bg-transparent px-2.5 text-white outline-none placeholder:text-basil-haze/70" />

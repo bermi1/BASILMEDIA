@@ -6,7 +6,6 @@ import { fmtDate, waLink } from '@/lib/format';
 import type { NewsStory as Story } from '@/lib/types';
 import { useSeo } from '@/hooks/useSeo';
 import { Media } from '@/components/Media';
-import { SubscribeSection } from './HealthNews';
 
 export default function NewsStory() {
   const { id = '' } = useParams();
@@ -18,7 +17,7 @@ export default function NewsStory() {
   return (
     <>
       <article className="container-bm max-w-[820px] py-12">
-        <Link to="/health-news" className="mb-6 inline-flex items-center gap-2 font-bold no-underline"><ArrowLeft size={18} /> Basil Health Brief</Link>
+        <Link to="/health-news" className="mb-6 inline-flex items-center gap-2 font-bold no-underline"><ArrowLeft size={18} /> Basil Brief</Link>
         <div className="flex gap-2 text-xs font-bold"><span className="rounded-full bg-basil-ice px-2.5 py-1 text-basil-deep">{s.tag}</span><span className="rounded-full bg-basil-mist px-2.5 py-1 text-basil-muted">{s.sector}</span></div>
         <h1 className="my-4 text-[clamp(32px,4.5vw,52px)] font-extrabold leading-[1.05]">{s.title}</h1>
         <p className="m-0 text-xl text-basil-muted">{s.dek}</p>
@@ -27,9 +26,12 @@ export default function NewsStory() {
           <a href={waLink('', `${s.title} — ${location.href}`)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-bold no-underline"><Share2 size={16} /> Share on WhatsApp</a>
         </div>
         {s.image_url && <Media src={s.image_url} overlay={false} className="mb-8 aspect-video rounded-3xl" />}
-        <div className="whitespace-pre-line text-[18px] leading-[1.8] text-[#22344F]">{s.body}</div>
+        <div className="whitespace-pre-line text-[17px] leading-[1.8] text-[#22344F]">{s.body}</div>
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-3 rounded-[20px] bg-basil-mist p-5">
+          <span><b className="block">Get the Basil Brief every Monday</b><span className="text-sm text-basil-muted">Health, youth opportunities, innovation, business and banking.</span></span>
+          <Link to="/subscribe" className="btn-primary h-11 min-h-0">Subscribe free</Link>
+        </div>
       </article>
-      <SubscribeSection source={`story:${s.id}`} />
     </>
   );
 }
