@@ -149,17 +149,10 @@ export default function HealthNews() {
 export function SubscribeSection({ source = 'health-news', standalone }: { source?: string; standalone?: boolean }) {
   return (
     <section id="subscribe" className="scroll-mt-24 text-white" style={{ background: 'radial-gradient(ellipse at 10% 10%, rgba(124,192,245,0.3), transparent 50%), linear-gradient(160deg, #0F6EC2, #0A2F5C 60%, #061E3D)' }}>
-      <div className={`container-bm grid items-center gap-6 pb-10 sm:gap-10 sm:pb-16 lg:grid-cols-[1fr_1.2fr] ${standalone ? 'pt-24 sm:pt-32' : 'pt-10 sm:pt-16'}`}>
-        <div>
-          <div className="font-mono text-xs tracking-[0.2em] text-basil-haze">BASIL BRIEF · JIUNGE</div>
-          <h2 className="my-2 text-[clamp(22px,3.4vw,42px)] font-bold leading-[1.1] sm:my-3">Your topics.<br />Your language.<br /><span className="text-basil-sky">Your channel.</span></h2>
-          <p className="m-0 max-w-[460px] text-[15px] text-basil-frost sm:text-lg">Health, youth opportunities, innovation, business and banking for youth — pick what matters to you. One brief a week, plus urgent alerts.</p>
-          <ul className="mt-4 hidden list-none flex-col gap-2.5 p-0 sm:mt-6 sm:flex">
-            {['Free, every Monday', 'Stop anytime — reply STOP', 'Your data stays in line with the PDPA 2022'].map((x) => (
-              <li key={x} className="flex items-center gap-2.5"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-sm">✓</span>{x}</li>
-            ))}
-          </ul>
-        </div>
+      <div className={`container-bm max-w-[460px] pb-12 ${standalone ? 'pt-24 sm:pt-32' : 'pt-10'}`}>
+        <div className="font-mono text-[11px] tracking-[0.2em] text-basil-haze">BASIL BRIEF · JIUNGE</div>
+        <h1 className="mb-1 mt-2 text-[26px] font-bold leading-tight sm:text-[32px]">Get the brief every Monday.</h1>
+        <p className="m-0 mb-5 text-[14px] text-basil-frost">Free. Pick your topics.</p>
         <SubscribeForm source={source} />
       </div>
     </section>
