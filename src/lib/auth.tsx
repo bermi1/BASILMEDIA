@@ -71,12 +71,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (supabase) {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      void import('@/os/security/lib').then((m) => m.recordLoginEvent('password'));
       return;
     }
     const u = readUsers().find((x) => x.email.toLowerCase() === email.toLowerCase());
     if (!u || u.password !== password) throw new Error('Email or password is not correct.');
     localStorage.setItem(DEMO_SESSION, u.email);
     setUser({ id: u.id, email: u.email, name: u.name, roles: u.roles });
+    void import('@/os/security/lib').then((m) => m.recordLoginEvent('password', u.id));
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, name: string) => {
@@ -116,6 +118,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
+
+/** MFA helpers (Supabase TOTP). Demo mode: no factors, assurance level always aal1. */
+export const mfa = {
+  async assurance() {
+    if (!supabase) return { currentLevel: 'aal1', nextLevel: 'aal1' };
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    return { currentLevel: data?.currentLevel ?? 'aal1', nextLevel: data?.nextLevel ?? 'aal1' };
+  },
+  async needsChallenge() {
+    const a = await mfa.assurance();
+    return a.nextLevel === 'aal2' && a.currentLevel !== 'aal2';
+  },
+};
 
 export function useAuth() {
   const c = useContext(Ctx);

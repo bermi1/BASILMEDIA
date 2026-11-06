@@ -23,6 +23,8 @@ const Privacy = lazy(() => import('@/pages/Privacy').then((m) => ({ default: m.P
 const FacePrivacy = lazy(() => import('@/pages/Privacy').then((m) => ({ default: m.FacePrivacy })));
 const OsRoutes = lazy(() => import('@/os/OsRoutes'));
 const PhoneApp = lazy(() => import('@/app/AppShell'));
+const Sign = lazy(() => import('@/pages/Sign'));
+const Verify = lazy(() => import('@/pages/Verify'));
 const Showcase = lazy(() => import('@/os/modules/growth/public').then((m) => ({ default: m.ShowcasePage })));
 const DealRoom = lazy(() => import('@/os/modules/growth/public').then((m) => ({ default: m.DealRoomPage })));
 
@@ -54,6 +56,8 @@ export default function App() {
               <Route path="g/:slug" element={<Gallery />} />
               <Route path="s/:slug" element={<Showcase />} />
               <Route path="d/:token" element={<DealRoom />} />
+              <Route path="sign/:token" element={<Sign />} />
+              <Route path="verify/:id" element={<Verify />} />
               <Route path="admin/*" element={<OsRoutes />} />
               <Route path="os/*" element={<OsRoutes />} />
               <Route path="app" element={<PhoneApp />} />

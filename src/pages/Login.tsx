@@ -7,6 +7,8 @@ import { isDemo } from '@/lib/supabase';
 import { useSeo } from '@/hooks/useSeo';
 import { Fingerprint } from '@/components/icons';
 import type { AppRole } from '@/lib/types';
+import { signInWithPasskey } from '@/os/security/lib';
+import { TwoFactorGate } from '@/os/security/TwoFactor';
 
 const PORTALS: { role: AppRole | 'website'; name: string; line: string; to: string; Icon: typeof Crown; main?: boolean }[] = [
   { role: 'website', name: 'Website CMS', line: 'Edit pages, pictures, videos and news', to: '/os/website', Icon: Globe2, main: true },
@@ -92,7 +94,7 @@ export default function Login() {
               </div>
               {mode === 'signin' && (
                 <>
-                  <button type="button" onClick={() => setToast('Passkey sign-in (fingerprint / Face ID) is switched on by your administrator. Use email for now.')} className="flex h-14 items-center justify-center gap-3 rounded-[18px] border-0 bg-basil text-[15px] font-bold text-white shadow-glow hover:bg-basil-deep sm:h-16 sm:text-base">
+                  <button type="button" disabled={busy} onClick={async () => { setErr(''); setBusy(true); try { await signInWithPasskey(); } catch (e) { const m = (e as Error).message; if (m !== 'Cancelled' && !/NotAllowed|abort/i.test(m)) setErr(m); } finally { setBusy(false); } }} className="flex h-14 items-center justify-center gap-3 rounded-[18px] border-0 bg-basil text-[15px] font-bold text-white shadow-glow hover:bg-basil-deep sm:h-16 sm:text-base">
                     <Fingerprint /> Fingerprint / Face ID
                   </button>
                   <div className="flex items-center gap-3 text-[13px] text-basil-muted"><span className="h-px flex-1 bg-basil-line" />or with email<span className="h-px flex-1 bg-basil-line" /></div>
@@ -119,6 +121,7 @@ export default function Login() {
             </motion.form>
           ) : (
             <motion.div key="portal" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="flex w-full max-w-[760px] flex-col gap-5">
+              <TwoFactorGate>
               <div>
                 <div className="font-mono text-[11px] tracking-[0.18em] text-basil">HABARI, {(user.name || user.email).split(/[ @]/)[0].toUpperCase()}</div>
                 <h2 className="m-0 mt-2 text-[34px] font-extrabold">Choose your portal</h2>
@@ -137,6 +140,7 @@ export default function Login() {
                 <div className="rounded-[22px] border border-basil-line bg-white p-6 text-basil-muted">Your account is waiting for a role. Ask the Super Admin to give you access.</div>
               )}
               <button type="button" onClick={signOut} className="self-start border-0 bg-transparent font-bold text-basil-muted">Sign out</button>
+              </TwoFactorGate>
             </motion.div>
           )}
         </AnimatePresence>

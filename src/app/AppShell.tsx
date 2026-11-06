@@ -10,6 +10,7 @@ import { ActingProvider, useActing } from '@/os/lib/session';
 import { resetOsDemo, useTable } from '@/os/lib/store';
 import { ToastProvider } from '@/os/cms/toast';
 import { Sheet } from '@/os/ui';
+import { TwoFactorGate } from '@/os/security/TwoFactor';
 import { PHONE_APPS } from './roles';
 import { Alerts } from './Alerts';
 import type { PhoneExtra } from '@/os/modules/types';
@@ -23,7 +24,9 @@ export default function PhoneApp() {
   return (
     <ActingProvider>
       <ToastProvider>
-        <Shell />
+        <TwoFactorGate>
+          <Shell />
+        </TwoFactorGate>
       </ToastProvider>
     </ActingProvider>
   );

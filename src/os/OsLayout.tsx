@@ -9,6 +9,7 @@ import { isDemo } from '@/lib/supabase';
 import { MODULES } from './modules';
 import { useActing } from './lib/session';
 import { Smartphone, ShieldCheck } from 'lucide-react';
+import { TwoFactorGate } from './security/TwoFactor';
 
 const CMS_NAV = [
   { to: '/os/website', label: 'Overview', Icon: LayoutDashboard, end: true },
@@ -81,7 +82,7 @@ export function OsLayout() {
           {isDemo && <span className="hidden rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900 sm:inline">Demo mode · browser storage</span>}
           <a href="/" target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-sm font-bold no-underline"><Globe2 size={16} />View site <ExternalLink size={14} /></a>
         </header>
-        <main className="min-w-0 flex-1 p-4 sm:p-6"><Outlet /></main>
+        <main className="min-w-0 flex-1 p-4 sm:p-6"><TwoFactorGate><Outlet /></TwoFactorGate></main>
       </div>
     </div>
   );
