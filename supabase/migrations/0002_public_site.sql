@@ -227,7 +227,7 @@ create table public.gallery_secrets (
 alter table public.gallery_secrets enable row level security; -- no policies: only security definer code reads it
 
 create or replace function public.stash_gallery_pin()
-returns trigger language plpgsql security definer set search_path = public as $$
+returns trigger language plpgsql security definer set search_path = public, extensions as $$
 begin
   if new.pin <> '' then
     insert into public.gallery_secrets (gallery_id, pin_hash) values (new.id, crypt(new.pin, gen_salt('bf')))
@@ -241,7 +241,7 @@ create trigger stash_pin after insert or update of pin on public.galleries for e
 
 -- Visitors read gallery media only through this function, which checks access mode, expiry and PIN.
 create or replace function public.gallery_media(p_slug text, p_pin text default null)
-returns setof public.media_items language plpgsql stable security definer set search_path = public as $$
+returns setof public.media_items language plpgsql stable security definer set search_path = public, extensions as $$
 declare g public.galleries; h text;
 begin
   select * into g from public.galleries where slug = p_slug and published;

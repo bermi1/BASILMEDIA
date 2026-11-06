@@ -186,7 +186,7 @@ create table public.esign_signers (
   phone text not null default '',
   sign_order int not null default 1,
   fields text[] not null default array['signature', 'name', 'date'],
-  token text not null unique default encode(extensions.gen_random_bytes(24), 'hex'),
+  token text not null unique default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''),
   status text not null default 'Waiting' check (status in ('Waiting', 'Sent', 'Viewed', 'Signed', 'Declined')),
   viewed_at timestamptz,
   signed_at timestamptz,
