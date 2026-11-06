@@ -37,12 +37,14 @@ export default {
       },
       keyframes: {
         marquee: { from: { transform: 'translateX(0)' }, to: { transform: 'translateX(-50%)' } },
+        'marquee-reverse': { from: { transform: 'translateX(-50%)' }, to: { transform: 'translateX(0)' } },
         float: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } },
         glow: { '0%,100%': { opacity: '.5', transform: 'scale(1)' }, '50%': { opacity: '.9', transform: 'scale(1.08)' } },
         pulseRing: { '0%': { boxShadow: '0 0 0 0 rgba(15,110,194,0.5)' }, '100%': { boxShadow: '0 0 0 34px rgba(15,110,194,0)' } },
       },
       animation: {
-        marquee: 'marquee 28s linear infinite',
+        marquee: 'marquee 40s linear infinite',
+        'marquee-reverse': 'marquee-reverse 46s linear infinite',
         float: 'float 6s ease-in-out infinite',
         glow: 'glow 7s ease-in-out infinite',
         pulseRing: 'pulseRing 1.2s ease-out infinite',

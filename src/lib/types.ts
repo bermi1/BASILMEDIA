@@ -33,6 +33,11 @@ export interface SiteSettings {
   about_story: string;
   about_image_url: string;
   mission: string;
+  /** "A word from our CEO" on the landing page. */
+  ceo_name: string;
+  ceo_title: string;
+  ceo_message: string;
+  ceo_photo_url: string;
   vision: string;
   company_profile_url: string;
   contact_email: string;
@@ -73,6 +78,7 @@ export interface Project {
   image_url: string;
   description: string;
   video_url: string;
+  orientation?: 'auto' | 'portrait' | 'landscape';
   external_url: string;
   featured: boolean;
   sort_order: number;
@@ -91,6 +97,7 @@ export interface Highlight {
   id: ID;
   title: string;
   video_url: string;
+  orientation?: 'auto' | 'portrait' | 'landscape';
   thumbnail_url: string;
   sort_order: number;
   published: boolean;
@@ -102,8 +109,6 @@ export interface TeamMember {
   role: string;
   photo_url: string;
   bio: string;
-  instagram_url?: string;
-  linkedin_url?: string;
   sort_order: number;
   published: boolean;
 }
@@ -131,9 +136,6 @@ export interface Booking {
 }
 
 export const SECTORS = ['Health', 'Education', 'Finance', 'Agribusiness', 'Government', 'NGOs'] as const;
-/** News desks of the Basil Brief (stored in news_stories.sector). */
-export const NEWS_DESKS = ['Health', 'Youth & Opportunities', 'Innovation', 'Capital & Business', 'Banking for Youth'] as const;
-export const OPPORTUNITY_KINDS = ['Job', 'Internship', 'Fellowship', 'Scholarship', 'Grant', 'Funding', 'Competition', 'Training', 'Call for abstracts'] as const;
 
 export interface NewsStory {
   id: ID;
@@ -154,7 +156,7 @@ export interface Opportunity {
   title: string;
   org: string;
   location: string;
-  kind: (typeof OPPORTUNITY_KINDS)[number];
+  kind: 'Job' | 'Fellowship' | 'Scholarship' | 'Call for abstracts';
   closes_on: string;
   link: string;
   published: boolean;

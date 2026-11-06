@@ -1,16 +1,16 @@
 // Share Studio: reference library (cleared work), showcase builder with lead signals, and deal rooms.
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Copy, ExternalLink, Eye, Flame, Heart, Lock, Plus, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { Copy, ExternalLink, Eye, Flame, Handshake, Heart, Lock, Plus, ShieldCheck, Sparkles, Trash2 } from 'lucide-react';
 import { useActing } from '@/os/lib/session';
-import { demoTable, insertRow, newId, rpc, updateRow, useTable, usePeople } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { insertRow, newId, rpc, updateRow, useTable, usePeople } from '@/os/lib/store';
+import { notifyRole } from '@/os/lib/notify';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Field, Pill, Sheet, Stat, Tabs, inputCls, tshShort } from '@/os/ui';
-import { PageTitle } from '@/os/OsLayout';
 import { DEAL_STEPS, dmy, isoPlus, leadScore, slugify, type Cta, type DealRoom, type Lead, type Proposal, type ReferenceItem, type ShareEvent, type Showcase } from './lib';
 import { ShowcaseView, DealRoomView } from './views';
 import { moveLead, useCrm } from './crm';
+import { GoLink, PageHead, useGo } from './kit';
 import type { Contract } from './lib';
 
 const origin = () => (typeof location !== 'undefined' ? location.origin : '');
@@ -22,17 +22,14 @@ const copy = (text: string, toast: (m: string) => void) => navigator.clipboard?.
 export function ReferenceLibrary() {
   const { rows } = useTable<ReferenceItem>('reference_items', { order: 'year', ascending: false });
   const { rows: projects } = useTable<{ id: string; name: string; client_id: string; service: string }>('projects');
-  const { can, userId } = useActing();
+  const { can } = useActing();
   const toast = useToast();
   const [tab, setTab] = useState<'cleared' | 'pending'>('cleared');
   const [edit, setEdit] = useState<Partial<ReferenceItem> | null>(null);
   const clearer = can('boss', 'gm_cfo');
   const setCleared = async (r: ReferenceItem, cleared: boolean) => {
     try {
-      await rpc('set_reference_cleared', { _id: r.id, _cleared: cleared }, () => {
-        const x = demoTable('reference_items').find((i) => i.id === r.id)!;
-        Object.assign(x, { cleared, cleared_by: cleared ? userId : null, cleared_at: cleared ? new Date().toISOString() : null });
-      });
+      await rpc('set_reference_cleared', { _id: r.id, _cleared: cleared });
       toast(cleared ? 'Cleared for sharing' : 'Removed from sharing');
     } catch (e) {
       toast((e as Error).message, 'error');
@@ -45,7 +42,7 @@ export function ReferenceLibrary() {
       if (edit.id) await updateRow('reference_items', edit.id, row);
       else {
         await insertRow('reference_items', { ...row, cleared: false, cleared_by: null, cleared_at: null });
-        await notify('u-boss', 'Reference waiting to be cleared', row.title, '/os/share', 'approval');
+        await notifyRole('boss', 'Reference waiting to be cleared', row.title, '/os/share', 'approval');
       }
       setEdit(null);
       toast(edit.id ? 'Saved' : 'Added — waiting for boss or GM/CFO to clear it');
@@ -56,13 +53,13 @@ export function ReferenceLibrary() {
   const list = rows.filter((r) => (tab === 'cleared' ? r.cleared : !r.cleared));
   return (
     <div>
-      <PageTitle tag="SHARE STUDIO" title="Reference library" sub="Only work cleared for sharing by the Boss or GM/CFO can go into a showcase.">
-        <div className="flex gap-2"><Link to="/os/share/showcases" className="btn-outline"><Sparkles size={16} />Showcases</Link><button type="button" className="btn-primary" onClick={() => setEdit({ kind: 'Film', year: new Date().getFullYear() })}><Plus size={16} />Add reference</button></div>
-      </PageTitle>
+      <PageHead tag="SHARE STUDIO" title="Reference library" sub="Only work cleared for sharing by the Boss or GM/CFO can go into a showcase.">
+        <div className="flex flex-wrap gap-2"><GoLink to="/os/share/showcases" className="btn-outline"><Sparkles size={16} />Showcases</GoLink><button type="button" className="btn-primary" onClick={() => setEdit({ kind: 'Film', year: new Date().getFullYear() })}><Plus size={16} />Add reference</button></div>
+      </PageHead>
       <Tabs value={tab} onChange={setTab} items={[{ value: 'cleared', label: 'Cleared for sharing', count: rows.filter((r) => r.cleared).length }, { value: 'pending', label: 'Not cleared', count: rows.filter((r) => !r.cleared).length }]} />
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {list.map((r) => (
-          <Card key={r.id} title={r.title} action={<button type="button" className="text-sm font-bold text-basil" onClick={() => setEdit(r)}>Edit</button>}>
+          <Card key={r.id} title={r.title} action={<button type="button" className="min-h-[44px] rounded-xl border border-basil-line bg-white px-3 text-sm font-bold text-basil" onClick={() => setEdit(r)}>Edit</button>}>
             <div className="mb-2 flex flex-wrap gap-1.5"><Pill tone="blue">{r.kind}</Pill><Pill tone="grey">{r.sector} · {r.year}</Pill>{r.cleared ? <Pill tone="green"><ShieldCheck size={12} />Cleared</Pill> : <Pill tone="amber"><Lock size={12} />Not cleared</Pill>}</div>
             <p className="m-0 text-sm text-basil-muted">{r.client_name}</p>
             <p className="m-0 mt-1 text-sm">{r.summary}</p>
@@ -70,7 +67,7 @@ export function ReferenceLibrary() {
             {clearer && <button type="button" className={`mt-3 min-h-[44px] ${r.cleared ? 'btn-outline' : 'btn-primary'}`} onClick={() => setCleared(r, !r.cleared)}>{r.cleared ? 'Withdraw clearance' : 'Clear for sharing'}</button>}
           </Card>
         ))}
-        {list.length === 0 && <Empty title="Nothing here" />}
+        {list.length === 0 && <Empty icon={<ShieldCheck />} title={tab === 'cleared' ? 'Nothing cleared yet' : 'Nothing waiting to be cleared'} sub={tab === 'cleared' ? 'Add finished work, then the Boss or GM/CFO clears it for sharing.' : undefined} />}
       </div>
       <Sheet open={!!edit} onClose={() => setEdit(null)} title={edit?.id ? 'Edit reference' : 'Add reference'}>
         {edit && (
@@ -104,17 +101,17 @@ export function useSignals() {
   };
 }
 
-export function ShowcasesList({ compact = false }: { compact?: boolean }) {
+export function ShowcasesList({ compact = false, lead: leadArg }: { compact?: boolean; lead?: string }) {
   const { rows } = useTable<Showcase>('showcases', { order: 'created_at', ascending: false });
   const { orgName, leads } = useCrm();
   const signals = useSignals();
   const { userId } = useActing();
   const people = usePeople();
-  const nav = useNavigate();
+  const go = useGo();
   const toast = useToast();
   const [params] = useSearchParams();
   const create = async () => {
-    const lead = leads.find((l) => l.id === params.get('lead'));
+    const lead = leads.find((l) => l.id === (leadArg ?? params.get('lead')));
     const me = people.find((p) => p.id === userId);
     const title = lead ? `Work for ${orgName(lead.organisation_id)}` : 'New showcase';
     const s = await insertRow<Showcase>('showcases', {
@@ -122,11 +119,11 @@ export function ShowcasesList({ compact = false }: { compact?: boolean }) {
       ctas: [{ label: 'Chat on WhatsApp', kind: 'whatsapp', url: `https://wa.me/${(me?.phone ?? '+255712000010').replace(/\D/g, '')}` }, { label: 'Book a 20-minute call', kind: 'book', url: '/contact' }],
       contact: { name: me?.full_name ?? 'Basil Media', role: 'Account Manager', phone: me?.phone ?? '', email: '', whatsapp: me?.phone ?? '' }, published: false, expires_on: isoPlus(30), created_by: userId,
     });
-    nav(`/os/share/showcases/${s.id}`);
+    go(`/os/share/showcases/${s.id}`);
   };
   return (
     <div className="flex flex-col gap-3">
-      {!compact && <div className="flex justify-end"><button type="button" className="btn-primary" onClick={create}><Plus size={16} />New showcase</button></div>}
+      <div className="flex sm:justify-end"><button type="button" className="btn-primary w-full sm:w-auto" onClick={create}><Plus size={16} />New showcase</button></div>
       {rows.map((s) => {
         const g = signals(s.id);
         return (
@@ -136,29 +133,30 @@ export function ShowcasesList({ compact = false }: { compact?: boolean }) {
               <span className="flex flex-wrap gap-1.5">{s.published ? <Pill tone="green">Live</Pill> : <Pill tone="grey">Draft</Pill>}<Pill tone={g.tone}><Flame size={12} />{g.temp} · {g.score}</Pill></span>
             </div>
             <div className="flex flex-wrap gap-3 text-sm text-basil-muted"><span><Eye size={13} className="mr-1 inline" />{g.views} views</span><span><Heart size={13} className="mr-1 inline" />{g.likes} likes</span><span><Sparkles size={13} className="mr-1 inline" />{g.needs} “I need this”</span><span>{g.ctas} CTA taps</span>{g.last && <span>last {dmy(g.last)}</span>}</div>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn-outline min-h-[44px]" onClick={() => copy(showcaseUrl(s.slug), toast)}><Copy size={15} />Copy link</button>
-              <a href={`/s/${s.slug}`} target="_blank" rel="noreferrer" className="btn-outline min-h-[44px]"><ExternalLink size={15} />Open</a>
-              {!compact && <Link to={`/os/share/showcases/${s.id}`} className="btn-primary min-h-[44px]">Edit</Link>}
-              {compact && s.contact.whatsapp && <a className="btn-primary min-h-[44px]" href={`https://wa.me/?text=${encodeURIComponent(`${s.title} — ${showcaseUrl(s.slug)}`)}`} target="_blank" rel="noreferrer">Send on WhatsApp</a>}
+            <div className={compact ? 'grid grid-cols-3 gap-2' : 'flex flex-wrap gap-2'}>
+              <button type="button" className="btn-outline px-2" onClick={() => copy(showcaseUrl(s.slug), toast)}><Copy size={15} />Copy</button>
+              <a href={`/s/${s.slug}`} target="_blank" rel="noreferrer" className="btn-outline px-2"><ExternalLink size={15} />Open</a>
+              <GoLink to={`/os/share/showcases/${s.id}`} className={compact ? 'btn-outline px-2' : 'btn-primary'}>Edit</GoLink>
+              {compact && s.published && <a className="btn-primary col-span-3" href={`https://wa.me/?text=${encodeURIComponent(`${s.title} — ${showcaseUrl(s.slug)}`)}`} target="_blank" rel="noreferrer">Send on WhatsApp</a>}
             </div>
           </div>
         );
       })}
-      {rows.length === 0 && <Empty title="No showcases yet" />}
+      {rows.length === 0 && <Empty icon={<Sparkles />} title="No showcases yet" sub="Pick cleared work for a prospect and send them one link." />}
     </div>
   );
 }
-export const ShowcasesPage = () => (<div><PageTitle tag="SHARE STUDIO" title="Showcases" sub="Personalised pages of 1–12 cleared references. Views and reactions become lead signals (cold / warm / hot)." /><ShowcasesList /></div>);
+export const ShowcasesPage = () => (<div><PageHead tag="SHARE STUDIO" title="Showcases" sub="Personalised pages of 1–12 cleared references. Views and reactions become lead signals (cold / warm / hot)." /><ShowcasesList /></div>);
 
-export function ShowcaseBuilder() {
-  const { id } = useParams();
+export function ShowcaseBuilder({ id: idArg }: { id?: string } = {}) {
+  const params = useParams();
+  const id = idArg ?? params.id;
   const { rows } = useTable<Showcase>('showcases', { eq: { id } });
   const { rows: refs } = useTable<ReferenceItem>('reference_items', { eq: { cleared: true } });
   const { orgs, leads } = useCrm();
   const signals = useSignals();
   const toast = useToast();
-  const nav = useNavigate();
+  const go = useGo();
   const [s, setS] = useState<Showcase | null>(null);
   useEffect(() => void (rows[0] && setS((x) => (x?.id === rows[0].id ? x : structuredClone(rows[0])))), [rows]);
   const picked = useMemo(() => (s ? s.item_ids.map((i) => refs.find((r) => r.id === i)).filter(Boolean) as ReferenceItem[] : []), [s, refs]);
@@ -173,6 +171,7 @@ export function ShowcaseBuilder() {
       if (!s.item_ids.length) throw new Error('Pick at least one item');
       const slug = slugify(s.slug) || slugify(s.title);
       await updateRow('showcases', s.id, { ...s, slug, published: publish ?? s.published, id: undefined, created_at: undefined });
+      setS({ ...s, slug, published: publish ?? s.published });
       toast(publish ? 'Published — link ready to share' : 'Saved');
     } catch (e) {
       toast((e as Error).message, 'error');
@@ -182,13 +181,14 @@ export function ShowcaseBuilder() {
   const g = signals(s.id);
   return (
     <div>
-      <PageTitle tag="SHARE STUDIO · SHOWCASE BUILDER" title={s.title} sub={showcaseUrl(s.slug)}>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn-outline" onClick={() => copy(showcaseUrl(s.slug), toast)}><Copy size={16} />Copy link</button>
-          <button type="button" className="btn-outline" onClick={() => save()}>Save</button>
-          <button type="button" className="btn-primary" onClick={() => save(!s.published)}>{s.published ? 'Unpublish' : 'Publish'}</button>
+      <PageHead tag="SHARE STUDIO · SHOWCASE BUILDER" title={s.title} sub={showcaseUrl(s.slug)}>
+        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+          <button type="button" className="btn-outline px-3" onClick={() => copy(showcaseUrl(s.slug), toast)}><Copy size={16} />Copy</button>
+          <button type="button" className="btn-outline px-3" onClick={() => save()}>Save</button>
+          <button type="button" className="btn-primary px-3" onClick={() => save(!s.published)}>{s.published ? 'Unpublish' : 'Publish'}</button>
+          {s.published && <a href={`/s/${s.slug}`} target="_blank" rel="noreferrer" className="btn-outline col-span-3"><ExternalLink size={16} />Open live page</a>}
         </div>
-      </PageTitle>
+      </PageHead>
       <div className="grid gap-4 xl:grid-cols-[420px_1fr]">
         <div className="flex flex-col gap-4">
           <Card title="Details">
@@ -207,6 +207,7 @@ export function ShowcaseBuilder() {
           </Card>
           <Card title={`Pick items (${s.item_ids.length}/12)`}>
             <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
+              {refs.length === 0 && <li className="text-sm text-basil-muted">No cleared references yet — add work in the reference library and ask the Boss or GM/CFO to clear it.</li>}
               {refs.map((r) => {
                 const on = s.item_ids.includes(r.id);
                 return (
@@ -231,7 +232,7 @@ export function ShowcaseBuilder() {
                   <input aria-label="Button link" className={`${inputCls} col-span-3`} value={c.url} onChange={(e) => setCta(i, { url: e.target.value })} />
                 </div>
               ))}
-              {s.ctas.length < 4 && <button type="button" className="border-0 bg-transparent p-0 text-left text-sm font-bold text-basil" onClick={() => setS({ ...s, ctas: [...s.ctas, { label: 'Call us', kind: 'call', url: `tel:${s.contact.phone}` }] })}>+ Button</button>}
+              {s.ctas.length < 4 && <button type="button" className="min-h-[44px] border-0 bg-transparent p-0 text-left text-sm font-bold text-basil" onClick={() => setS({ ...s, ctas: [...s.ctas, { label: 'Call us', kind: 'call', url: `tel:${s.contact.phone}` }] })}>+ Button</button>}
             </div>
           </Card>
           <Card title="Lead signals">
@@ -241,10 +242,10 @@ export function ShowcaseBuilder() {
             <ul className="m-0 mt-3 flex list-none flex-col gap-1 p-0 text-sm">
               {g.ev.slice(0, 8).map((e) => <li key={e.id} className="text-basil-muted">{new Date(e.created_at).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' })} · <b className="text-basil-ink">{e.kind === 'need' ? '“I need something like this”' : e.kind === 'like' ? '“I like this”' : e.kind}</b>{e.item_id && ` · ${refs.find((r) => r.id === e.item_id)?.title ?? ''}`}</li>)}
             </ul>
-            {s.lead_id && g.temp === 'hot' && <button type="button" className="btn-primary mt-3" onClick={() => nav(`/os/share/deals?lead=${s.lead_id}`)}>Hot lead — open a deal room</button>}
+            {s.lead_id && g.temp === 'hot' && <button type="button" className="btn-primary mt-3" onClick={() => go(`/os/share/deals?lead=${s.lead_id}`)}>Hot lead — open a deal room</button>}
           </Card>
         </div>
-        <div className="overflow-hidden rounded-[28px] border border-basil-line bg-[#F3F7FC]">
+        <div className="min-w-0 overflow-hidden rounded-[28px] border border-basil-line bg-[#F3F7FC]">
           <div className="border-b border-basil-line bg-white px-4 py-2 text-xs font-bold text-basil-muted">PREVIEW · {s.mode === 'linktree' ? 'Link tree' : 'Showcase'}</div>
           <ShowcaseView showcase={s} items={picked} onReact={() => undefined} />
         </div>
@@ -254,22 +255,22 @@ export function ShowcaseBuilder() {
 }
 
 // ---------- deal rooms ----------
-export function DealsList({ compact = false }: { compact?: boolean }) {
+export function DealsList({ compact = false, lead: leadArg }: { compact?: boolean; lead?: string }) {
   const { rows } = useTable<DealRoom>('deal_rooms', { order: 'created_at', ascending: false });
   const { leads, orgName } = useCrm();
   const { rows: proposals } = useTable<Proposal>('proposals');
   const { rows: shows } = useTable<Showcase>('showcases');
   const { userId } = useActing();
   const [params] = useSearchParams();
-  const [lead, setLead] = useState(params.get('lead') ?? '');
-  const nav = useNavigate();
+  const [lead, setLead] = useState(leadArg ?? params.get('lead') ?? '');
+  const go = useGo();
   const toast = useToast();
   const serious = leads.filter((l) => ['Meeting', 'Proposal Sent', 'Negotiation'].includes(l.stage));
   const create = async () => {
     const l = leads.find((x) => x.id === lead);
     if (!l) return toast('Choose a lead', 'error');
     const existing = rows.find((d) => d.lead_id === l.id);
-    if (existing) return nav(`/os/share/deals/${existing.id}`);
+    if (existing) return go(`/os/share/deals/${existing.id}`);
     const prop = proposals.find((p) => p.lead_id === l.id);
     const sh = shows.find((s) => s.lead_id === l.id);
     const d = await insertRow<DealRoom>('deal_rooms', {
@@ -277,34 +278,35 @@ export function DealsList({ compact = false }: { compact?: boolean }) {
       contract_id: null, contract_terms: '1. Scope. As in the proposal.\n2. Fees. Payable 40% on signing, 25% after the shoot, 20% on first cut, 15% on final delivery.\n3. Revisions. Two rounds per deliverable.\n4. Rights. Usage rights pass to the Client on full payment.\n5. Data. Personal data handled under the Tanzania Personal Data Protection Act, 2022.',
       deposit_pct: 40, deposit_paid_at: null, kickoff_at: null, step: sh ? (prop ? 2 : 1) : 0, signed_name: '', signed_at: null, signed_user_agent: '', prepared_by: userId, expires_on: isoPlus(30),
     });
-    nav(`/os/share/deals/${d.id}`);
+    go(`/os/share/deals/${d.id}`);
   };
   return (
     <div className="flex flex-col gap-3">
-      {!compact && (
-        <div className="flex flex-wrap items-end gap-2">
+      {(
+        <div className="flex flex-wrap items-end gap-2 [&>label]:min-w-0 [&>label]:flex-1">
           <Field label="Serious lead"><select className={inputCls} value={lead} onChange={(e) => setLead(e.target.value)}><option value="">Choose…</option>{serious.map((l) => <option key={l.id} value={l.id}>{l.title} · {orgName(l.organisation_id)}</option>)}</select></Field>
-          <button type="button" className="btn-primary min-h-[48px]" onClick={create}><Plus size={16} />Open deal room</button>
+          <button type="button" className={`btn-primary min-h-[48px] ${compact ? 'w-full' : ''}`} onClick={create}><Plus size={16} />Open deal room</button>
         </div>
       )}
       {rows.map((d) => {
         const pct = Math.round((Math.min(d.step, 6) / 6) * 100);
         return (
-          <Link key={d.id} to={`/os/share/deals/${d.id}`} className="flex flex-col gap-2 rounded-2xl border border-basil-line bg-white p-4 text-basil-ink no-underline">
+          <GoLink key={d.id} to={`/os/share/deals/${d.id}`} className="flex flex-col gap-2 rounded-2xl border border-basil-line bg-white p-4 text-basil-ink no-underline">
             <span className="flex flex-wrap items-start justify-between gap-2"><b>{d.title}</b><Pill tone={d.step >= 6 ? 'green' : d.step >= 3 ? 'amber' : 'blue'}>{d.step >= 6 ? 'Kicked off' : DEAL_STEPS[d.step]}</Pill></span>
             <span className="text-sm text-basil-muted">{d.client_name} · {tshShort(d.value)}</span>
             <div className="h-2 overflow-hidden rounded-full bg-basil-line"><div className="h-full rounded-full bg-basil" style={{ width: `${pct}%` }} /></div>
-          </Link>
+          </GoLink>
         );
       })}
-      {rows.length === 0 && <Empty title="No deal rooms yet" />}
+      {rows.length === 0 && <Empty icon={<Handshake />} title="No deal rooms yet" sub="Open one for a lead at Meeting, Proposal Sent or Negotiation." />}
     </div>
   );
 }
-export const DealsPage = () => (<div><PageTitle tag="SHARE STUDIO · DEAL ROOMS" title="Deal rooms" sub="Showcase → proposal → quotation → contract sign → deposit → kick-off, on one private page per serious lead." /><DealsList /></div>);
+export const DealsPage = () => (<div><PageHead tag="SHARE STUDIO · DEAL ROOMS" title="Deal rooms" sub="Showcase → proposal → quotation → contract sign → deposit → kick-off, on one private page per serious lead." /><DealsList /></div>);
 
-export function DealRoomAdmin() {
-  const { id } = useParams();
+export function DealRoomAdmin({ id: idArg }: { id?: string } = {}) {
+  const params = useParams();
+  const id = idArg ?? params.id;
   const { rows } = useTable<DealRoom>('deal_rooms', { eq: { id } });
   const d = rows[0];
   const { rows: proposals } = useTable<Proposal>('proposals');
@@ -332,24 +334,24 @@ export function DealRoomAdmin() {
     await patch({ kickoff_at: new Date(kick).toISOString(), step: 6 }, 'Kick-off booked');
     const l = leads.find((x) => x.id === d.lead_id) as Lead | undefined;
     if (l && l.stage !== 'Won') await moveLead(l, 'Won', userId).catch(() => undefined);
-    await notify('u-boss', 'Deal won', `${d.client_name} · ${d.title} · ${tshShort(d.value)}`, `/os/share/deals/${d.id}`, 'info');
+    await notifyRole('boss', 'Deal won', `${d.client_name} · ${d.title} · ${tshShort(d.value)}`, `/os/share/deals/${d.id}`, 'info');
   };
   return (
     <div>
-      <PageTitle tag="DEAL ROOM" title={d.client_name} sub={d.title}>
-        <div className="flex flex-wrap gap-2">
-          <button type="button" className="btn-outline" onClick={() => copy(dealUrl(d.token), toast)}><Copy size={16} />Copy client link</button>
-          <a className="btn-outline" href={`/d/${d.token}`} target="_blank" rel="noreferrer"><ExternalLink size={16} />Client view</a>
+      <PageHead tag="DEAL ROOM" title={d.client_name} sub={d.title}>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+          <button type="button" className="btn-outline px-3" onClick={() => copy(dealUrl(d.token), toast)}><Copy size={16} />Copy link</button>
+          <a className="btn-outline px-3" href={`/d/${d.token}`} target="_blank" rel="noreferrer"><ExternalLink size={16} />Client view</a>
         </div>
-      </PageTitle>
-      <div className="grid gap-4 xl:grid-cols-[1fr_380px]">
+      </PageHead>
+      <div className="flex flex-col-reverse gap-4 xl:grid xl:grid-cols-[1fr_380px]">
         <DealRoomView deal={d} proposal={proposal} contract={contract} showcaseSlug={show?.slug ?? null} internal />
         <div className="flex flex-col gap-3">
           <Card title="Move the deal forward">
             <div className="flex flex-col gap-3 text-sm">
               <Field label="Showcase"><select className={inputCls} value={d.showcase_id ?? ''} onChange={(e) => patch({ showcase_id: e.target.value || null, step: Math.max(d.step, e.target.value ? 1 : 0) }, 'Showcase linked')}><option value="">—</option>{shows.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}</select></Field>
               <Field label="Proposal"><select className={inputCls} value={d.proposal_id ?? ''} onChange={(e) => patch({ proposal_id: e.target.value || null, step: Math.max(d.step, e.target.value ? 2 : 1) }, 'Proposal linked')}><option value="">—</option>{proposals.map((p) => <option key={p.id} value={p.id}>{p.number} · {p.title}</option>)}</select></Field>
-              <Field label="Quotation link" hint="From the finance module (link only)."><div className="flex gap-2"><input className={inputCls} value={q || d.quotation_url} onChange={(e) => setQ(e.target.value)} placeholder="https://…" /><button type="button" className="btn-outline" onClick={() => patch({ quotation_url: q || d.quotation_url, step: Math.max(d.step, 3) }, 'Quotation shared — signing open')}>Save</button></div></Field>
+              <Field label="Quotation link" hint="From the finance module (link only). Saving it opens signing."><div className="flex gap-2"><input className={inputCls} value={q || d.quotation_url} onChange={(e) => setQ(e.target.value)} placeholder="https://…" /><button type="button" className="btn-outline shrink-0" onClick={() => patch({ quotation_url: q || d.quotation_url, step: Math.max(d.step, 3) }, 'Quotation shared — signing open')}>Save</button></div></Field>
               <Field label="Contract record"><select className={inputCls} value={d.contract_id ?? ''} onChange={(e) => patch({ contract_id: e.target.value || null }, 'Contract linked')}><option value="">—</option>{contracts.map((c) => <option key={c.id} value={c.id}>{c.number} · {c.title}</option>)}</select></Field>
               <Field label="Agreement text shown to the client"><textarea className={`${inputCls} h-32 py-2`} defaultValue={d.contract_terms} onBlur={(e) => e.target.value !== d.contract_terms && patch({ contract_terms: e.target.value }, 'Agreement updated')} disabled={!!d.signed_at} /></Field>
               {d.signed_at && !d.deposit_paid_at && <button type="button" className="btn-primary" onClick={() => patch({ deposit_paid_at: new Date().toISOString(), step: Math.max(d.step, 5) }, 'Deposit recorded')}>Deposit received ({d.deposit_pct}%)</button>}
@@ -368,9 +370,11 @@ export function DealRoomAdmin() {
 export function ShareQuick() {
   return (
     <div className="flex flex-col gap-4">
+      <h2 className="m-0 text-sm font-extrabold uppercase tracking-wide text-basil-muted">Showcases</h2>
       <ShowcasesList compact />
-      <h2 className="m-0 text-sm font-extrabold uppercase tracking-wide text-basil-muted">Deal rooms</h2>
+      <h2 className="m-0 mt-2 text-sm font-extrabold uppercase tracking-wide text-basil-muted">Deal rooms</h2>
       <DealsList compact />
+      <GoLink to="/os/share" className="btn-outline"><ShieldCheck size={16} />Reference library</GoLink>
     </div>
   );
 }

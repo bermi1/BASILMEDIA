@@ -1,5 +1,6 @@
 // Check-out flow (single items or kits with packing checklist), returns, and the "who has it now" board.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Bell, Boxes, Check, CheckCircle2, ChevronRight, ClipboardCheck, Clock, PackageCheck, Plus, Send } from 'lucide-react';
 import { insertRow, usePeople, useTable } from '@/os/lib/store';
 import { notify } from '@/os/lib/notify';
@@ -45,7 +46,12 @@ const Steps = ({ n, of }: { n: number; of: number }) => (
 );
 
 // ---------- guided check-out ----------
-export function CheckoutFlow({ initialGear }: { initialGear?: string }) {
+export function CheckoutFlow({ initialGear: fromProps }: { initialGear?: string }) {
+  const [params, setParams] = useSearchParams();
+  const [initialGear] = useState(() => fromProps ?? params.get('gear') ?? undefined);
+  useEffect(() => {
+    if (params.has('gear') && !fromProps) setParams((p) => (p.delete('gear'), p), { replace: true });
+  }, [params, fromProps, setParams]);
   const [mode, setMode] = useState<'items' | 'kit' | null>(initialGear ? 'items' : null);
   if (!mode) {
     return (
@@ -111,7 +117,7 @@ function ItemsFlow({ initialGear, onBack }: { initialGear?: string; onBack: () =
   const chosen = gear.filter((g) => sel.includes(g.id));
   return (
     <div className="flex flex-col gap-3">
-      <button type="button" onClick={() => (step ? setStep(step - 1) : onBack())} className="flex items-center gap-1 self-start border-0 bg-transparent p-0 text-sm font-bold text-basil"><ArrowLeft size={16} />Back</button>
+      <button type="button" onClick={() => (step ? setStep(step - 1) : onBack())} className="flex min-h-[44px] items-center gap-1 self-start border-0 bg-transparent p-0 text-sm font-bold text-basil"><ArrowLeft size={16} />Back</button>
       <Steps n={step} of={4} />
       {step === 0 && (
         <>
@@ -182,7 +188,7 @@ function KitFlow({ onBack }: { onBack: () => void }) {
   if (packing) return <KitChecklist kc={packing} mode="out" onDone={() => { setPacking(null); setKit(null); onBack(); }} />;
   return (
     <div className="flex flex-col gap-3">
-      <button type="button" onClick={() => (kit ? setKit(null) : onBack())} className="flex items-center gap-1 self-start border-0 bg-transparent p-0 text-sm font-bold text-basil"><ArrowLeft size={16} />Back</button>
+      <button type="button" onClick={() => (kit ? setKit(null) : onBack())} className="flex min-h-[44px] items-center gap-1 self-start border-0 bg-transparent p-0 text-sm font-bold text-basil"><ArrowLeft size={16} />Back</button>
       {!kit ? (
         <>
           <h2 className="m-0 text-lg font-extrabold">Choose a kit</h2>
@@ -258,7 +264,7 @@ export function KitChecklist({ kc, mode, onDone }: { kc: KitCheckout; mode: 'out
   };
   return (
     <div className="flex flex-col gap-3">
-      <button type="button" onClick={onDone} className="flex items-center gap-1 self-start border-0 bg-transparent p-0 text-sm font-bold text-basil"><ArrowLeft size={16} />Back</button>
+      <button type="button" onClick={onDone} className="flex min-h-[44px] items-center gap-1 self-start border-0 bg-transparent p-0 text-sm font-bold text-basil"><ArrowLeft size={16} />Back</button>
       <div className="rounded-3xl bg-gradient-to-br from-amber-600 to-amber-700 p-4 text-white">
         <span className="font-mono text-[11px] tracking-widest opacity-80">KIT · {kit?.code} · {mode === 'out' ? 'PACKING OUT' : 'CHECK IN'}</span>
         <b className="mt-1 block text-xl">{kit?.name}</b>

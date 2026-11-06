@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Boxes, CalendarRange, Camera, ClipboardList, ConciergeBell, Droplets, HandCoins, PackageCheck, Plus, QrCode, TrendingUp, Truck, Warehouse, Wrench } from 'lucide-react';
-import { demoTable } from '@/os/lib/store';
-import { isDemo } from '@/lib/supabase';
+import { fetchRows } from '@/os/lib/store';
 import { PageTitle } from '@/os/OsLayout';
 import { Card, Stat, Tabs, tshShort } from '@/os/ui';
 import type { OsModule } from '../types';
@@ -17,7 +16,6 @@ import { RentalAgreement, RentalsPanel } from './rentals';
 import { DeskBoard, ParcelsPanel, RoomsBoard, SignInForm, VisitorLog, WalkInEnquiry } from './reception';
 import { CurrentTrip, TripHistory, TripsList, VehiclePanel } from './transport';
 import { useTable } from '@/os/lib/store';
-import './seed';
 
 function StoreHome() {
   const { rows: gear } = useGear();
@@ -80,29 +78,22 @@ function TransportPage() {
   ), TRANSPORT_ROLES);
 }
 
-const overdueBadge = () => {
-  if (!isDemo) return 0;
-  try {
-    return (demoTable('gear_checkouts') as unknown as Checkout[]).filter(isOverdue).length;
-  } catch {
-    return 0;
-  }
-};
+const overdueBadge = async () => (await fetchRows<Checkout>('gear_checkouts', { eq: { status: 'out' } })).filter(isOverdue).length;
 
 export const storeModule: OsModule = {
   key: 'store',
   section: 'OPERATIONS',
   nav: [
     { to: '/os/store', label: 'Media store', icon: Warehouse, roles: STORE_ROLES, badge: overdueBadge },
-    { to: '/os/store/gear', label: 'Gear register', icon: Camera, roles: STORE_ROLES },
-    { to: '/os/store/checkout', label: 'Check out', icon: PackageCheck, roles: STORE_ROLES },
-    { to: '/os/store/returns', label: 'Returns', icon: ClipboardList, roles: STORE_ROLES },
-    { to: '/os/store/kits', label: 'Kits', icon: Boxes, roles: STORE_ROLES },
-    { to: '/os/store/reservations', label: 'Reservations', icon: CalendarRange, roles: STORE_ROLES },
-    { to: '/os/store/maintenance', label: 'Maintenance', icon: Wrench, roles: STORE_ROLES },
-    { to: '/os/store/consumables', label: 'Consumables', icon: Droplets, roles: STORE_ROLES },
-    { to: '/os/store/stocktake', label: 'Stock-take', icon: QrCode, roles: STORE_ROLES },
-    { to: '/os/store/rentals', label: 'Outside rentals', icon: HandCoins, roles: STORE_ROLES },
+    { to: '/os/store/gear', label: 'Gear register', icon: Camera, roles: ['storekeeper'] },
+    { to: '/os/store/checkout', label: 'Check out', icon: PackageCheck, roles: ['storekeeper'] },
+    { to: '/os/store/returns', label: 'Returns', icon: ClipboardList, roles: ['storekeeper'] },
+    { to: '/os/store/kits', label: 'Kits', icon: Boxes, roles: ['storekeeper'] },
+    { to: '/os/store/reservations', label: 'Reservations', icon: CalendarRange, roles: ['storekeeper'] },
+    { to: '/os/store/maintenance', label: 'Maintenance', icon: Wrench, roles: ['storekeeper'] },
+    { to: '/os/store/consumables', label: 'Consumables', icon: Droplets, roles: ['storekeeper'] },
+    { to: '/os/store/stocktake', label: 'Stock-take', icon: QrCode, roles: ['storekeeper'] },
+    { to: '/os/store/rentals', label: 'Outside rentals', icon: HandCoins, roles: ['storekeeper'] },
     { to: '/os/store/roi', label: 'Gear ROI', icon: TrendingUp, roles: STORE_ROLES },
     { to: '/os/reception', label: 'Reception', icon: ConciergeBell, roles: ['receptionist'] },
     { to: '/os/transport', label: 'Transport', icon: Truck, roles: ['driver', 'gm_cfo'] },

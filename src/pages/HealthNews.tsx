@@ -1,147 +1,116 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ArrowRight, Briefcase, CalendarPlus } from 'lucide-react';
+import { Briefcase } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { useRows } from '@/hooks/useData';
+import { supabase } from '@/lib/supabase';
+import { LiveHealthFeed } from '@/components/LiveHealthFeed';
+import { UpcomingHealthEvents } from '@/components/UpcomingHealthEvents';
 import { useSeo } from '@/hooks/useSeo';
 import { fmtDate } from '@/lib/format';
 import { Media } from '@/components/Media';
 import { Reveal } from '@/components/Reveal';
 import { SubscribeForm } from '@/components/SubscribeForm';
-import { PageHero } from '@/components/PageHero';
-import { NEWS_DESKS } from '@/lib/types';
-
-function icsHref(title: string, date: string, where: string) {
-  const d = date.replace(/-/g, '');
-  const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Basil Media//Health Brief//EN', 'BEGIN:VEVENT', `UID:${d}-${title.length}@basilmedia`, `DTSTART;VALUE=DATE:${d}`, `SUMMARY:${title}`, `LOCATION:${where}`, 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-  return `data:text/calendar;charset=utf-8,${encodeURIComponent(body)}`;
-}
-
-const DESK_LINE: Record<string, string> = {
-  Health: 'Policy, research, CPD and alerts for health professionals.',
-  'Youth & Opportunities': 'Jobs, internships, grants and competitions for young Tanzanians.',
-  Innovation: 'Startups, tech and the people building what comes next.',
-  'Capital & Business': 'Funding, markets and business insight you can act on.',
-  'Banking for Youth': 'Accounts, loans and bank programmes made for young people.',
-};
 
 export default function HealthNews() {
-  useSeo('Basil Brief — News', 'Health, youth opportunities, innovation, capital & business and banking for youth — curated by Basil Media.');
+  useSeo('Basil Health Brief — Health News', 'Policy, research, CPD and opportunities across Tanzania’s health sector, curated weekly by Basil Media.');
   const { rows: stories } = useRows('news_stories', { publishedOnly: true });
   const { rows: opps } = useRows('opportunities', { publishedOnly: true });
-  const { rows: events } = useRows('events', { publishedOnly: true });
-  const [desk, setDesk] = useState('All');
+  const [tag, setTag] = useState('All');
   const [oppKind, setOppKind] = useState('All');
-  const filtered = stories.filter((s) => desk === 'All' || s.sector === desk);
+  const tags = useMemo(() => ['All', ...Array.from(new Set(stories.map((s) => s.tag)))], [stories]);
+  const filtered = stories.filter((s) => tag === 'All' || s.tag === tag);
   const featured = filtered.find((s) => s.featured) ?? filtered[0];
   const rest = filtered.filter((s) => s !== featured);
-  const upcoming = events.filter((e) => e.starts_on >= new Date().toISOString().slice(0, 10)).slice(0, 5);
-  const oppKinds = ['All', ...Array.from(new Set(opps.map((o) => o.kind)))];
   const oppList = opps.filter((o) => oppKind === 'All' || o.kind === oppKind);
-  const showOpps = desk === 'All' || desk === 'Youth & Opportunities' || desk === 'Capital & Business';
 
   return (
     <>
-      <PageHero kicker="BASIL BRIEF" title={<>News that moves <span className="text-glow">Tanzania forward.</span></>}>
-        <div className="mt-5 flex flex-wrap gap-2">
-          <Link to="/subscribe" className="flex h-11 items-center gap-2 rounded-full bg-white px-5 text-[14px] font-semibold text-basil no-underline hover:bg-basil-ice">Subscribe free <ArrowRight size={16} /></Link>
-          <a href="#opportunities" className="flex h-11 items-center rounded-full border border-white/30 bg-white/10 px-5 text-[14px] font-semibold text-white no-underline backdrop-blur hover:bg-white/20 hover:text-white">Opportunities</a>
+      <section className="relative overflow-hidden text-white" style={{ background: 'radial-gradient(ellipse at 85% 10%, rgba(124,192,245,0.3), transparent 50%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
+        <div className="container-bm relative flex flex-wrap items-end gap-5 pb-6 pt-24 sm:gap-8 sm:pb-10 sm:pt-32">
+          <div className="min-w-0 flex-[1_1_520px]">
+            <div className="font-mono text-xs tracking-[0.2em] text-basil-haze">HEALTH NEWS · LIVE FROM VERIFIED SOURCES</div>
+            <h1 className="my-2 text-[clamp(26px,4.5vw,56px)] font-bold leading-[1.05] tracking-[-0.02em] sm:my-3">Basil Health <span className="text-basil-sky">Brief</span></h1>
+            <p className="m-0 max-w-[620px] text-[15px] text-basil-frost sm:text-lg">Health news from Tanzania, Africa and the world, collected automatically several times a day from trusted newsrooms and health agencies. Only the last 48 hours, only stories with their own photo, always with the source and a link to the original.</p>
+          </div>
+          <NewsStats />
         </div>
-      </PageHero>
-
-      <div className="sticky top-[76px] z-20 border-b border-basil-line bg-white/92 backdrop-blur-xl sm:top-[92px]">
-        <div role="tablist" aria-label="News desks" className="container-bm scrollbar-none flex gap-5 overflow-x-auto sm:gap-7">
-          {['All', ...NEWS_DESKS].map((d) => {
-            const on = desk === d;
-            const n = d === 'All' ? stories.length : stories.filter((s) => s.sector === d).length;
-            return (
-              <button key={d} type="button" role="tab" aria-selected={on} onClick={() => setDesk(d)} className={`relative flex h-12 shrink-0 items-center gap-1.5 whitespace-nowrap border-0 bg-transparent px-0 text-[14px] font-medium ${on ? 'text-basil-ink' : 'text-basil-muted hover:text-basil-ink'}`}>
-                {d}{n > 0 && <span className={`rounded-full px-1.5 text-[11px] font-bold ${on ? 'bg-basil text-white' : 'bg-basil-mist text-basil-muted'}`}>{n}</span>}
-                {on && <motion.span layoutId="desk-line" className="absolute inset-x-0 -bottom-px h-[3px] rounded-full bg-basil" />}
+        <div className={`container-bm relative pb-6 ${stories.length ? '' : 'hidden'}`}>
+          <div role="group" aria-label="Filter by topic" className="scrollbar-none flex gap-2 overflow-x-auto">
+            {tags.map((t) => (
+              <button key={t} type="button" aria-pressed={tag === t} onClick={() => setTag(t)} className={`min-h-[44px] shrink-0 rounded-full px-4 text-sm font-semibold ${tag === t ? 'border-0 bg-white text-basil' : 'border border-white/35 bg-transparent text-white hover:bg-white/10'}`}>
+                {t} <span className="opacity-60">{t === 'All' ? stories.length : stories.filter((s) => s.tag === t).length}</span>
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
+      </section>
 
-      <div className="container-bm grid gap-8 py-7 sm:py-10 lg:grid-cols-[1fr_320px] lg:gap-10">
+      <div className="container-bm py-8 sm:py-12">
         <div className="min-w-0">
-          {desk !== 'All' && <p className="m-0 mb-5 text-[14.5px] text-basil-muted">{DESK_LINE[desk]}</p>}
-          {featured ? (
+          <LiveHealthFeed />
+          <div className="mt-10 sm:mt-14"><UpcomingHealthEvents /></div>
+          {stories.length > 0 && <h2 className="m-0 mb-4 mt-10 text-2xl font-extrabold sm:mt-14">From Basil Media</h2>}
+          {featured && (
             <Reveal>
-              <Link to={`/health-news/${featured.id}`} className="glow-card group mb-6 grid overflow-hidden rounded-[22px] border border-basil-line bg-white text-basil-ink no-underline hover:text-basil-ink md:grid-cols-2">
-                <Media src={featured.image_url} index={0} overlay={false} className="min-h-[180px] md:min-h-[260px]" />
-                <div className="flex flex-col gap-2 p-5 sm:p-7">
-                  <div className="flex flex-wrap gap-1.5 text-[11px] font-bold uppercase tracking-wide"><span className="text-basil">{featured.sector}</span><span className="text-basil-muted">· {featured.tag}</span></div>
-                  <h2 className="m-0 text-[20px] font-bold leading-tight group-hover:text-basil sm:text-[26px]">{featured.title}</h2>
-                  <p className="m-0 line-clamp-3 text-[14.5px] text-basil-muted">{featured.dek}</p>
-                  <span className="mt-auto pt-2 text-[12.5px] text-basil-muted">{fmtDate(featured.published_at)} · {featured.read_minutes} min read</span>
+              <Link to={`/health-news/${featured.id}`} className="group mb-7 grid overflow-hidden rounded-[22px] sm:mb-10 sm:rounded-[28px] border border-basil-line bg-white text-basil-ink no-underline transition hover:shadow-card hover:text-basil-ink md:grid-cols-2">
+                <Media src={featured.image_url} index={0} overlay={false} className="min-h-[170px] sm:min-h-[240px]" />
+                <div className="flex flex-col gap-2.5 p-4 sm:gap-3 sm:p-8">
+                  <div className="flex gap-2 text-xs font-bold"><span className="rounded-full bg-basil px-2.5 py-1 text-white">Featured</span><span className="rounded-full bg-basil-ice px-2.5 py-1 text-basil-deep">{featured.tag}</span></div>
+                  <h2 className="m-0 text-[20px] font-extrabold leading-tight group-hover:text-basil sm:text-[28px]">{featured.title}</h2>
+                  <p className="m-0 text-basil-muted">{featured.dek}</p>
+                  <div className="mt-auto flex justify-between text-sm text-basil-muted"><span>{fmtDate(featured.published_at)} · {featured.read_minutes} min read</span><span className="font-bold text-basil">Read the brief ›</span></div>
                 </div>
               </Link>
             </Reveal>
-          ) : (
-            <div className="rounded-[22px] border border-dashed border-basil-edge bg-basil-mist px-6 py-12 text-center">
-              <b className="block">New stories land here every week.</b>
-              <span className="text-sm text-basil-muted">Subscribe and we’ll send them to your phone first.</span>
-              <div className="mt-4"><Link to="/subscribe" className="btn-primary h-11 min-h-0">Subscribe free</Link></div>
-            </div>
           )}
-          <div className="flex flex-col divide-y divide-basil-line">
+          <div className={`mb-4 flex items-baseline justify-between ${stories.length ? "" : "hidden"}`}><h3 className="m-0 text-xl font-extrabold">{tag === 'All' ? 'Latest stories' : tag}</h3><span className="font-mono text-xs text-basil-muted">{rest.length} STORIES</span></div>
+          <div className="grid gap-2.5 sm:grid-cols-2 sm:gap-4">
             {rest.map((s, i) => (
-              <Link key={s.id} to={`/health-news/${s.id}`} className="group flex gap-3.5 py-4 text-basil-ink no-underline hover:text-basil-ink">
-                <Media src={s.image_url} index={i + 1} overlay={false} className="h-[78px] w-[104px] shrink-0 rounded-xl sm:h-[96px] sm:w-[150px]" />
-                <div className="min-w-0 flex-1">
-                  <span className="text-[11px] font-bold uppercase tracking-wide text-basil">{s.sector}</span>
-                  <h3 className="m-0 mt-0.5 line-clamp-2 text-[15px] font-semibold leading-snug group-hover:text-basil sm:text-[17px]">{s.title}</h3>
-                  <span className="text-[12px] text-basil-muted">{fmtDate(s.published_at)} · {s.read_minutes} min</span>
-                </div>
-              </Link>
+              <Reveal key={s.id} delay={i * 0.04}>
+                <Link to={`/health-news/${s.id}`} className="group flex h-full overflow-hidden rounded-[18px] border border-basil-line bg-white text-basil-ink no-underline transition hover:-translate-y-1 hover:shadow-card hover:text-basil-ink sm:flex-col sm:rounded-3xl">
+                  <Media src={s.image_url} index={i + 1} overlay={false} className="w-[104px] shrink-0 sm:h-40 sm:w-auto" />
+                  <div className="flex min-w-0 flex-1 flex-col gap-1 p-3 sm:gap-2 sm:p-5">
+                    <span className="text-xs font-bold text-basil">{s.tag}</span>
+                    <h3 className="m-0 line-clamp-3 text-[15px] font-extrabold leading-snug group-hover:text-basil sm:text-lg">{s.title}</h3>
+                    <div className="mt-auto flex justify-between text-[12px] text-basil-muted sm:text-[13px]"><span>{fmtDate(s.published_at)}</span><span>{s.read_minutes} min</span></div>
+                  </div>
+                </Link>
+              </Reveal>
             ))}
           </div>
+          {stories.length > 0 && !rest.length && !featured && <p className="text-basil-muted">No stories in this topic yet.</p>}
 
-          {showOpps && (
-            <section id="opportunities" aria-labelledby="opp-h" className="mt-8 scroll-mt-40 rounded-[22px] bg-basil-mist p-4 sm:p-6">
-              <div className="mb-4">
-                <div className="kicker">OPPORTUNITIES BOARD</div>
-                <h2 id="opp-h" className="m-0 mt-1 text-[19px] font-bold sm:text-2xl">Jobs, grants, funding &amp; competitions</h2>
-              </div>
-              <div role="group" aria-label="Opportunity type" className="scrollbar-none -mx-1 mb-3 flex gap-1.5 overflow-x-auto px-1">
-                {oppKinds.map((k) => <button key={k} type="button" aria-pressed={oppKind === k} onClick={() => setOppKind(k)} className={`h-9 shrink-0 whitespace-nowrap rounded-full px-3.5 text-[13px] font-medium ${oppKind === k ? 'border-0 bg-basil text-white' : 'border border-basil-edge bg-white text-basil-deep'}`}>{k}</button>)}
-              </div>
-              <div className="flex flex-col gap-2">
-                {oppList.map((o) => (
-                  <a key={o.id} href={o.link || undefined} target="_blank" rel="noreferrer" className="flex items-center gap-3 rounded-2xl border border-basil-line bg-white p-3.5 text-basil-ink no-underline hover:border-basil-soft hover:text-basil-ink">
-                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-basil-ice text-basil"><Briefcase size={18} /></span>
-                    <span className="min-w-0 flex-1"><b className="block truncate text-[14.5px]">{o.title}</b><span className="block truncate text-[12.5px] text-basil-muted">{o.org} · {o.location} · closes {fmtDate(o.closes_on)}</span></span>
-                    <span className="hidden rounded-full bg-basil-ice px-2.5 py-1 text-[11px] font-bold text-basil-deep sm:inline">{o.kind}</span>
-                  </a>
+
+          {opps.length > 0 && (
+          <section aria-labelledby="opp-h" className="mt-8 rounded-[22px] bg-basil-mist p-4 sm:mt-12 sm:rounded-[28px] sm:p-8">
+            <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+              <div><div className="kicker">OPPORTUNITIES BOARD</div><h2 id="opp-h" className="m-0 mt-1 text-2xl font-extrabold">Jobs, fellowships &amp; calls for abstracts</h2></div>
+              <div role="group" aria-label="Opportunity type" className="scrollbar-none -mx-1 flex gap-1.5 overflow-x-auto px-1 sm:flex-wrap">
+                {['All', 'Job', 'Fellowship', 'Scholarship', 'Call for abstracts'].map((k) => (
+                  <button key={k} type="button" aria-pressed={oppKind === k} onClick={() => setOppKind(k)} className={`min-h-[40px] shrink-0 rounded-full px-3.5 text-sm font-semibold ${oppKind === k ? 'border-0 bg-basil text-white' : 'border border-basil-edge bg-white text-basil-deep'}`}>{k}</button>
                 ))}
-                {!oppList.length && <p className="m-0 py-4 text-center text-sm text-basil-muted">New opportunities are posted every week.</p>}
               </div>
-            </section>
+            </div>
+            <div className="flex flex-col gap-2.5">
+              {oppList.map((o) => (
+                <div key={o.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-basil-line bg-white p-4">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-basil-ice text-basil"><Briefcase size={20} /></span>
+                  <div className="min-w-0 flex-[1_1_220px]"><div className="font-bold">{o.title}</div><div className="text-sm text-basil-muted">{o.org} · {o.location}</div></div>
+                  <span className="rounded-full bg-basil-ice px-3 py-1 text-xs font-bold text-basil-deep">{o.kind}</span>
+                  <span className="text-sm text-basil-muted">Closes {fmtDate(o.closes_on)}</span>
+                  {o.link && <a href={o.link} target="_blank" rel="noreferrer" className="btn-outline h-10 min-h-0 px-4 text-sm">Apply</a>}
+                </div>
+              ))}
+              {!oppList.length && <p className="m-0 text-basil-muted">Nothing open right now in this category.</p>}
+            </div>
+          </section>
           )}
         </div>
 
-        <aside className="flex flex-col gap-5">
-          <section aria-labelledby="cpd-h" className="rounded-[22px] border border-basil-line p-5">
-            <div className="kicker">CALENDAR</div>
-            <h2 id="cpd-h" className="m-0 mb-4 mt-1 text-[17px] font-bold">Upcoming events</h2>
-            <div className="flex flex-col gap-3">
-              {upcoming.map((e) => {
-                const d = new Date(`${e.starts_on}T12:00:00`);
-                return (
-                  <div key={e.id} className="flex items-center gap-3">
-                    <div className="flex w-12 shrink-0 flex-col items-center rounded-xl bg-basil-ice py-1.5 text-basil-deep"><span className="text-[10px] font-bold uppercase">{d.toLocaleString('en-GB', { month: 'short' })}</span><span className="font-display text-lg font-bold leading-none">{d.getDate()}</span></div>
-                    <div className="min-w-0 flex-1"><div className="truncate text-[14px] font-semibold">{e.title}</div><div className="truncate text-[12px] text-basil-muted">{e.venue}{e.cpd ? ` · ${e.cpd}` : ''}</div></div>
-                    <a href={icsHref(e.title, e.starts_on, e.venue)} download={`${e.title}.ics`} aria-label={`Add ${e.title} to calendar`} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-basil-edge text-basil hover:bg-basil-ice"><CalendarPlus size={17} /></a>
-                  </div>
-                );
-              })}
-              {!upcoming.length && <p className="m-0 text-sm text-basil-muted">No upcoming events listed.</p>}
-            </div>
-          </section>
-        </aside>
       </div>
+
+      <SubscribeSection />
     </>
   );
 }
@@ -149,12 +118,55 @@ export default function HealthNews() {
 export function SubscribeSection({ source = 'health-news', standalone }: { source?: string; standalone?: boolean }) {
   return (
     <section id="subscribe" className="scroll-mt-24 text-white" style={{ background: 'radial-gradient(ellipse at 10% 10%, rgba(124,192,245,0.3), transparent 50%), linear-gradient(160deg, #0F6EC2, #0A2F5C 60%, #061E3D)' }}>
-      <div className={`container-bm max-w-[460px] pb-12 ${standalone ? 'pt-24 sm:pt-32' : 'pt-10'}`}>
-        <div className="font-mono text-[11px] tracking-[0.2em] text-basil-haze">BASIL BRIEF · JIUNGE</div>
-        <h1 className="mb-1 mt-2 text-[26px] font-bold leading-tight sm:text-[32px]">Get the brief every Monday.</h1>
-        <p className="m-0 mb-5 text-[14px] text-basil-frost">Free. Pick your topics.</p>
+      <div className={`container-bm grid items-center gap-6 pb-10 sm:gap-10 sm:pb-16 lg:grid-cols-[1fr_1.2fr] ${standalone ? 'pt-24 sm:pt-32' : 'pt-10 sm:pt-16'}`}>
+        <div>
+          <div className="font-mono text-xs tracking-[0.2em] text-basil-haze">SUBSCRIBE · JIUNGE</div>
+          <h2 className="my-2 text-[clamp(22px,3.4vw,42px)] font-bold leading-[1.1] sm:my-3">Health news and events,<br /><span className="text-basil-sky">on your phone.</span></h2>
+          <p className="m-0 max-w-[460px] text-[15px] text-basil-frost sm:text-lg">The week's health news from Tanzania, Africa and the world, upcoming health events, and urgent alerts when they matter.</p>
+          <ul className="mt-4 hidden list-none flex-col gap-2.5 p-0 sm:mt-6 sm:flex">
+            {['Free for health workers', 'Stop anytime — reply STOP', 'Your data stays in line with the PDPA 2022'].map((x) => (
+              <li key={x} className="flex items-center gap-2.5"><span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20"><Check size={14} /></span>{x}</li>
+            ))}
+          </ul>
+        </div>
         <SubscribeForm source={source} />
       </div>
     </section>
+  );
+}
+
+/** Live figures about the news feed, straight from the database. */
+function NewsStats() {
+  const [st, setSt] = useState<{ stories: number; critical: number; sources: number; tz: number; updated: string } | null>(null);
+  useEffect(() => {
+    const since = new Date(Date.now() - 48 * 36e5).toISOString();
+    const head = { count: 'exact' as const, head: true };
+    Promise.all([
+      supabase.from('health_feed_items').select('id', head).gte('published_at', since).neq('image_url', ''),
+      supabase.from('health_feed_items').select('id', head).gte('published_at', since).neq('image_url', '').eq('critical', true),
+      supabase.from('health_feed_items').select('id', head).gte('published_at', since).neq('image_url', '').eq('zone', 'tanzania'),
+      supabase.from('news_sources').select('id', head).eq('enabled', true),
+      supabase.from('news_sources').select('last_fetched_at').eq('enabled', true).order('last_fetched_at', { ascending: false, nullsFirst: false }).limit(1),
+    ]).then(([a, c, t, src, last]) => setSt({ stories: a.count ?? 0, critical: c.count ?? 0, tz: t.count ?? 0, sources: src.count ?? 0, updated: (last.data?.[0] as { last_fetched_at?: string } | undefined)?.last_fetched_at ?? '' }));
+  }, []);
+  const ago = (iso: string) => { if (!iso) return '—'; const m = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000)); return m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
+  const tiles: [string, string][] = [
+    [st ? String(st.stories) : '·', 'stories, last 48 h'],
+    [st ? String(st.tz) : '·', 'from Tanzania'],
+    [st ? String(st.critical) : '·', 'critical alerts'],
+    [st ? String(st.sources) : '·', 'verified sources'],
+  ];
+  return (
+    <div className="w-full flex-[0_1_380px] rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl sm:p-5">
+      <div className="grid grid-cols-4 gap-2 sm:grid-cols-2 sm:gap-3">
+        {tiles.map(([v, l]) => (
+          <div key={l} className="rounded-2xl bg-white/10 px-2 py-2.5 text-center sm:px-3 sm:py-3 sm:text-left">
+            <b className="block font-display text-xl leading-none sm:text-3xl">{v}</b>
+            <span className="mt-1 block text-[10.5px] leading-tight text-basil-haze sm:text-xs">{l}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2 text-[11.5px] text-basil-haze sm:text-xs"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />Updated {st ? ago(st.updated) : '…'} · refreshes every 2 hours</div>
+    </div>
   );
 }

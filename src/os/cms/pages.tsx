@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Download, ExternalLink, ImagePlus, Images, Inbox, Loader2, QrCode, RotateCcw, ScanFace, Users, Video } from 'lucide-react';
 import { indexGallery, labelCluster, loadClusters, rebuildClusters, type Cluster, type FaceBox, type IndexProgress } from '@/lib/face';
+import { Link } from 'react-router-dom';
+import { Download, ExternalLink, ImagePlus, Images, Inbox, Loader2, QrCode, ScanFace, Users, Video } from 'lucide-react';
 import { useRows, useSettings } from '@/hooks/useData';
-import { resetDemo, save, saveSettings, remove } from '@/lib/db';
+import { save, saveSettings, remove } from '@/lib/db';
 import { uploadFile } from '@/lib/storage';
-import { isDemo } from '@/lib/supabase';
 import { fmtDate } from '@/lib/format';
 import type { Booking, Gallery, MediaItem, SiteSettings, Stat, Subscriber } from '@/lib/types';
 import { FieldInput, type Field } from './fields';
@@ -17,15 +16,13 @@ export function CmsOverview() {
   const counts = {
     projects: useRows('projects_public').rows.length,
     partners: useRows('partners').rows.length,
-    highlights: useRows('highlights').rows.length,
     team: useRows('team').rows.length,
     galleries: useRows('galleries').rows.length,
     news: useRows('news_stories').rows.length,
   };
   const { rows: bookings } = useRows('bookings');
-  const toast = useToast();
   const cards: [string, number, string][] = [
-    ['Projects', counts.projects, '/os/website/projects'], ['Partners', counts.partners, '/os/website/partners'], ['Highlights', counts.highlights, '/os/website/highlights'],
+    ['Projects', counts.projects, '/os/website/projects'], ['Partners', counts.partners, '/os/website/partners'],
     ['Team', counts.team, '/os/website/team'], ['Galleries', counts.galleries, '/os/website/galleries'], ['News stories', counts.news, '/os/website/news'],
     ['Bookings', bookings.length, '/os/website/bookings'],
   ];
@@ -46,12 +43,6 @@ export function CmsOverview() {
           {!bookings.length && <li className="py-3 text-sm text-basil-muted">No bookings yet. They appear here as soon as someone sends the form.</li>}
         </ul>
       </div>
-      {isDemo && (
-        <div className="mt-6 rounded-2xl bg-amber-50 p-5 text-sm text-amber-900">
-          <b>Demo mode.</b> Content is saved in this browser only. Connect Supabase (see README) so edits go live for every visitor.
-          <button type="button" onClick={() => { if (confirm('Reset all demo content to the starter set?')) { resetDemo(); toast('Demo content reset'); } }} className="ml-3 inline-flex items-center gap-1 border-0 bg-transparent font-bold text-amber-900 underline"><RotateCcw size={14} />Reset demo content</button>
-        </div>
-      )}
     </>
   );
 }
@@ -78,6 +69,10 @@ const GROUPS: { title: string; fields: Field[] }[] = [
   { title: 'About us', fields: [
     { key: 'about_story', label: 'Company story', type: 'textarea' },
     { key: 'about_image_url', label: 'About picture', type: 'image', folder: 'site' },
+    { key: 'ceo_name', label: 'CEO name (landing page)', type: 'text' },
+    { key: 'ceo_title', label: 'CEO title', type: 'text' },
+    { key: 'ceo_message', label: 'A word from the CEO', type: 'textarea', help: 'Leave empty to use the standard message.' },
+    { key: 'ceo_photo_url', label: 'CEO photo', type: 'image', folder: 'site' },
     { key: 'mission', label: 'Mission', type: 'textarea' },
     { key: 'vision', label: 'Vision', type: 'textarea' },
     { key: 'company_profile_url', label: 'Company profile (PDF)', type: 'file', folder: 'documents' },
@@ -324,7 +319,6 @@ function GalleryMedia({ g, onBack }: { g: Gallery; onBack: () => void }) {
           <input ref={ref} type="file" multiple accept="image/*,video/*" className="hidden" onChange={(e) => uploadAll(e.target.files)} />
           <button type="button" className="btn-primary" onClick={() => ref.current?.click()}>Choose files</button>
         </div>
-        {isDemo && <span className="text-xs text-amber-800">Demo mode: files under 1.5 MB only. Connect storage for full-size uploads.</span>}
       </div>
       {queue.length > 0 && (
         <ul className="mb-5 grid list-none gap-1.5 p-0 sm:grid-cols-2">
@@ -337,7 +331,6 @@ function GalleryMedia({ g, onBack }: { g: Gallery; onBack: () => void }) {
           ))}
         </ul>
       )}
-      <FacePanel g={g} rows={rows} />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
         {rows.map((m) => (
           <div key={m.id} className="overflow-hidden rounded-2xl border border-basil-line bg-white">
@@ -354,11 +347,23 @@ function GalleryMedia({ g, onBack }: { g: Gallery; onBack: () => void }) {
           </div>
         ))}
       </div>
+      <FacePanel g={g} rows={rows} />
     </>
   );
 }
 
-// Bermi AI face indexing and the internal "People" view. Runs in this browser; only embeddings are stored.
+function downloadCsv(name: string, rows: Record<string, unknown>[]) {
+  if (!rows.length) return;
+  const keys = Object.keys(rows[0]);
+  const esc = (v: unknown) => `"${String(Array.isArray(v) ? v.join('; ') : v ?? '').replace(/"/g, '""')}"`;
+  const csv = [keys.join(','), ...rows.map((r) => keys.map((k) => esc(r[k])).join(','))].join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function FacePanel({ g, rows }: { g: Gallery; rows: MediaItem[] }) {
   const [prog, setProg] = useState<IndexProgress | null>(null);
   const [running, setRunning] = useState(false);
@@ -421,16 +426,4 @@ function FacePanel({ g, rows }: { g: Gallery; rows: MediaItem[] }) {
       )}
     </div>
   );
-}
-
-function downloadCsv(name: string, rows: Record<string, unknown>[]) {
-  if (!rows.length) return;
-  const keys = Object.keys(rows[0]);
-  const esc = (v: unknown) => `"${String(Array.isArray(v) ? v.join('; ') : v ?? '').replace(/"/g, '""')}"`;
-  const csv = [keys.join(','), ...rows.map((r) => keys.map((k) => esc(r[k])).join(','))].join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-  a.download = name;
-  a.click();
-  URL.revokeObjectURL(a.href);
 }

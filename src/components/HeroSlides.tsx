@@ -1,6 +1,8 @@
-// Crossfading, slowly zooming background photos for the hero (team, office, studio — set in the CMS).
-import { useEffect, useState } from 'react';
+// Crossfading hero photos (team, office, studio — set in the CMS). Each photo is shown whole (never cropped or
+// zoomed, so no heads are cut) over a soft blurred copy of itself that fills the rest of the hero.
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { Volume2, VolumeX } from 'lucide-react';
 import { parseVideo } from '@/lib/video';
 
 export function HeroSlides({ images, video, interval = 6000 }: { images: string[]; video?: string; interval?: number }) {
@@ -18,7 +20,12 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
   }, [i, images]);
   const v = parseVideo(video);
   if (v.kind === 'file') {
-    return <video aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" src={v.src} poster={images[0]} autoPlay muted loop playsInline preload="metadata" />;
+    // Built-in hero video: the same wide file on every screen (phones show it at its own 16:9 shape).
+    const builtIn = v.src.startsWith('/media/hero/') && v.src.endsWith('.mp4');
+    const src = v.src;
+    const poster = builtIn ? src.replace(/\.mp4$/, '-poster.jpg') : images[0];
+    if (reduce) return <img aria-hidden="true" src={poster} alt="" className="absolute inset-0 h-full w-full object-cover" />;
+    return <HeroVideo src={src} poster={poster} />;
   }
   if (v.kind === 'youtube') {
     return (
@@ -31,17 +38,10 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
   return (
     <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
       <AnimatePresence initial={false}>
-        <motion.img
-          key={images[i]}
-          src={images[i]}
-          alt=""
-          fetchPriority={i === 0 ? 'high' : 'auto'}
-          initial={{ opacity: 0, scale: 1.08 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ opacity: { duration: 1.2 }, scale: { duration: interval / 1000 + 1.2, ease: 'linear' } }}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
+        <motion.div key={images[i]} className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.2 }}>
+          <img src={images[i]} alt="" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-70 blur-2xl" />
+          <img src={images[i]} alt="" {...{ fetchpriority: i === 0 ? 'high' : 'auto' }} className="absolute inset-0 h-full w-full object-contain" />
+        </motion.div>
       </AnimatePresence>
       {images.length > 1 && (
         <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-1.5 sm:bottom-5">
@@ -49,5 +49,29 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
         </div>
       )}
     </div>
+  );
+}
+
+/** Background video: starts silent (browsers only autoplay muted video); a small button turns the music on. */
+function HeroVideo({ src, poster }: { src: string; poster: string }) {
+  const ref = useRef<HTMLVideoElement>(null);
+  const [muted, setMuted] = useState(true);
+  const toggle = () => {
+    const v = ref.current;
+    if (!v) return;
+    v.muted = !v.muted;
+    if (!v.muted) void v.play();
+    setMuted(v.muted);
+  };
+  return (
+    <>
+      <video ref={ref} key={src} aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" src={src} poster={poster} autoPlay muted loop playsInline preload="auto" />
+      {/* light Basil-blue coating: on brand, but the footage keeps its colour */}
+      <div aria-hidden="true" className="absolute inset-0 mix-blend-multiply" style={{ background: 'linear-gradient(135deg, rgba(15,110,194,0.28), rgba(10,47,92,0.12) 55%, rgba(43,134,218,0.22))' }} />
+      <button type="button" onClick={toggle} aria-pressed={!muted} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
+        className="absolute right-2 top-2 z-20 flex h-7 items-center gap-1 rounded-full border border-white/30 bg-black/30 px-2.5 text-[11px] sm:bottom-6 sm:left-6 sm:right-auto sm:top-auto sm:h-10 sm:gap-1.5 sm:px-3.5 sm:text-[13px] font-semibold text-white backdrop-blur-md transition hover:bg-black/50 sm:bottom-6 sm:left-6">
+        {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}{muted ? 'Sound on' : 'Sound off'}
+      </button>
+    </>
   );
 }

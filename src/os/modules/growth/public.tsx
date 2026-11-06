@@ -13,7 +13,7 @@ const Loading = () => <Frame><div className="flex min-h-screen items-center just
 const Missing = ({ what }: { what: string }) => (
   <Frame>
     <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center gap-3 px-6 text-center">
-      <img src="/logo.svg" alt="Basil Media" className="h-14 w-14" />
+      <img src="/brand/basil-media-logo.svg" alt="Basil Media" className="h-20 w-auto" />
       <h1 className="m-0 text-2xl font-extrabold">This {what} is not available</h1>
       <p className="m-0 text-[#4A5D78]">The link may have expired. Ask your Basil Media contact for a new one.</p>
       <a href="/" className="font-bold">Visit basilmedia.co.tz →</a>

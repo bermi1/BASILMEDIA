@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Images, MessageCircle, Phone, Plus, Star } from 'lucide-react';
 import { useActing } from '@/os/lib/session';
+import { docTotals, invoicePaid, invoiceStatus, type Invoice, type Payment } from '@/os/modules/finance/lib';
 import { fetchRows, insertRow, updateRow, usePeople } from '@/os/lib/store';
 import { notify } from '@/os/lib/notify';
 import { useToast } from '@/os/cms/toast';
-import { Avatar, Card, Empty, Field, Pill, Sheet, StageTracker, inputCls, tsh } from '@/os/ui';
+import { Avatar, Empty, Field, Pill, Sheet, StageTracker, inputCls, tsh } from '@/os/ui';
 import { REQUEST_STATUS, REQUEST_TYPES, balanceFor, dayLabel, dmy, isoPlus, monthKey, monthLabel, requestImpact, todayIso, type CalItem, type ClientRequest, type Retainer } from './lib';
 import { Section, useClients, useGalleries, useMyClient } from './kit';
 import { AllowanceRings, KIND_LABEL, WhoIsComing, YearCalendar, shootPill, signOffShoot, useRetainerData } from './retainers';
@@ -14,7 +15,7 @@ import { AllowanceRings, KIND_LABEL, WhoIsComing, YearCalendar, shootPill, signO
 function useClientCtx() {
   const { userId } = useActing();
   const { clientId, clientRole, loading } = useMyClient(userId);
-  const data = useRetainerData(clientId ?? '__none__');
+  const data = useRetainerData(clientId ?? '00000000-0000-0000-0000-000000000000');
   const client = useClients().find((c) => c.id === clientId);
   const retainer = data.retainers.find((r) => r.status === 'active') ?? data.retainers[0];
   return { userId, clientId, clientRole, loading, client, retainer, ...data };
@@ -103,11 +104,10 @@ function ItemSheet({ item, onClose }: { item: CalItem | null; onClose: () => voi
   const people = usePeople();
   const c = useClientCtx();
   const cur = item ? c.items.find((i) => i.id === item.id) ?? item : null;
-  const toggle = (i: number) => cur && updateRow('retainer_calendar', cur.id, { checklist: cur.checklist.map((x, j) => (j === i ? { ...x, done: !x.done } : x)) });
   return (
     <Sheet open={!!cur} onClose={onClose} title={cur ? `${KIND_LABEL[cur.kind]} · ${dmy(cur.date)}` : ''}>
       {cur && (cur.kind === 'shoot' || cur.kind === 'podcast') ? (
-        <WhoIsComing item={cur} people={people} onToggleCheck={toggle}>
+        <WhoIsComing item={cur} people={people}>
           {cur.status === 'Wrapped' && !cur.signoff && <SignOff item={cur} />}
           {cur.signoff && <p className="m-0 text-sm">You signed off: {'★'.repeat(cur.signoff.rating)} {cur.signoff.outcome === 'issue' ? '· issue reported' : ''}</p>}
         </WhoIsComing>
@@ -143,7 +143,7 @@ export function ClientRequests() {
         number: `REQ-${String(143 + c.requests.length).padStart(4, '0')}`, client_id: c.clientId, retainer_id: c.retainer.id, type: form.type, title: form.title, preferred_dates: form.dates.filter(Boolean), location: form.location, deliverables: form.deliverables, urgency: form.urgency,
         status: impact?.over ? 'Quote needed' : 'New', units: type.units, over_allowance: !!impact?.over, quote_amount: impact?.quote ?? 0, quote_status: impact?.over ? 'sent' : 'none', requested_by: c.userId, note: impact?.over ? 'Over allowance — estimated extra charge from the rate card; your account manager confirms.' : '',
       });
-      await notify(c.retainer.account_manager_id, 'New client request', `${c.client?.name} · ${form.title}`, '/os/retainers/requests', 'task');
+      // With Supabase the notify_client_request trigger tells the account manager.
       toast(impact?.over ? 'Sent — this is over your allowance, so it comes back as a quote' : 'Request sent');
       setForm(null);
     } catch (e) {
@@ -151,8 +151,13 @@ export function ClientRequests() {
     }
   };
   const decide = async (q: ClientRequest, ok: boolean) => {
-    await updateRow('client_requests', q.id, { quote_status: ok ? 'accepted' : 'declined', status: ok ? 'Reviewing' : 'Declined' });
-    toast(ok ? 'Quote accepted — we will schedule it' : 'Quote declined');
+    try {
+      await updateRow('client_requests', q.id, { quote_status: ok ? 'accepted' : 'declined', status: ok ? 'Reviewing' : 'Declined' });
+      if (c.retainer) await notify(c.retainer.account_manager_id, ok ? 'Quote accepted' : 'Quote declined', `${c.client?.name} · ${q.title}`, '/os/retainers/requests', 'task');
+      toast(ok ? 'Quote accepted — we will schedule it' : 'Quote declined');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
   };
   return (
     <div className="flex flex-col gap-4">
@@ -214,31 +219,48 @@ export function ClientWork() {
       <Section title="Deliverables">
         {deliveries.slice(0, 20).map((d) => (
           <div key={d.id} className="flex items-center justify-between gap-2 rounded-2xl bg-white p-3 text-sm">
-            <span><b className="block">{d.title}</b><span className="text-basil-muted">{dmy(d.date)}</span></span>
-            {d.gallery_slug ? <a href={`/g/${d.gallery_slug}`} className="font-bold">Open</a> : d.link ? <a href={d.link} target="_blank" rel="noreferrer" className="font-bold">Watch</a> : <Pill tone="green">Delivered</Pill>}
+            <span className="min-w-0"><b className="block">{d.title}</b><span className="text-basil-muted">{dmy(d.date)}</span></span>
+            {d.gallery_slug ? <a href={`/g/${d.gallery_slug}`} className="flex min-h-[44px] shrink-0 items-center rounded-full bg-[#E6F4F2] px-4 font-bold text-[#0F766E] no-underline">Open</a> : d.link ? <a href={d.link} target="_blank" rel="noreferrer" className="flex min-h-[44px] shrink-0 items-center rounded-full bg-[#E6F4F2] px-4 font-bold text-[#0F766E] no-underline">Watch</a> : <Pill tone="green">Delivered</Pill>}
           </div>
         ))}
+        {deliveries.length === 0 && <div className="rounded-2xl bg-white p-4 text-sm text-basil-muted">Nothing delivered yet.</div>}
       </Section>
     </div>
   );
 }
 
+const INV_LABEL: Record<string, [string, 'green' | 'red' | 'amber' | 'blue' | 'grey']> = { paid: ['Paid', 'green'], overdue: ['Overdue', 'red'], partially_paid: ['Part paid', 'amber'], sent: ['Due', 'blue'], viewed: ['Due', 'blue'], draft: ['Draft', 'grey'], cancelled: ['Cancelled', 'grey'] };
+
 export function ClientBilling() {
   const c = useClientCtx();
-  const [inv, setInv] = useState<Record<string, unknown>[] | null>(null);
+  const [data, setData] = useState<{ inv: Invoice[]; pay: Payment[] } | null>(null);
   useEffect(() => {
     if (!c.clientId) return;
-    fetchRows('invoices', { eq: { client_id: c.clientId } }).then(setInv).catch(() => setInv([]));
+    Promise.all([fetchRows<Invoice>('invoices', { eq: { client_id: c.clientId }, order: 'issue_date', ascending: false }), fetchRows<Payment>('invoice_payments').catch(() => [] as Payment[])])
+      .then(([inv, pay]) => setData({ inv: inv.filter((i) => i.status !== 'draft'), pay }))
+      .catch(() => setData({ inv: [], pay: [] }));
   }, [c.clientId]);
   if (!c.clientId) return <NoClient />;
+  const rows = (data?.inv ?? []).map((i) => {
+    const total = docTotals(i).total, paid = invoicePaid(i, data!.pay);
+    return { i, total, balance: Math.max(0, total - paid), status: invoiceStatus(i, data!.pay) };
+  });
+  const due = rows.filter((r) => !['paid', 'cancelled'].includes(r.status)).reduce((s, r) => s + r.balance, 0);
   return (
-    <div className="flex flex-col gap-3">
-      {c.retainer && <Card title="Your retainer"><p className="m-0 text-sm">{c.retainer.tier} tier · <b>{tsh(c.retainer.monthly_fee)}</b> per month · {dmy(c.retainer.start_date)} – {dmy(c.retainer.end_date)}</p></Card>}
+    <div className="flex flex-col gap-4">
+      {c.retainer && (
+        <div className="flex flex-col gap-1 rounded-[24px] p-4 text-white" style={{ background: 'linear-gradient(135deg,#0F766E,#0A2F5C)' }}>
+          <span className="text-xs font-bold uppercase tracking-wide text-white/75">{c.retainer.tier} retainer</span>
+          <b className="font-display text-2xl">{tsh(c.retainer.monthly_fee)}<span className="text-sm font-normal text-white/80"> / month</span></b>
+          <span className="text-sm text-white/85">{dmy(c.retainer.start_date)} – {dmy(c.retainer.end_date)}</span>
+        </div>
+      )}
+      {rows.length > 0 && <div className="flex items-center justify-between rounded-2xl bg-white p-4 text-sm"><span className="text-basil-muted">Balance due</span><b className={`font-display text-lg ${due ? 'text-amber-800' : 'text-emerald-700'}`}>{due ? tsh(due) : 'All paid'}</b></div>}
       <Section title="Invoices">
-        {inv === null ? null : inv.length === 0 ? <div className="rounded-2xl bg-white p-4 text-sm text-basil-muted">No invoices to show yet.</div> : inv.map((i) => (
-          <div key={String(i.id)} className="flex items-center justify-between rounded-2xl bg-white p-4 text-sm">
-            <span><b className="block">{String(i.number ?? i.invoice_no ?? 'Invoice')}</b><span className="text-basil-muted">{dmy(String(i.issue_date ?? i.issued_on ?? i.created_at ?? '').slice(0, 10))}</span></span>
-            <span className="text-right"><b className="block">{tsh(Number(i.total ?? i.amount ?? 0))}</b><Pill tone={i.status === 'paid' ? 'green' : i.status === 'overdue' ? 'red' : 'amber'}>{String(i.status ?? 'open')}</Pill></span>
+        {data === null ? null : rows.length === 0 ? <div className="rounded-2xl bg-white p-4 text-sm text-basil-muted">No invoices to show yet.</div> : rows.map(({ i, total, balance, status }) => (
+          <div key={i.id} className="flex items-center justify-between gap-3 rounded-2xl bg-white p-4 text-sm">
+            <span className="min-w-0"><b className="block">{i.number}</b><span className="block truncate text-basil-muted">{i.title || 'Invoice'}</span><span className="text-xs text-basil-muted">Issued {dmy(i.issue_date)} · due {dmy(i.due_date)}</span></span>
+            <span className="shrink-0 text-right"><b className="block">{tsh(total)}</b>{balance > 0 && balance < total && <span className="block text-xs text-basil-muted">{tsh(balance)} left</span>}<Pill tone={INV_LABEL[status]?.[1] ?? 'amber'}>{INV_LABEL[status]?.[0] ?? status}</Pill></span>
           </div>
         ))}
       </Section>
@@ -255,8 +277,7 @@ export function RaiseConcern() {
     try {
       if (!f.subject || !f.body) throw new Error('Add a subject and a few words');
       await insertRow('client_concerns', { client_id: c.clientId, subject: f.subject, body: f.body, severity: f.severity, status: 'Open', raised_by: c.userId, response: '' });
-      await notify(c.retainer?.account_manager_id ?? 'u-growth', 'Client raised a concern', `${c.client?.name} · ${f.subject}`, '/os/retainers/concerns', 'alert');
-      await notify('u-boss', 'Client raised a concern', `${c.client?.name} · ${f.subject}`, '/os/retainers/concerns', 'alert');
+      // The notify_client_concern trigger tells the account managers and the Boss.
       setF({ subject: '', body: '', severity: 'Medium' });
       toast('Sent — your account manager will respond within one working day');
     } catch (e) {
@@ -283,13 +304,14 @@ export function TeamContacts() {
   const c = useClientCtx();
   const people = usePeople();
   const crewIds = [...new Set(c.items.flatMap((i) => i.crew.map((x) => x.user_id)))];
-  const team = [c.retainer?.account_manager_id, 'u-boss', ...crewIds].filter((x, i, a) => x && a.indexOf(x) === i) as string[];
+  const bossId = people.find((p) => p.roles.includes('boss'))?.id;
+  const team = [c.retainer?.account_manager_id, bossId, ...crewIds].filter((x, i, a) => x && a.indexOf(x) === i) as string[];
   return (
     <div className="flex flex-col gap-2">
       {team.map((id) => {
         const p = people.find((x) => x.id === id);
         if (!p) return null;
-        const role = id === c.retainer?.account_manager_id ? 'Account Manager' : id === 'u-boss' ? 'CEO, Basil Media' : c.items.flatMap((i) => i.crew).find((x) => x.user_id === id)?.role ?? 'Crew';
+        const role = id === c.retainer?.account_manager_id ? 'Account Manager' : id === bossId ? 'CEO, Basil Media' : c.items.flatMap((i) => i.crew).find((x) => x.user_id === id)?.role ?? 'Crew';
         return (
           <div key={id} className="flex items-center gap-3 rounded-2xl bg-white p-4">
             <Avatar name={p.full_name} size={44} /><span className="min-w-0 flex-1"><b className="block">{p.full_name}</b><span className="text-sm text-basil-muted">{role}</span></span>

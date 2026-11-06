@@ -42,7 +42,7 @@ export function TaskRow({ t, people, projects, onOpen, showProject = true }: { t
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-basil-line bg-white p-3">
       <button type="button" aria-label={done ? 'Mark not done' : 'Mark done'} onClick={() => setTaskStatus(t, done ? 'To do' : 'Done')} className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 ${done ? 'border-emerald-600 bg-emerald-600 text-white' : late ? 'border-red-400 bg-white text-transparent' : 'border-basil-edge bg-white text-transparent'}`}><Check size={18} /></button>
-      <button type="button" onClick={onOpen} className="min-w-0 flex-1 border-0 bg-transparent p-0 text-left">
+      <button type="button" onClick={onOpen} className="min-h-[44px] min-w-0 flex-1 border-0 bg-transparent p-0 text-left">
         <b className={`block truncate text-[15px] ${done ? 'text-basil-muted line-through' : 'text-basil-ink'}`}>{t.title}</b>
         <span className="block truncate text-xs text-basil-muted">{showProject && <>{projects.find((p) => p.id === t.project_id)?.name ?? ''} · </>}{firstName(people, t.assignee_id)}{checks && ` · ☑ ${checks}`}{t.minutes_logged ? ` · ${fmtMinutes(t.minutes_logged)}` : ''}</span>
       </button>
@@ -157,15 +157,15 @@ export function TaskList({ tasks, people, projects, showProject = true, defaults
   const list = tasks.filter((t) => filter === 'all' || (filter === 'done' ? t.status === 'Done' : filter === 'late' ? isOverdue(t) : t.status !== 'Done'));
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="flex gap-1.5">
+      <div className="flex items-center gap-2">
+        <div className="scrollbar-none flex min-w-0 flex-1 gap-1.5 overflow-x-auto">
           {(['open', 'late', 'done', 'all'] as const).map((k) => (
-            <button key={k} type="button" aria-pressed={filter === k} onClick={() => setFilter(k)} className={`min-h-[40px] rounded-full px-3 text-sm font-semibold capitalize ${filter === k ? 'border-0 bg-basil text-white' : 'border border-basil-edge bg-white text-basil-deep'}`}>
+            <button key={k} type="button" aria-pressed={filter === k} onClick={() => setFilter(k)} className={`min-h-[44px] shrink-0 rounded-full px-3 text-sm font-semibold capitalize ${filter === k ? 'border-0 bg-basil text-white' : 'border border-basil-edge bg-white text-basil-deep'}`}>
               {k === 'late' ? 'Overdue' : k} <span className="opacity-70">{tasks.filter((t) => k === 'all' || (k === 'done' ? t.status === 'Done' : k === 'late' ? isOverdue(t) : t.status !== 'Done')).length}</span>
             </button>
           ))}
         </div>
-        <button type="button" className="btn-primary" onClick={() => setOpen('new')}><Plus size={16} />Task</button>
+        <button type="button" className="btn-primary min-h-[44px] shrink-0 px-3 sm:px-4" aria-label="New task" onClick={() => setOpen('new')}><Plus size={18} /><span className="hidden sm:inline">Task</span></button>
       </div>
       {list.map((t) => <TaskRow key={t.id} t={t} people={people} projects={projects} showProject={showProject} onOpen={() => setOpen(t)} />)}
       {!list.length && (empty ?? <p className="m-0 rounded-2xl bg-white p-6 text-center text-sm text-basil-muted">Nothing here.</p>)}

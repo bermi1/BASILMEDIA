@@ -12,7 +12,7 @@ import { acknowledgeCheckouts, requestReturnHelp } from './actions';
 import { EmptyBox, GearStatusPill, GearThumb, SearchBox, SectionHead, matchGear, nameOf, projectName, useCheckouts, useGear, useProjects } from './shared';
 import { CheckinSheet, ConsumablesPanel } from './ops';
 import { WhoHasIt } from './checkout';
-import './seed';
+import { AssetDetail } from './gear';
 
 export { RoomsBoard } from './reception';
 
@@ -113,7 +113,9 @@ export function TodayVisitors() {
 
 // ---------- storekeeper phone ----------
 export function StorePhoneHome() {
+  const { userId } = useActing();
   const [, setParams] = useSearchParams();
+  const [detail, setDetail] = useState<string | null>(null);
   const go = (tab: string) => setParams((p) => (p.set('tab', tab), p), { replace: true });
   const { rows: gear } = useGear();
   const { rows: checkouts } = useCheckouts();
@@ -128,11 +130,12 @@ export function StorePhoneHome() {
   const count = (s: Gear['status']) => gear.filter((g) => g.status === s).length;
   const hits = q.trim() ? gear.filter((g) => matchGear(g, q)).slice(0, 6) : [];
   const checkout = found ? open.find((c) => c.gear_id === found.id) : undefined;
+  if (detail) return <AssetDetail gearId={detail} onBack={() => setDetail(null)} onCheckout={(id) => setParams((p) => (p.set('tab', 'checkout'), p.set('gear', id), p), { replace: true })} />;
   return (
     <div className="flex flex-col gap-4">
       <div className="rounded-3xl bg-gradient-to-br from-amber-600 to-amber-800 p-4 text-white">
         <span className="font-mono text-[11px] tracking-widest opacity-80">{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Africa/Dar_es_Salaam' }).toUpperCase()}</span>
-        <b className="mt-1 block font-display text-2xl">Habari, {nameOf(people, 'u-store').split(' ')[0] === '—' ? 'Juma' : nameOf(people, 'u-store').split(' ')[0]}</b>
+        <b className="mt-1 block font-display text-2xl">Habari{nameOf(people, userId) !== '—' ? `, ${nameOf(people, userId).split(' ')[0]}` : ''}</b>
         <span className="text-sm opacity-90">{gear.length} items tracked · Media store, Mikocheni</span>
         <div className="mt-3 grid grid-cols-4 gap-1.5 text-center">
           {([['In store', count('available')], ['Out', count('out')], ['Repair', count('in_repair')], ['Reserved', count('reserved')]] as const).map(([l, n]) => <div key={l} className="rounded-xl bg-white/15 py-2"><b className="block font-display text-xl">{n}</b><span className="text-[11px]">{l}</span></div>)}
@@ -146,8 +149,8 @@ export function StorePhoneHome() {
             <div className="flex items-center gap-3"><GearThumb gear={found} size={48} /><span className="min-w-0 flex-1"><b className="block">{found.name}</b><span className="text-xs text-basil-muted">{found.tag} · {found.serial} · {found.location}</span></span><GearStatusPill status={found.status} /></div>
             {checkout && <p className="m-0 mt-2 text-sm">With <b>{nameOf(people, checkout.holder_id)}</b> · due {fmtDateTime(checkout.due_at)}{isOverdue(checkout) && <b className="text-red-700"> · {lateText(checkout.due_at)}</b>}</p>}
             <div className="mt-2 grid grid-cols-2 gap-2">
-              {checkout ? <FoundCheckin c={checkout} g={found} /> : found.status === 'available' || found.status === 'reserved' ? <button type="button" className="btn-primary !px-2" onClick={() => go('checkout')}>Check out</button> : <span />}
-              <Link to={`/os/store/asset/${found.id}`} className="btn-outline !px-2">Details</Link>
+              {checkout ? <FoundCheckin c={checkout} g={found} /> : found.status === 'available' || found.status === 'reserved' ? <button type="button" className="btn-primary !px-2" onClick={() => setParams((p) => (p.set('tab', 'checkout'), p.set('gear', found.id), p), { replace: true })}>Check out</button> : <span />}
+              <button type="button" className="btn-outline !px-2" onClick={() => setDetail(found.id)}>Details</button>
             </div>
           </div>
         )}
@@ -178,10 +181,13 @@ function FoundCheckin({ c, g }: { c: Checkout; g: Gear }) {
 export function InventoryPhone() {
   const { rows: gear } = useGear();
   const people = usePeople();
+  const [, setParams] = useSearchParams();
+  const [openId, setOpenId] = useState<string | null>(null);
   const [tab, setTab] = useState<'gear' | 'consumables'>('gear');
   const [q, setQ] = useState('');
   const [cat, setCat] = useState('');
   const cats = [...new Set(gear.map((g) => g.category))];
+  if (openId) return <AssetDetail gearId={openId} onBack={() => setOpenId(null)} onCheckout={(id) => setParams((p) => (p.set('tab', 'checkout'), p.set('gear', id), p), { replace: true })} />;
   return (
     <div className="flex flex-col gap-3">
       <Tabs value={tab} onChange={setTab} items={[{ value: 'gear', label: 'Gear', count: gear.length }, { value: 'consumables', label: 'Consumables' }]} />
@@ -190,11 +196,11 @@ export function InventoryPhone() {
           <SearchBox value={q} onChange={setQ} />
           <div className="scrollbar-none flex gap-1.5 overflow-x-auto">{['', ...cats].map((c) => <button key={c || 'all'} type="button" aria-pressed={cat === c} onClick={() => setCat(c)} className={`min-h-[40px] shrink-0 rounded-full px-3 text-sm font-semibold ${cat === c ? 'border-0 bg-amber-600 text-white' : 'border border-basil-edge bg-white'}`}>{c || 'All'}</button>)}</div>
           {gear.filter((g) => matchGear(g, q) && (!cat || g.category === cat)).map((g) => (
-            <Link key={g.id} to={`/os/store/asset/${g.id}`} className="flex min-h-[60px] items-center gap-3 rounded-2xl border border-basil-line bg-white p-3 text-basil-ink no-underline">
+            <button key={g.id} type="button" onClick={() => (setOpenId(g.id), scrollTo({ top: 0 }))} className="flex min-h-[60px] w-full items-center gap-3 rounded-2xl border border-basil-line bg-white p-3 text-left text-basil-ink">
               <GearThumb gear={g} />
               <span className="min-w-0 flex-1"><b className="block truncate">{g.name}</b><span className="block truncate text-xs text-basil-muted">{g.tag} · {g.holder_id ? nameOf(people, g.holder_id) : g.location}</span></span>
               <GearStatusPill status={g.status} />
-            </Link>
+            </button>
           ))}
         </>
       )}

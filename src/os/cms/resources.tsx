@@ -1,6 +1,6 @@
 // Field definitions for each website content type managed in the CMS.
 import { ResourceManager } from './ResourceManager';
-import { WORK_CATEGORIES, SECTORS, NEWS_DESKS, OPPORTUNITY_KINDS } from '@/lib/types';
+import { WORK_CATEGORIES, SECTORS } from '@/lib/types';
 import { fmtDate } from '@/lib/format';
 import { youtubeThumb } from '@/lib/video';
 
@@ -16,13 +16,14 @@ export const ProjectsCms = () => (
       { key: 'category', label: 'Category', type: 'select', options: WORK_CATEGORIES },
       { key: 'featured', label: 'Featured on home page', type: 'boolean' },
       { key: 'image_url', label: 'Cover picture', type: 'image', folder: 'projects' },
-      { key: 'video_url', label: 'Video', type: 'video', folder: 'projects', help: 'Upload a file or paste a YouTube, Vimeo or Instagram link — it plays inside the page.' },
+      { key: 'video_url', label: 'Video', type: 'video', folder: 'projects', help: 'Paste the YouTube link — it plays inside the page.' },
+      { key: 'orientation', label: 'Video shape', type: 'select', options: ['auto', 'landscape', 'portrait'], help: 'Auto: Instagram reels and YouTube Shorts are tall, other links are wide.' },
       { key: 'description', label: 'Description', type: 'textarea' },
-      { key: 'external_url', label: 'External link', type: 'url' },
+      { key: 'external_url', label: 'Photo gallery link (Pixieset) or other link', type: 'url', help: 'For photo work, paste the Pixieset gallery link — the card opens the gallery.' },
       { key: 'published', label: 'Published', type: 'boolean' },
     ]}
-    blank={() => ({ title: '', client: '', category: 'Corporate' as const, image_url: '', video_url: '', description: '', external_url: '', featured: false, published: true })}
-    summary={(r) => [r.title, `${r.category} · ${r.client}${r.featured ? ' · ★ featured' : ''}${r.video_url ? ' · ▶ video' : ''}`]}
+    blank={() => ({ title: '', client: '', category: 'Corporate' as const, image_url: '', video_url: '', description: '', external_url: '', orientation: 'auto' as const, featured: false, published: true })}
+    summary={(r) => [r.title, `${r.category} · ${r.client}${r.featured ? ' · featured' : ''}${r.video_url ? ' · video' : ''}`]}
     thumb={(r) => r.image_url || youtubeThumb(r.video_url)}
   />
 );
@@ -54,6 +55,7 @@ export const HighlightsCms = () => (
       { key: 'title', label: 'Title', type: 'text', required: true },
       { key: 'published', label: 'Published', type: 'boolean' },
       { key: 'video_url', label: 'Reel', type: 'video', folder: 'highlights' },
+      { key: 'orientation', label: 'Video shape', type: 'select', options: ['auto', 'landscape', 'portrait'], help: 'Auto: Instagram reels and YouTube Shorts are tall, other links are wide.' },
       { key: 'thumbnail_url', label: 'Thumbnail (optional)', type: 'image', folder: 'highlights' },
     ]}
     blank={() => ({ title: '', video_url: '', thumbnail_url: '', published: true })}
@@ -83,8 +85,6 @@ export const TeamCms = () => (
       { key: 'name', label: 'Name', type: 'text', required: true },
       { key: 'role', label: 'Role', type: 'text' },
       { key: 'photo_url', label: 'Photo', type: 'image', folder: 'team' },
-      { key: 'instagram_url', label: 'Instagram profile', type: 'url' },
-      { key: 'linkedin_url', label: 'LinkedIn profile', type: 'url' },
       { key: 'bio', label: 'Short bio', type: 'textarea' },
       { key: 'published', label: 'Published', type: 'boolean' },
     ]}
@@ -111,12 +111,12 @@ export const TestimonialsCms = () => (
 
 export const NewsCms = () => (
   <ResourceManager
-    table="news_stories" tag="AUDIENCE · BASIL BRIEF" title="News" sub="Nothing goes live until an editor publishes it." publishable
+    table="news_stories" tag="AUDIENCE · HEALTH BRIEF" title="Health news" sub="Nothing goes live until an editor publishes it." publishable
     fields={[
       { key: 'title', label: 'Headline', type: 'text', required: true, wide: true },
       { key: 'dek', label: 'Summary line', type: 'text', wide: true },
-      { key: 'tag', label: 'Topic', type: 'select', options: ['Policy', 'Regulation', 'Research', 'Facilities', 'Events', 'Alert', 'Opportunities', 'Startups', 'Funding', 'Markets', 'Banking', 'Skills'] },
-      { key: 'sector', label: 'Desk', type: 'select', options: NEWS_DESKS },
+      { key: 'tag', label: 'Topic', type: 'select', options: ['Policy', 'Regulation', 'Research', 'Facilities', 'Events', 'Alert', 'Opportunities'] },
+      { key: 'sector', label: 'Sector', type: 'select', options: SECTORS },
       { key: 'published_at', label: 'Publish date', type: 'date' },
       { key: 'read_minutes', label: 'Read time (minutes)', type: 'number' },
       { key: 'featured', label: 'Featured', type: 'boolean' },
@@ -137,7 +137,7 @@ export const OpportunitiesCms = () => (
       { key: 'title', label: 'Title', type: 'text', required: true },
       { key: 'org', label: 'Organisation', type: 'text' },
       { key: 'location', label: 'Location', type: 'text' },
-      { key: 'kind', label: 'Type', type: 'select', options: OPPORTUNITY_KINDS },
+      { key: 'kind', label: 'Type', type: 'select', options: ['Job', 'Fellowship', 'Scholarship', 'Call for abstracts'] },
       { key: 'closes_on', label: 'Closing date', type: 'date' },
       { key: 'link', label: 'Apply link', type: 'url' },
       { key: 'published', label: 'Published', type: 'boolean' },

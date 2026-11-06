@@ -1,16 +1,14 @@
 // Boss cockpit: today at a glance, Monday briefing (printable), company scoreboard and decision log.
 import { useEffect, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, Briefcase, CalendarClock, ChevronRight, CircleDollarSign, Gavel, Inbox, Lightbulb, Plus, Target as TargetIcon, TrendingUp, Users } from 'lucide-react';
-import { isDemo } from '@/lib/supabase';
+import { AlertTriangle, ArrowRight, Briefcase, CalendarClock, Check, ChevronRight, CircleDollarSign, Gavel, Inbox, Lightbulb, Plus, Target as TargetIcon, TrendingUp, Undo2, Users } from 'lucide-react';
 import { useActing } from '@/os/lib/session';
-import { fetchRows, insertRow, onChange, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
+import { fetchRows, insertRow, onChange, rpc, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
+import { useFinance } from '@/os/modules/finance/lib';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Field, Pill, Sheet, inputCls, tsh, tshShort, type Tone } from '@/os/ui';
-import { PageTitle } from '@/os/OsLayout';
 import { ApprovalsInbox, CashGlance } from '@/os/modules/finance/phone';
 import { DAY, daysBetween, dmy, fmtUnit, isoPlus, monthKey, renewalBand, rowAmount, rowDate, todayIso, type CalItem, type Decision, type LeadActivity, type Proposal, type Target, type Tender } from './lib';
-import { Ring, PrintArea, PrintButton, useBookings, useClients } from './kit';
+import { GoLink, PageHead, Ring, PrintArea, PrintButton, useBookings, useClients, useInPhone } from './kit';
 import { pipelineTotals, useCrm, useLeadHeat } from './crm';
 import { useRenewals } from './docs';
 import { useRetainerData } from './retainers';
@@ -40,8 +38,7 @@ function useForeign(table: string, q: Parameters<typeof fetchRows>[1] = {}) {
   return rows;
 }
 
-export interface ApprovalItem { id: string; title: string; sub: string; amount: number; at: string; kind: 'money' | 'proposal' | 'other'; link?: string }
-const BOSS_STATUSES = ['boss_approval'];
+export interface ApprovalItem { id: string; title: string; sub: string; amount: number; at: string; kind: 'money' | 'payroll' | 'proposal' | 'other'; link?: string }
 
 /** Everything the cockpit needs, derived from every module's tables. */
 export function useBoss() {
@@ -58,18 +55,22 @@ export function useBoss() {
   const clients = useClients();
   const income = useForeign('income');
   const expenses = useForeign('expenses');
-  const invoices = useForeign('invoices');
-  const money = useForeign('money_requests');
+  const fin = useFinance();
+  // Overdue = effective status from finance (due date passed, balance after payments still open).
+  const overdueInv = fin.overdueRows.map((r) => ({ id: r.inv.id, number: r.inv.number, amount: r.balance, due_date: r.inv.due_date }));
   const notes = useTable<{ id: string; user_id: string; kind: string; title: string; body: string; read_at: string | null; created_at: string; link: string }>('notifications', { eq: { user_id: userId } }).rows;
   const { rows: bookings } = useBookings();
   const heat = useLeadHeat();
   const today = todayIso();
+  const leaveRows = useTable<{ user_id: string; leave_type: string; start_date: string; end_date: string; status: string }>('leave_requests').rows;
+  const reportRows = useTable<{ author_id: string; week_start: string }>('weekly_reports').rows;
 
   const approvals: ApprovalItem[] = [
-    ...money.filter((m) => BOSS_STATUSES.includes(String(m.status))).map((m) => ({ id: m.id, title: String(m.purpose ?? m.title ?? 'Money request'), sub: `${personName(people, String(m.requester_id ?? m.requested_by ?? ''))} · recommended by GM/CFO`, amount: rowAmount(m), at: String(m.created_at ?? ''), kind: 'money' as const })),
+    ...fin.waitingBoss.map((m) => ({ id: m.id, title: m.purpose || 'Money request', sub: `${personName(people, m.requester_id)} · recommended by GM/CFO`, amount: Number(m.amount), at: String(m.stage_at ?? m.submitted_at ?? m.created_at ?? ''), kind: 'money' as const })),
+    ...fin.runs.filter((r) => r.status === 'reviewed').map((r) => ({ id: r.id, title: `Payroll ${r.period}`, sub: `${r.headcount} people · checked by GM/CFO`, amount: Number(r.net), at: String(r.reviewed_at ?? r.created_at ?? ''), kind: 'payroll' as const })),
     ...proposals.filter((p) => p.status === 'awaiting_approval').map((p) => ({ id: p.id, title: `Proposal discount ${p.discount_pct}% · ${p.client_name}`, sub: p.title, amount: proposalTotals(p).total, at: p.created_at, kind: 'proposal' as const, link: `/os/growth/proposals/${p.id}` })),
   ];
-  if (!money.length) notes.filter((n) => n.kind === 'approval' && !n.read_at && !proposals.some((p) => n.link.includes(p.id))).forEach((n) => approvals.push({ id: n.id, title: n.title, sub: n.body, amount: 0, at: n.created_at, kind: 'other', link: n.link }));
+  if (!fin.requests.length) notes.filter((n) => n.kind === 'approval' && !n.read_at && !proposals.some((p) => n.link.includes(p.id))).forEach((n) => approvals.push({ id: n.id, title: n.title, sub: n.body, amount: 0, at: n.created_at, kind: 'other', link: n.link }));
   approvals.sort((a, b) => a.at.localeCompare(b.at));
 
   const monthIncome = income.filter((r) => rowDate(r).startsWith(monthKey())).reduce((s, r) => s + rowAmount(r), 0);
@@ -78,7 +79,6 @@ export function useBoss() {
   const fallbackMonth = ret.retainers.filter((r) => r.status === 'active').reduce((s, r) => s + r.monthly_fee, 0);
   const monthActual = income.length ? monthIncome : fallbackMonth;
 
-  const overdueInv = invoices.filter((i) => i.status === 'overdue' || (!['paid', 'cancelled', 'draft', 'void'].includes(String(i.status)) && String(i.due_date ?? i.due_on ?? '9999') < today));
   const active = projects.filter((p) => !['Archive', 'Invoice'].includes(p.stage));
   const red = active.filter((p) => p.health === 'red');
   const amber = active.filter((p) => p.health === 'amber');
@@ -87,7 +87,12 @@ export function useBoss() {
     ...ret.items.filter((i) => i.date === today && (i.kind === 'shoot' || i.kind === 'podcast')).map((i: CalItem) => ({ who: i.crew.map((c) => personName(people, c.user_id).split(' ')[0]).join(', '), where: `${clients.find((c) => c.id === i.client_id)?.name ?? ''} · ${i.title}`, live: i.status !== 'Completed' && i.status !== 'Wrapped' })),
   ];
   // Leave and daily reports come from the people module when it exists; demo shows a sample.
-  const pulse = isDemo ? { leave: ['Rehema Juma (annual leave, back Mon)'], reportsMissing: ['Benedicto Ngowi', 'Hamisi Omary'] } : { leave: [] as string[], reportsMissing: [] as string[] };
+  // Team pulse: who is on approved leave today, and who has not filed last week's report.
+  const monday = (() => { const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) - 7); return d.toISOString().slice(0, 10); })();
+  const pulse = {
+    leave: leaveRows.filter((l) => l.status === 'Approved' && l.start_date <= today && l.end_date >= today).map((l) => `${personName(people, l.user_id)} (${l.leave_type.toLowerCase()}, back ${l.end_date})`),
+    reportsMissing: people.filter((p) => p.roles.some((r) => r !== 'client' && r !== 'boss')).filter((p) => !reportRows.some((w) => w.author_id === p.id && w.week_start >= monday)).map((p) => p.full_name),
+  };
   const pipe = pipelineTotals(crm.leads);
   const atRisk = ret.retainers.filter((r) => ret.health(r).tone !== 'green');
   const newBookings = bookings.filter((b) => b.status === 'new');
@@ -96,7 +101,7 @@ export function useBoss() {
 
   const alerts: { tone: Tone; text: string; link: string }[] = [
     ...red.map((p) => ({ tone: 'red' as Tone, text: `${p.name} is red · stage ${p.stage}`, link: '/os' })),
-    ...overdueInv.slice(0, 3).map((i) => ({ tone: 'red' as Tone, text: `Invoice ${String(i.number ?? '')} overdue · ${tshShort(rowAmount(i))}`, link: '/os' })),
+    ...overdueInv.slice(0, 3).map((i) => ({ tone: 'red' as Tone, text: `Invoice ${i.number} overdue · ${tshShort(i.amount)}`, link: '/os' })),
     ...openConcerns.map((c) => ({ tone: (c.severity === 'High' ? 'red' : 'amber') as Tone, text: `Client concern: ${c.subject}`, link: '/os/retainers/concerns' })),
     ...renewals.map((c) => ({ tone: 'amber' as Tone, text: `${c.title} renews in ${daysBetween(c.end_date)} days`, link: '/os/growth/contracts' })),
     ...tendersSoon.map((t) => ({ tone: 'amber' as Tone, text: `Tender closes ${dmy(t.closes_on)}: ${t.title}`, link: '/os/growth/tenders' })),
@@ -111,9 +116,9 @@ export type BossData = ReturnType<typeof useBoss>;
 /** Deterministic "three things that need your attention". Each rule scores urgency; the top three win. */
 export function attention(b: BossData): { score: number; title: string; why: string; link: string }[] {
   const out: { score: number; title: string; why: string; link: string }[] = [];
-  const overdueTotal = b.overdueInv.reduce((s, i) => s + rowAmount(i), 0);
+  const overdueTotal = b.overdueInv.reduce((s, i) => s + i.amount, 0);
   if (overdueTotal > 0) {
-    const oldest = Math.max(...b.overdueInv.map((i) => -daysBetween(String(i.due_date ?? i.due_on ?? todayIso()))));
+    const oldest = Math.max(...b.overdueInv.map((i) => -daysBetween(i.due_date || todayIso())));
     out.push({ score: 70 + Math.min(25, oldest / 2), title: `Collect ${tshShort(overdueTotal)} in overdue invoices`, why: `${b.overdueInv.length} invoice${b.overdueInv.length > 1 ? 's' : ''}, oldest ${oldest} days late. Ask Finance for a call list today.`, link: '/os' });
   }
   if (b.approvals.length) {
@@ -140,6 +145,7 @@ export function attention(b: BossData): { score: number; title: string; why: str
 }
 
 function Tile({ icon, label, value, sub, tone, onClick, to }: { icon: ReactNode; label: string; value: ReactNode; sub?: ReactNode; tone?: Tone; onClick?: () => void; to?: string }) {
+  const Link = GoLink;
   const body = (
     <>
       <span className="flex items-center justify-between text-[13px] text-basil-muted"><span className="flex items-center gap-1.5">{icon}{label}</span>{(onClick || to) && <ChevronRight size={16} />}</span>
@@ -152,8 +158,12 @@ function Tile({ icon, label, value, sub, tone, onClick, to }: { icon: ReactNode;
 }
 
 /** "Today at a glance" — used on the Boss phone Home tab and the desktop cockpit. */
-export function TodayGlance({ onApprovals, desktop = false }: { onApprovals?: () => void; desktop?: boolean }) {
+export function TodayGlance({ onApprovals, onProjects, desktop = false }: { onApprovals?: () => void; onProjects?: () => void; desktop?: boolean }) {
   const b = useBoss();
+  const phone = useInPhone();
+  const Link = GoLink;
+  // On the phone, links into the approvals/projects tabs switch tab instead of leaving the app.
+  const tabLink = (to: string): { to?: string; onClick?: () => void } => (to.startsWith('/app?tab=approvals') ? { onClick: onApprovals } : phone && to === '/os' ? { onClick: onProjects } : { to });
   const { userId } = useActing();
   const first = personName(b.people, userId).split(' ')[0];
   const pct = b.monthTarget ? Math.round((b.monthActual / b.monthTarget) * 100) : 0;
@@ -178,9 +188,9 @@ export function TodayGlance({ onApprovals, desktop = false }: { onApprovals?: ()
           <Ring value={b.monthActual} max={b.monthTarget || 1} size={72} color="#B8860B" />
           <span className="min-w-0"><span className="block text-[13px] text-basil-muted">This month vs target</span><b className="font-display text-xl">{tshShort(b.monthActual)}</b><span className="block text-xs text-basil-muted">of {tshShort(b.monthTarget)} · {pct}%{!b.usingIncome && ' · from retainers (no income posted yet)'}</span></span>
         </div>
-        <Tile icon={<Briefcase size={15} />} label="Projects active" value={b.active.length} sub={<><span className="text-emerald-700">{b.active.length - b.red.length - b.amber.length} on track</span> · <span className="text-amber-700">{b.amber.length} at risk</span> · <span className="text-red-700">{b.red.length} red</span></>} tone={b.red.length ? 'red' : undefined} to={desktop ? '/os' : undefined} />
-        <Tile icon={<TrendingUp size={15} />} label="Pipeline" value={tshShort(b.pipe.value)} sub={`${b.pipe.count} open · weighted ${tshShort(b.pipe.weighted)}`} tone="gold" to={desktop ? '/os/growth' : undefined} />
-        <Tile icon={<Users size={15} />} label="Retainers at risk" value={b.atRisk.length} sub={`${b.ret.retainers.length} retainers · ${b.renewals.length} renewal alert${b.renewals.length === 1 ? '' : 's'}`} tone={b.atRisk.length ? 'amber' : 'green'} to={desktop ? '/os/retainers' : undefined} />
+        <Tile icon={<Briefcase size={15} />} label="Projects" value={b.active.length} sub={<><span className="text-emerald-700">{b.active.length - b.red.length - b.amber.length} ok</span> · <span className="text-amber-700">{b.amber.length} risk</span> · <span className="text-red-700">{b.red.length} red</span></>} tone={b.red.length ? 'red' : undefined} {...tabLink('/os')} />
+        <Tile icon={<TrendingUp size={15} />} label="Pipeline" value={tshShort(b.pipe.value)} sub={`${b.pipe.count} open leads`} tone="gold" to="/os/growth" />
+        <Tile icon={<Users size={15} />} label="Retainers at risk" value={b.atRisk.length} sub={`of ${b.ret.retainers.length} · ${b.renewals.length} renewal${b.renewals.length === 1 ? '' : 's'} due`} tone={b.atRisk.length ? 'amber' : 'green'} to={desktop ? '/os/retainers' : '/os/boss/risk'} />
       </div>
       <Card title={<span className="flex items-center gap-2"><Users size={16} />People today</span>}>
         <ul className="m-0 flex list-none flex-col gap-2 p-0 text-sm">
@@ -192,16 +202,24 @@ export function TodayGlance({ onApprovals, desktop = false }: { onApprovals?: ()
       </Card>
       <Card title={<span className="flex items-center gap-2"><Lightbulb size={16} className="text-[#B8860B]" />Three things that need your attention</span>}>
         <ol className="m-0 flex list-none flex-col gap-2 p-0">
-          {things.map((t, i) => (
-            <li key={i}><Link to={t.link} className="flex gap-3 rounded-xl bg-[#FBF4E2] p-3 text-basil-ink no-underline"><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#B8860B] text-sm font-bold text-white">{i + 1}</span><span className="text-sm"><b className="block">{t.title}</b><span className="text-basil-muted">{t.why}</span></span></Link></li>
-          ))}
+          {things.map((t, i) => {
+            const tl = tabLink(t.link);
+            const cls = 'flex w-full gap-3 rounded-xl border-0 bg-[#FBF4E2] p-3 text-left text-basil-ink no-underline';
+            const inner = <><span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#B8860B] text-sm font-bold text-white">{i + 1}</span><span className="text-sm"><b className="block">{t.title}</b><span className="text-basil-muted">{t.why}</span></span></>;
+            return <li key={i}>{tl.to ? <Link to={tl.to} className={cls}>{inner}</Link> : <button type="button" onClick={tl.onClick} className={cls}>{inner}</button>}</li>;
+          })}
           {things.length === 0 && <li className="text-sm text-basil-muted">Nothing pressing. Good week.</li>}
         </ol>
       </Card>
       {b.alerts.length > 0 && (
         <Card title={<span className="flex items-center gap-2"><AlertTriangle size={16} />Alerts</span>}>
           <ul className="m-0 flex list-none flex-col gap-1.5 p-0">
-            {b.alerts.slice(0, desktop ? 12 : 6).map((a, i) => <li key={i}><Link to={a.link} className="flex min-h-[40px] items-center gap-2 text-sm text-basil-ink no-underline"><span className={`h-2 w-2 shrink-0 rounded-full ${a.tone === 'red' ? 'bg-red-600' : a.tone === 'amber' ? 'bg-amber-500' : 'bg-basil'}`} />{a.text}</Link></li>)}
+            {b.alerts.slice(0, desktop ? 12 : 6).map((a, i) => {
+              const tl = tabLink(a.link);
+              const cls = 'flex min-h-[44px] w-full items-center gap-2 border-0 bg-transparent p-0 text-left text-sm text-basil-ink no-underline';
+              const inner = <><span className={`h-2 w-2 shrink-0 rounded-full ${a.tone === 'red' ? 'bg-red-600' : a.tone === 'amber' ? 'bg-amber-500' : 'bg-basil'}`} /><span className="flex-1">{a.text}</span><ChevronRight size={16} className="shrink-0 text-basil-muted" /></>;
+              return <li key={i}>{tl.to ? <Link to={tl.to} className={cls}>{inner}</Link> : <button type="button" onClick={tl.onClick} className={cls}>{inner}</button>}</li>;
+            })}
           </ul>
         </Card>
       )}
@@ -213,13 +231,13 @@ export function BossCockpit() {
   const scroll = () => document.getElementById('approvals')?.scrollIntoView({ behavior: 'smooth' });
   return (
     <div>
-      <PageTitle tag="BOSS · COCKPIT" title="Today at a glance" sub={new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Dar_es_Salaam' })}>
-        <div className="flex flex-wrap gap-2"><Link to="/os/boss/briefing" className="btn-outline"><CalendarClock size={16} />Monday briefing</Link><Link to="/os/boss/scoreboard" className="btn-outline"><TargetIcon size={16} />Scoreboard</Link><Link to="/os/boss/decisions" className="btn-outline"><Gavel size={16} />Decisions</Link></div>
-      </PageTitle>
+      <PageHead tag="BOSS · COCKPIT" title="Today at a glance" sub={new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Africa/Dar_es_Salaam' })}>
+        <div className="flex flex-wrap gap-2"><GoLink to="/os/boss/briefing" className="btn-outline"><CalendarClock size={16} />Monday briefing</GoLink><GoLink to="/os/boss/scoreboard" className="btn-outline"><TargetIcon size={16} />Scoreboard</GoLink><GoLink to="/os/boss/decisions" className="btn-outline"><Gavel size={16} />Decisions</GoLink></div>
+      </PageHead>
       <div className="grid gap-4 xl:grid-cols-[1fr_420px]">
         <TodayGlance desktop onApprovals={scroll} />
         <div className="flex flex-col gap-4">
-          <section id="approvals" className="rounded-2xl border border-basil-line bg-white p-4"><h2 className="m-0 mb-3 text-base font-extrabold">Approvals</h2><ApprovalsInbox /><GrowthApprovals /></section>
+          <section id="approvals" className="rounded-2xl border border-basil-line bg-white p-4"><h2 className="m-0 mb-3 text-base font-extrabold">Approvals</h2><ApprovalsInbox /><ProposalApprovals /></section>
           <ScoreboardMini />
         </div>
       </div>
@@ -227,15 +245,39 @@ export function BossCockpit() {
   );
 }
 
-/** Growth-side items waiting for the boss (proposal discounts). Money approvals live in ApprovalsInbox. */
-function GrowthApprovals() {
-  const b = useBoss();
-  const items = b.approvals.filter((a) => a.kind === 'proposal');
+/** Proposal discounts waiting for the boss, decided in place. Money approvals live in ApprovalsInbox. */
+export function ProposalApprovals() {
+  const { rows } = useTable<Proposal>('proposals', { order: 'created_at' });
+  const { can } = useActing();
+  const people = usePeople();
+  const toast = useToast();
+  const items = rows.filter((p) => p.status === 'awaiting_approval');
   if (!items.length) return null;
+  const decide = async (p: Proposal, ok: boolean) => {
+    try {
+      await rpc('approve_proposal', { _id: p.id, _approve: ok });
+      toast(ok ? `Discount approved · ${p.client_name}` : 'Sent back to draft');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  };
   return (
     <div className="mt-3 flex flex-col gap-2 border-t border-basil-line pt-3">
-      <b className="text-sm">Proposals</b>
-      {items.map((a) => <Link key={a.id} to={a.link!} className="flex items-center justify-between gap-2 rounded-xl bg-[#FBF4E2] p-3 text-sm text-basil-ink no-underline"><span><b className="block">{a.title}</b><span className="text-basil-muted">{a.sub}</span></span><b>{tshShort(a.amount)}</b></Link>)}
+      <b className="text-sm">Proposal discounts</b>
+      {items.map((p) => {
+        const t = proposalTotals(p);
+        return (
+          <div key={p.id} className="flex flex-col gap-2 rounded-2xl bg-[#FBF4E2] p-3 text-sm">
+            <GoLink to={`/os/growth/proposals/${p.id}`} className="flex items-start justify-between gap-2 text-basil-ink no-underline"><span className="min-w-0"><b className="block">{p.client_name} · {p.discount_pct}% off</b><span className="text-basil-muted">{p.title} · by {personName(people, p.created_by)}</span></span><span className="shrink-0 text-right"><b className="block">{tshShort(t.total)}</b><span className="text-xs text-amber-800">−{tshShort(t.disc)}</span></span></GoLink>
+            {can('boss') && (
+              <div className="grid grid-cols-2 gap-2">
+                <button type="button" className="btn-outline bg-white" onClick={() => decide(p, false)}><Undo2 size={16} />Send back</button>
+                <button type="button" className="btn-primary" onClick={() => decide(p, true)}><Check size={16} />Approve</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -258,19 +300,19 @@ export function MondayBriefing() {
     ...b.pipe.overdue.slice(0, 2).map((l) => `Chase “${l.next_action}” for ${l.title}.`),
     ...b.tendersSoon.map((t) => `Confirm documents for tender ${t.reference} (closes ${dmy(t.closes_on)}).`),
   ].slice(0, 5);
-  const Row = ({ k, v, tone }: { k: string; v: ReactNode; tone?: string }) => <div className="flex justify-between gap-3 border-b border-basil-line/70 py-1.5 text-sm"><span className="text-basil-muted">{k}</span><b className={tone}>{v}</b></div>;
+  const Row = ({ k, v, tone }: { k: string; v: ReactNode; tone?: string }) => <div className="flex justify-between gap-3 border-b border-basil-line/70 py-1.5 text-sm"><span className="shrink-0 text-basil-muted">{k}</span><b className={`text-right ${tone ?? ''}`}>{v}</b></div>;
   return (
     <div>
-      <PageTitle tag="BOSS · MONDAY BRIEFING" title="Monday briefing" sub="Generated automatically from every module. One page — print it or read it on the phone."><PrintButton label="Print briefing" /></PageTitle>
+      <PageHead tag="BOSS · MONDAY BRIEFING" title="Monday briefing" sub="Generated automatically from every module. One page — print it or read it on the phone."><PrintButton label="Print briefing" /></PageHead>
       <PrintArea>
-        <article className="mx-auto max-w-3xl rounded-2xl border border-basil-line bg-white p-5 sm:p-8">
-          <header className="mb-4 flex items-start justify-between gap-3 border-b-2 border-[#B8860B] pb-3">
+        <article className="mx-auto max-w-3xl rounded-2xl border border-basil-line bg-white p-4 sm:p-8">
+          <header className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b-2 border-[#B8860B] pb-3">
             <div><div className="font-display text-xl font-extrabold text-basil-deep">Basil Media · Monday briefing</div><div className="text-sm text-basil-muted">Week {dmy(weekAgo)} – {dmy(today)}</div></div>
             <Pill tone="gold">For Emmanuel Basil</Pill>
           </header>
           <section className="mb-5 break-inside-avoid">
             <h2 className="m-0 mb-2 text-lg font-extrabold">Three things that need your attention</h2>
-            <ol className="m-0 flex flex-col gap-2 pl-5">{things.map((t, i) => <li key={i} className="text-sm"><b>{t.title}.</b> {t.why}</li>)}{things.length === 0 && <li className="text-sm">Nothing urgent this week.</li>}</ol>
+            <ol className="m-0 flex flex-col gap-2 pl-4">{things.map((t, i) => <li key={i} className="text-sm"><b>{t.title}.</b> {t.why}</li>)}{things.length === 0 && <li className="text-sm">Nothing urgent this week.</li>}</ol>
           </section>
           <div className="grid gap-5 sm:grid-cols-2">
             <section className="break-inside-avoid">
@@ -278,7 +320,7 @@ export function MondayBriefing() {
               <Row k="Income" v={b.income.length ? tsh(inc) : 'Not recorded yet'} tone="text-emerald-700" />
               <Row k="Expenses" v={b.expenses.length ? tsh(exp) : 'Not recorded yet'} tone="text-red-700" />
               <Row k="Net" v={b.income.length || b.expenses.length ? tsh(inc - exp) : '—'} />
-              <Row k="Overdue invoices" v={b.overdueInv.length ? `${b.overdueInv.length} · ${tshShort(b.overdueInv.reduce((s, i) => s + rowAmount(i), 0))}` : 'None'} tone={b.overdueInv.length ? 'text-red-700' : ''} />
+              <Row k="Overdue invoices" v={b.overdueInv.length ? `${b.overdueInv.length} · ${tshShort(b.overdueInv.reduce((s, i) => s + i.amount, 0))}` : 'None'} tone={b.overdueInv.length ? 'text-red-700' : ''} />
               <Row k="Approvals waiting" v={b.approvals.length} tone={b.approvals.length ? 'text-amber-700' : ''} />
             </section>
             <section className="break-inside-avoid">
@@ -312,7 +354,7 @@ function useTargets() {
 function ScoreboardMini() {
   const rows = useTargets();
   return (
-    <Card title="Scoreboard" action={<Link to="/os/boss/scoreboard" className="text-sm font-bold">Open <ArrowRight size={14} className="inline" /></Link>}>
+    <Card title="Scoreboard" action={<GoLink to="/os/boss/scoreboard" className="inline-flex min-h-[44px] items-center text-sm font-bold">Open <ArrowRight size={14} className="inline" /></GoLink>}>
       <div className="grid grid-cols-3 gap-3">{rows.slice(0, 6).map((t) => <Ring key={t.id} value={t.actual} max={t.target} size={64} color="#B8860B" label={t.label} />)}</div>
     </Card>
   );
@@ -338,9 +380,9 @@ export function Scoreboard() {
   };
   return (
     <div>
-      <PageTitle tag="BOSS · SCOREBOARD" title={`Company scoreboard ${new Date().getFullYear()}`} sub={`${yearPct}% of the year gone. Gold ring = progress to the yearly target.`}>
+      <PageHead tag="BOSS · SCOREBOARD" title={`Company scoreboard ${new Date().getFullYear()}`} sub={`${yearPct}% of the year gone. Gold ring = progress to the yearly target.`}>
         {editor && <button type="button" className="btn-primary" onClick={() => setEdit({ unit: 'count' })}><Plus size={16} />Target</button>}
-      </PageTitle>
+      </PageHead>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
         {rows.map((t) => {
           const p = t.target ? Math.round((t.actual / t.target) * 100) : 0;
@@ -396,9 +438,9 @@ export function DecisionLog() {
   };
   return (
     <div>
-      <PageTitle tag="BOSS · DECISIONS" title="Decision log" sub="What we decided, why, who owns it and when we review it.">
+      <PageHead tag="BOSS · DECISIONS" title="Decision log" sub="What we decided, why, who owns it and when we review it.">
         {editor && <button type="button" className="btn-primary" onClick={() => setEdit({ decided_on: todayIso(), status: 'Active' })}><Plus size={16} />Decision</button>}
-      </PageTitle>
+      </PageHead>
       <div className="flex flex-col gap-3">
         {rows.map((d) => {
           const review = d.review_on && d.status === 'Active' && d.review_on <= isoPlus(7);

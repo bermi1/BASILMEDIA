@@ -1,15 +1,14 @@
 // Proposals (Basil Media structure, printable), contracts/MoU register, tenders, events and subscribers.
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, CalendarDays, FileSignature, FileText, Gavel, Plus, Users } from 'lucide-react';
 import { useActing } from '@/os/lib/session';
-import { fetchRows, insertRow, rpc, demoTable, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
-import { notify } from '@/os/lib/notify';
+import { fetchRows, insertRow, rpc, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
+import { notify, notifyRole } from '@/os/lib/notify';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Field, Pill, Sheet, Stat, StageTracker, Tabs, inputCls, tsh, tshShort, type Tone } from '@/os/ui';
-import { PageTitle } from '@/os/OsLayout';
 import { TENDER_STATUS, daysBetween, dmy, isoPlus, monthKey, monthLabel, renewalBand, todayIso, type Contract, type GrowthEvent, type Instalment, type Proposal, type Tender } from './lib';
-import { PrintArea, PrintButton, useSubscribers } from './kit';
+import { GoLink, PageHead, PrintArea, PrintButton, useGo, useSubscribers } from './kit';
 import { useCrm } from './crm';
 
 // ---------- settings ----------
@@ -40,15 +39,15 @@ export const proposalTotals = (p: Pick<Proposal, 'lines' | 'discount_pct' | 'vat
 const PSTATUS: Record<Proposal['status'], [string, Tone]> = { draft: ['Draft', 'grey'], awaiting_approval: ['Awaiting boss approval', 'amber'], approved: ['Approved', 'green'], sent: ['Sent', 'blue'], accepted: ['Accepted', 'green'], declined: ['Declined', 'red'] };
 export const proposalPill = (s: Proposal['status']) => <Pill tone={PSTATUS[s][1]}>{PSTATUS[s][0]}</Pill>;
 
-export function ProposalsList({ compact = false }: { compact?: boolean }) {
+export function ProposalsList({ compact = false, lead: leadArg }: { compact?: boolean; lead?: string }) {
   const { rows } = useTable<Proposal>('proposals', { order: 'created_at', ascending: false });
   const { leads, orgs, orgName } = useCrm();
   const { userId } = useActing();
   const vat = useVatRate();
-  const nav = useNavigate();
+  const go = useGo();
   const [params] = useSearchParams();
   const toast = useToast();
-  const [lead, setLead] = useState(params.get('lead') ?? '');
+  const [lead, setLead] = useState(leadArg ?? params.get('lead') ?? '');
   const create = async () => {
     try {
       const l = leads.find((x) => x.id === lead);
@@ -59,41 +58,46 @@ export function ProposalsList({ compact = false }: { compact?: boolean }) {
         who_we_are: BOILER.who_we_are, who_you_are: org ? `${org.name} is a ${org.type.toLowerCase()} in ${org.city || 'Tanzania'}.` : '', what_we_propose: '', client_gains: '', how_we_work: BOILER.how_we_work, why_basil: BOILER.why_basil,
         lines: [{ name: l?.service || 'Production', amount: l?.value ? Math.round(l.value / (1 + vat / 100)) : 0 }], discount_pct: 0, vat_rate: vat, created_by: userId, sent_at: null,
       });
-      nav(`/os/growth/proposals/${p.id}`);
+      go(`/os/growth/proposals/${p.id}`);
     } catch (e) {
       toast((e as Error).message, 'error');
     }
   };
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="flex flex-wrap items-end gap-2 [&>label]:min-w-0 [&>label]:flex-1">
         <Field label="Start from lead"><select className={inputCls} value={lead} onChange={(e) => setLead(e.target.value)}><option value="">— blank —</option>{leads.filter((l) => l.stage !== 'Lost').map((l) => <option key={l.id} value={l.id}>{l.title} · {orgName(l.organisation_id)}</option>)}</select></Field>
         <button type="button" className="btn-primary min-h-[48px]" onClick={create}><Plus size={16} />New proposal</button>
       </div>
       <div className={compact ? 'flex flex-col gap-2' : 'grid gap-3 md:grid-cols-2 xl:grid-cols-3'}>
         {rows.map((p) => (
-          <Link key={p.id} to={`/os/growth/proposals/${p.id}`} className="flex flex-col gap-1 rounded-2xl border border-basil-line bg-white p-4 text-basil-ink no-underline hover:shadow-card">
+          <GoLink key={p.id} to={`/os/growth/proposals/${p.id}`} className="flex flex-col gap-1 rounded-2xl border border-basil-line bg-white p-4 text-basil-ink no-underline hover:shadow-card">
             <span className="flex items-start justify-between gap-2"><b>{p.title}</b>{proposalPill(p.status)}</span>
             <span className="text-sm text-basil-muted">{p.number} · {p.client_name} · {dmy(p.created_at)}</span>
             <span className="font-display font-extrabold">{tsh(proposalTotals(p).total)}<span className="ml-1 text-xs font-normal text-basil-muted">incl. VAT</span></span>
             {p.discount_pct > 0 && <span className="text-xs text-amber-800">Discount {p.discount_pct}%</span>}
-          </Link>
+          </GoLink>
         ))}
+        {rows.length === 0 && <Empty icon={<FileText />} title="No proposals yet" sub="Start one from a lead — the Basil Media structure is filled in for you." />}
       </div>
     </div>
   );
 }
 export const ProposalsPage = () => (
-  <div><PageTitle tag="GROWTH · PROPOSALS" title="Proposals" sub="Who We Are · Who You Are · What We Are Proposing · What the Client Will Gain · How We Work · Why Basil Media" /><ProposalsList /></div>
+  <div><PageHead tag="GROWTH · PROPOSALS" title="Proposals" sub="Who We Are · Who You Are · What We Are Proposing · What the Client Will Gain · How We Work · Why Basil Media" /><ProposalsList /></div>
 );
 
 const SECTIONS: [keyof Proposal, string][] = [['who_we_are', 'Who We Are'], ['who_you_are', 'Who You Are'], ['what_we_propose', 'What We Are Proposing'], ['client_gains', 'What the Client Will Gain'], ['how_we_work', 'How We Work'], ['why_basil', 'Why Basil Media']];
 
-export function ProposalDoc() {
-  const { id } = useParams();
+export function ProposalDoc({ id: idArg }: { id?: string } = {}) {
+  const params = useParams();
+  const id = idArg ?? params.id;
+  const go = useGo();
+  const { rows: contracts } = useTable<Contract>('contracts');
+  const { orgs } = useCrm();
   const { rows } = useTable<Proposal>('proposals', { eq: { id } });
   const p = rows[0];
-  const { can, userId } = useActing();
+  const { can } = useActing();
   const toast = useToast();
   const [draft, setDraft] = useState<Proposal | null>(null);
   useEffect(() => void (p && setDraft((d) => (d?.id === p.id ? d : structuredClone(p)))), [p]);
@@ -112,19 +116,29 @@ export function ProposalDoc() {
   const submit = async () => {
     if (draft.discount_pct > DISCOUNT_APPROVAL_PCT) {
       await save({ status: 'awaiting_approval' });
-      await notify('u-boss', 'Proposal needs your approval', `${draft.title} · ${draft.discount_pct}% discount · ${tsh(t.total)}`, `/os/growth/proposals/${p.id}`, 'approval');
+      await notifyRole('boss', 'Proposal needs your approval', `${draft.title} · ${draft.discount_pct}% discount · ${tsh(t.total)}`, `/os/growth/proposals/${p.id}`, 'approval');
       toast('Sent to the boss for approval (discount above 10%)');
     } else await save({ status: 'sent', sent_at: new Date().toISOString() });
   };
   const decide = async (ok: boolean) => {
     try {
-      await rpc('approve_proposal', { _id: p.id, _approve: ok }, () => {
-        const r = demoTable('proposals').find((x) => x.id === p.id)!;
-        if (r.created_by === userId) throw new Error('You cannot approve your own proposal');
-        r.status = ok ? 'approved' : 'draft';
-      });
+      await rpc('approve_proposal', { _id: p.id, _approve: ok });
       await notify(p.created_by, ok ? 'Proposal approved' : 'Proposal sent back', p.title, `/os/growth/proposals/${p.id}`, 'approval');
       toast(ok ? 'Approved' : 'Sent back to draft');
+    } catch (e) {
+      toast((e as Error).message, 'error');
+    }
+  };
+  const contract = contracts.find((c) => c.lead_id && c.lead_id === p.lead_id && c.title === p.title);
+  const toContract = async () => {
+    try {
+      const start = todayIso();
+      const k = await insertRow<Contract>('contracts', {
+        number: `BM-C-${new Date().getFullYear()}-${String(contracts.length + 30).padStart(3, '0')}`, title: p.title, kind: 'Contract', organisation_id: p.organisation_id, client_id: orgs.find((o) => o.id === p.organisation_id)?.client_id ?? null, lead_id: p.lead_id,
+        value: t.total, start_date: start, end_date: isoPlus(90), status: 'awaiting_signature', instalments: DEFAULT_INST(start), renewal_notice_days: 90, signed_by_name: '', signed_at: null, signed_user_agent: '',
+      });
+      toast(`Contract ${k.number} created with 40/25/20/15 instalments`);
+      go('/os/growth/contracts');
     } catch (e) {
       toast((e as Error).message, 'error');
     }
@@ -133,22 +147,23 @@ export function ProposalDoc() {
   const cur = p.status === 'approved' ? 1 : p.status === 'declined' ? 3 : order.indexOf(p.status);
   return (
     <div>
-      <PageTitle tag={`PROPOSAL · ${p.number}`} title={p.title} sub={`${p.client_name} · ${dmy(p.created_at)}`}>
+      <PageHead tag={`PROPOSAL · ${p.number}`} title={p.title} sub={`${p.client_name} · ${dmy(p.created_at)}`}>
         <div className="bm-noprint flex flex-wrap gap-2">
           {editable && <button type="button" className="btn-outline" onClick={() => save()}>Save</button>}
           {editable && p.status === 'draft' && <button type="button" className="btn-primary" onClick={submit}>{draft.discount_pct > DISCOUNT_APPROVAL_PCT ? 'Ask boss to approve' : 'Mark as sent'}</button>}
           {p.status === 'approved' && <button type="button" className="btn-primary" onClick={() => save({ status: 'sent', sent_at: new Date().toISOString() })}>Mark as sent</button>}
           {p.status === 'sent' && <><button type="button" className="btn-primary" onClick={() => save({ status: 'accepted' })}>Client accepted</button><button type="button" className="btn-outline" onClick={() => save({ status: 'declined' })}>Declined</button></>}
+          {p.status === 'accepted' && (contract ? <GoLink to="/os/growth/contracts" className="btn-outline"><FileSignature size={16} />Contract {contract.number}</GoLink> : <button type="button" className="btn-primary" onClick={toContract}><FileSignature size={16} />Create contract</button>)}
           {p.status === 'awaiting_approval' && can('boss') && <><button type="button" className="btn-primary" onClick={() => decide(true)}>Approve</button><button type="button" className="btn-outline" onClick={() => decide(false)}>Send back</button></>}
           <PrintButton label="Print / PDF" />
         </div>
-      </PageTitle>
+      </PageHead>
       <div className="bm-noprint mb-4"><StageTracker stages={['Draft', 'Approval', 'Sent', 'Accepted']} current={Math.max(0, cur)} rejected={p.status === 'declined'} /></div>
       <PrintArea>
-        <article className="mx-auto max-w-3xl rounded-2xl border border-basil-line bg-white p-6 sm:p-10">
-          <header className="mb-6 flex items-start justify-between gap-4 border-b border-basil-line pb-4">
+        <article className="mx-auto max-w-3xl rounded-2xl border border-basil-line bg-white p-4 sm:p-10">
+          <header className="mb-6 flex flex-wrap items-start justify-between gap-4 border-b border-basil-line pb-4">
             <div><div className="font-display text-2xl font-extrabold text-basil-deep">Basil Media</div><div className="text-sm text-basil-muted">Mikocheni, Dar es Salaam · hello@basilmedia.co.tz</div></div>
-            <div className="text-right text-sm"><b>{p.number}</b><div>{dmy(p.created_at)}</div><div>Prepared for {p.client_name || '—'}</div></div>
+            <div className="text-sm sm:text-right"><b>{p.number}</b><div>{dmy(p.created_at)}</div><div>Prepared for {p.client_name || '—'}</div></div>
           </header>
           {editable ? (
             <div className="bm-noprint mb-4 grid gap-3 sm:grid-cols-2">
@@ -171,12 +186,12 @@ export function ProposalDoc() {
                 {draft.lines.map((l, i) => (
                   <tr key={i} className="border-b border-basil-line/60">
                     <td className="py-2">{editable ? <input aria-label="Item" className={`${inputCls} h-10`} value={l.name} onChange={(e) => setDraft({ ...draft, lines: draft.lines.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)) })} /> : l.name}</td>
-                    <td className="w-40 py-2 text-right">{editable ? <input aria-label="Amount" inputMode="numeric" className={`${inputCls} h-10 text-right`} value={l.amount} onChange={(e) => setDraft({ ...draft, lines: draft.lines.map((x, j) => (j === i ? { ...x, amount: Number(e.target.value.replace(/\D/g, '')) || 0 } : x)) })} /> : l.amount.toLocaleString('en-GB')}</td>
+                    <td className="w-32 py-2 pl-2 text-right sm:w-40">{editable ? <input aria-label="Amount" inputMode="numeric" className={`${inputCls} h-10 text-right`} value={l.amount} onChange={(e) => setDraft({ ...draft, lines: draft.lines.map((x, j) => (j === i ? { ...x, amount: Number(e.target.value.replace(/\D/g, '')) || 0 } : x)) })} /> : l.amount.toLocaleString('en-GB')}</td>
                   </tr>
                 ))}
-                {editable && <tr className="bm-noprint"><td colSpan={2} className="py-2"><button type="button" className="border-0 bg-transparent p-0 text-sm font-bold text-basil" onClick={() => setDraft({ ...draft, lines: [...draft.lines, { name: '', amount: 0 }] })}>+ Add line</button></td></tr>}
+                {editable && <tr className="bm-noprint"><td colSpan={2} className="py-2"><button type="button" className="min-h-[44px] border-0 bg-transparent p-0 text-sm font-bold text-basil" onClick={() => setDraft({ ...draft, lines: [...draft.lines, { name: '', amount: 0 }] })}>+ Add line</button></td></tr>}
                 <tr><td className="py-1 text-right text-basil-muted">Subtotal</td><td className="py-1 text-right">{t.sub.toLocaleString('en-GB')}</td></tr>
-                {(t.disc > 0 || editable) && <tr><td className="py-1 text-right text-basil-muted">Discount {editable ? <input aria-label="Discount percent" inputMode="numeric" className="bm-noprint ml-1 h-8 w-14 rounded-lg border border-basil-edge px-2 text-right" value={draft.discount_pct} onChange={(e) => setDraft({ ...draft, discount_pct: Math.min(100, Number(e.target.value.replace(/\D/g, '')) || 0) })} /> : draft.discount_pct}%</td><td className="py-1 text-right">−{t.disc.toLocaleString('en-GB')}</td></tr>}
+                {(t.disc > 0 || editable) && <tr><td className="py-1 text-right text-basil-muted">Discount {editable ? <input aria-label="Discount percent" inputMode="numeric" className="bm-noprint ml-1 h-11 w-16 rounded-lg border border-basil-edge px-2 text-right" value={draft.discount_pct} onChange={(e) => setDraft({ ...draft, discount_pct: Math.min(100, Number(e.target.value.replace(/\D/g, '')) || 0) })} /> : draft.discount_pct}%</td><td className="py-1 text-right">−{t.disc.toLocaleString('en-GB')}</td></tr>}
                 <tr><td className="py-1 text-right text-basil-muted">VAT {draft.vat_rate}%</td><td className="py-1 text-right">{t.vat.toLocaleString('en-GB')}</td></tr>
                 <tr className="font-extrabold"><td className="py-2 text-right">Total incl. VAT</td><td className="py-2 text-right">TSH {t.total.toLocaleString('en-GB')}</td></tr>
               </tbody>
@@ -237,11 +252,11 @@ export function ContractsList() {
       {list.map((c) => {
         const paid = c.instalments.filter((i) => i.paid).reduce((s, i) => s + i.pct, 0);
         return (
-          <Card key={c.id} title={<span className="flex flex-wrap items-center gap-2"><FileSignature size={16} className="text-basil" />{c.title}</span>} action={<button type="button" className="text-sm font-bold text-basil" onClick={() => setEdit(c)}>Edit</button>}>
+          <Card key={c.id} title={<span className="flex flex-wrap items-center gap-2"><FileSignature size={16} className="text-basil" />{c.title}</span>} action={<button type="button" className="min-h-[44px] rounded-xl border border-basil-line bg-white px-3 text-sm font-bold text-basil" onClick={() => setEdit(c)}>Edit</button>}>
             <div className="flex flex-wrap gap-1.5 text-sm"><Pill tone="blue">{c.kind}</Pill><Pill tone={KSTATUS[c.status]}>{c.status.replace('_', ' ')}</Pill><span className="text-basil-muted">{c.number} · {orgName(c.organisation_id)} · {dmy(c.start_date)} – {dmy(c.end_date)}</span>{c.value > 0 && <b>{tsh(c.value)}</b>}</div>
             {c.signed_at && <div className="mt-1 text-xs text-basil-muted">Signed by {c.signed_by_name} · {new Date(c.signed_at).toLocaleString('en-GB')}</div>}
             {c.instalments.length > 0 && (
-              <div className="mt-3 grid gap-2 sm:grid-cols-4">
+              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
                 {c.instalments.map((i, j) => {
                   const late = !i.paid && !!i.due_date && i.due_date < todayIso();
                   return (
@@ -250,7 +265,7 @@ export function ContractsList() {
                     </button>
                   );
                 })}
-                <div className="text-xs text-basil-muted sm:col-span-4">{paid}% received · tap an instalment to mark paid / unpaid</div>
+                <div className="col-span-2 text-xs text-basil-muted sm:col-span-4">{paid}% received · tap an instalment to mark paid / unpaid</div>
               </div>
             )}
           </Card>
@@ -265,23 +280,23 @@ export function ContractsList() {
               <Field label="Status"><select className={inputCls} value={edit.status} onChange={(e) => setEdit({ ...edit, status: e.target.value as Contract['status'] })}>{Object.keys(KSTATUS).map((s) => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}</select></Field>
             </div>
             <Field label="Organisation"><select className={inputCls} value={edit.organisation_id ?? ''} onChange={(e) => setEdit({ ...edit, organisation_id: e.target.value || null })}><option value="">—</option>{orgs.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}</select></Field>
-            <div className="grid grid-cols-3 gap-3">
-              <Field label="Value (TSH)"><input className={inputCls} inputMode="numeric" value={edit.value ?? 0} onChange={(e) => setEdit({ ...edit, value: Number(e.target.value.replace(/\D/g, '')) || 0 })} /></Field>
+            <Field label="Value (TSH)"><input className={inputCls} inputMode="numeric" value={edit.value ?? 0} onChange={(e) => setEdit({ ...edit, value: Number(e.target.value.replace(/\D/g, '')) || 0 })} /></Field>
+            <div className="grid grid-cols-2 gap-3">
               <Field label="Start"><input type="date" className={inputCls} value={edit.start_date ?? ''} onChange={(e) => setEdit({ ...edit, start_date: e.target.value })} /></Field>
               <Field label="End"><input type="date" className={inputCls} value={edit.end_date ?? ''} onChange={(e) => setEdit({ ...edit, end_date: e.target.value })} /></Field>
             </div>
             <Field label="Renewal reminder (days before end)"><input className={inputCls} inputMode="numeric" value={edit.renewal_notice_days ?? 90} onChange={(e) => setEdit({ ...edit, renewal_notice_days: Number(e.target.value) || 0 })} /></Field>
             <b className="text-sm">Instalments</b>
             {(edit.instalments ?? []).map((i, j) => (
-              <div key={j} className="grid grid-cols-[1fr_70px_140px] gap-2">
+              <div key={j} className="grid grid-cols-[1fr_64px] gap-2 sm:grid-cols-[1fr_70px_140px]">
                 <input aria-label="Label" className={inputCls} value={i.label} onChange={(e) => setEdit({ ...edit, instalments: edit.instalments!.map((x, k) => (k === j ? { ...x, label: e.target.value } : x)) })} />
                 <input aria-label="Percent" className={inputCls} inputMode="numeric" value={i.pct} onChange={(e) => setEdit({ ...edit, instalments: edit.instalments!.map((x, k) => (k === j ? { ...x, pct: Number(e.target.value) || 0 } : x)) })} />
-                <input aria-label="Due date" type="date" className={inputCls} value={i.due_date ?? ''} onChange={(e) => setEdit({ ...edit, instalments: edit.instalments!.map((x, k) => (k === j ? { ...x, due_date: e.target.value } : x)) })} />
+                <input aria-label="Due date" type="date" className={`${inputCls} col-span-2 sm:col-span-1`} value={i.due_date ?? ''} onChange={(e) => setEdit({ ...edit, instalments: edit.instalments!.map((x, k) => (k === j ? { ...x, due_date: e.target.value } : x)) })} />
               </div>
             ))}
-            <div className="flex gap-3 text-sm">
-              <button type="button" className="border-0 bg-transparent p-0 font-bold text-basil" onClick={() => setEdit({ ...edit, instalments: DEFAULT_INST(edit.start_date ?? todayIso()) })}>Use 40/25/20/15</button>
-              <button type="button" className="border-0 bg-transparent p-0 font-bold text-basil" onClick={() => setEdit({ ...edit, instalments: [] })}>No instalments</button>
+            <div className="flex gap-2 text-sm">
+              <button type="button" className="btn-outline" onClick={() => setEdit({ ...edit, instalments: DEFAULT_INST(edit.start_date ?? todayIso()) })}>Use 40/25/20/15</button>
+              <button type="button" className="btn-outline" onClick={() => setEdit({ ...edit, instalments: [] })}>No instalments</button>
             </div>
             <button type="button" className="btn-primary" onClick={saveIt}>Save</button>
           </div>
@@ -290,7 +305,7 @@ export function ContractsList() {
     </div>
   );
 }
-export const ContractsPage = () => (<div><PageTitle tag="GROWTH · CONTRACTS" title="Contracts & MoU register" sub="Instalments, signatures and renewal reminders at 90 / 60 / 30 days." /><ContractsList /></div>);
+export const ContractsPage = () => (<div><PageHead tag="GROWTH · CONTRACTS" title="Contracts & MoU register" sub="Instalments, signatures and renewal reminders at 90 / 60 / 30 days." /><ContractsList /></div>);
 
 // ---------- tenders ----------
 const TTONE: Record<string, Tone> = { Identified: 'blue', Preparing: 'amber', Submitted: 'gold', Won: 'green', Lost: 'red', 'Not pursued': 'grey' };
@@ -353,7 +368,7 @@ export function TendersList() {
     </div>
   );
 }
-export const TendersPage = () => (<div><PageTitle tag="GROWTH · TENDERS" title="Tenders tracker" sub="Closing dates, documents and outcomes." /><TendersList /></div>);
+export const TendersPage = () => (<div><PageHead tag="GROWTH · TENDERS" title="Tenders tracker" sub="Closing dates, documents and outcomes." /><TendersList /></div>);
 
 // ---------- events ----------
 export function EventsList() {
@@ -419,7 +434,7 @@ export function EventsList() {
     </div>
   );
 }
-export const EventsPage = () => (<div><PageTitle tag="GROWTH · EVENTS" title="Events calendar" sub="Conferences, networking and awards where we meet buyers." /><EventsList /></div>);
+export const EventsPage = () => (<div><PageHead tag="GROWTH · EVENTS" title="Events calendar" sub="Conferences, networking and awards where we meet buyers." /><EventsList /></div>);
 
 // ---------- subscribers (website table, read-only here) ----------
 export function SubscribersGlance() {
@@ -444,7 +459,7 @@ export function SubscribersGlance() {
           {rows.length === 0 && <li className="text-sm text-basil-muted">Nobody has subscribed on the website yet.</li>}
         </ul>
       </Card>
-      <Link to="/os/website/subscribers" className="text-sm font-bold"><FileText size={14} className="mr-1 inline" />Manage in Website CMS →</Link>
+      <a href="/os/website/subscribers" className="flex min-h-[44px] items-center text-sm font-bold"><FileText size={14} className="mr-1 inline" />Manage in Website CMS →</a>
     </div>
   );
 }

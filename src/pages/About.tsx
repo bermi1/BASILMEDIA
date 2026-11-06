@@ -1,63 +1,84 @@
-import { Link } from 'react-router-dom';
-import { Clapperboard, Compass, Download, MapPin, Target } from 'lucide-react';
+import { useState } from 'react';
+import { Download } from 'lucide-react';
 import { useRows, useSettings } from '@/hooks/useData';
 import { useSeo } from '@/hooks/useSeo';
 import { useI18n } from '@/lib/i18n';
 import { Reveal } from '@/components/Reveal';
 import { PageHero } from '@/components/PageHero';
-import { PartnerLogo, uniquePartners } from '@/components/PartnerLogo';
 
 export default function About() {
   const s = useSettings();
   const { t } = useI18n();
   useSeo('About Us', s.mission);
-  const { rows: partnerRows } = useRows('partners');
-  const partners = uniquePartners(partnerRows);
-  const { rows: services } = useRows('services', { publishedOnly: true });
-  const lead = (s.about_story.match(/^.*?[.!?](\s|$)/)?.[0] ?? s.about_story).trim();
-
-  const cards = [
-    { icon: Target, title: 'Mission', body: <p className="m-0">{s.mission}</p> },
-    { icon: Compass, title: 'Vision', body: <p className="m-0">{s.vision}</p> },
-    { icon: Clapperboard, title: 'What we do', body: <div className="flex flex-wrap gap-1.5">{services.map((x) => <Link key={x.id} to={`/services#${x.slug}`} className="rounded-full bg-basil-ice px-2.5 py-1 text-[12.5px] font-medium text-basil-deep no-underline hover:bg-basil hover:text-white">{x.title}</Link>)}</div> },
-    { icon: MapPin, title: 'Where to find us', body: <p className="m-0">{s.address}{s.office_hours && <><br /><span className="text-basil-muted">{s.office_hours}</span></>}</p> },
-  ];
-
+  const { rows: allPartners } = useRows('partners');
+  // one logo per partner, even if the same partner was saved twice
+  const partners = allPartners.filter((p, i, a) => a.findIndex((q) => q.name.trim().toLowerCase() === p.name.trim().toLowerCase()) === i);
+  const story = (s.about_story || '').split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean);
   return (
     <>
-      <PageHero kicker={t('about').toUpperCase()} title={<>A Dar es Salaam studio that <span className="text-glow">tells Tanzania’s stories.</span></>} image={s.about_image_url || undefined} />
+      <PageHero kicker={t('about').toUpperCase()} title={<>A Dar es Salaam studio that <span className="text-glow">tells Tanzania’s stories.</span></>} />
 
-      <section className="relative overflow-hidden">
-        <div aria-hidden="true" className="bg-dots fade-mask absolute inset-0" />
-        <div className="container-bm section relative">
-          <Reveal><p className="m-0 max-w-[820px] font-display text-[clamp(18px,2.4vw,28px)] font-semibold leading-snug tracking-[-0.01em] text-basil-ink">{lead}</p></Reveal>
-          <div className="mt-6 grid grid-cols-1 gap-3 sm:mt-8 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
-            {cards.map(({ icon: Icon, title, body }, i) => (
-              <Reveal key={title} delay={i * 0.05}>
-                <div className="glow-card flex h-full flex-col gap-3 rounded-[20px] border border-basil-line bg-white/90 p-5 text-[14.5px] leading-relaxed text-[#33465F] backdrop-blur">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-basil text-white"><Icon size={19} /></span>
-                  <b className="font-display text-[16px] text-basil-ink">{title}</b>
-                  {body}
-                </div>
-              </Reveal>
-            ))}
+      {/* Intro: the whole team photo (never cropped) beside the opening of our story */}
+      <section className="container-bm section grid items-center gap-6 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
+        <Reveal>
+          <img src={s.about_image_url || '/img/team/basil-media-team.jpg'} alt="The Basil Media team" className="block h-auto w-full rounded-[24px] shadow-card" />
+        </Reveal>
+        <Reveal>
+          <div className="font-mono text-[11px] tracking-[0.18em] text-basil">WHO WE ARE</div>
+          <p className="m-0 mt-2 font-display text-[19px] font-semibold leading-snug text-basil-ink sm:text-2xl">{story[0]}</p>
+        </Reveal>
+      </section>
+
+      {/* The rest of the story as a grid of short cards, not one long block of text */}
+      {story.length > 1 && (
+        <section className="container-bm grid gap-3 pb-10 sm:grid-cols-2 sm:gap-4 sm:pb-14 lg:grid-cols-3">
+          {story.slice(1).map((para, i) => (
+            <Reveal key={i} delay={i * 0.05}>
+              <div className="h-full rounded-[22px] border border-basil-line bg-white p-5 sm:p-6">
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-basil-ice font-display font-extrabold text-basil">{i + 1}</span>
+                <p className="m-0 mt-3 text-[15px] leading-relaxed text-[#33465F]">{para}</p>
+              </div>
+            </Reveal>
+          ))}
+        </section>
+      )}
+      <section className="container-bm grid grid-cols-2 gap-2.5 pb-10 sm:gap-4 sm:pb-14">
+        <div className="rounded-[22px] bg-basil p-4 text-white sm:rounded-[26px] sm:p-8"><div className="font-mono text-[11px] tracking-[0.18em] text-basil-frost">MISSION</div><p className="mb-0 mt-2 font-display text-[14px] font-bold leading-snug sm:mt-3 sm:text-xl sm:leading-normal">{s.mission}</p></div>
+        <div className="rounded-[22px] bg-basil-deep p-4 text-white sm:rounded-[26px] sm:p-8"><div className="font-mono text-[11px] tracking-[0.18em] text-basil-haze">VISION</div><p className="mb-0 mt-2 font-display text-[14px] font-bold leading-snug sm:mt-3 sm:text-xl sm:leading-normal">{s.vision}</p></div>
+      </section>
+      <section className="section bg-basil-mist">
+        <div className="container-bm">
+          <h2 className="h-section m-0 mb-5">{t('team')}</h2>
+          <div className="grid gap-2.5 sm:gap-4 lg:grid-cols-[2fr_1fr]">
+            <figure className="relative m-0 overflow-hidden rounded-[22px]">
+              <img src="/img/services/event-coverage-team.jpg" alt="Basil Media crew covering an outdoor event" loading="lazy" className="aspect-[16/10] w-full object-cover object-top lg:h-full lg:aspect-auto" />
+              <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-basil-night/85 to-transparent p-4 pt-12 text-white sm:p-6"><b className="font-display text-lg sm:text-2xl">One crew, from brief to final cut</b><span className="block text-sm text-white/85">Filmmakers, photographers, editors and producers in Dar es Salaam.</span></figcaption>
+            </figure>
+            <img src="/img/team/crew-on-set.jpg" alt="Basil Media crew filming at a conference" loading="lazy" className="hidden w-full rounded-[22px] object-cover object-top lg:block lg:aspect-[3/4]" />
           </div>
         </div>
       </section>
-
-      {(partners.length > 0 || s.company_profile_url) && (
-        <section className="container-bm section flex flex-col items-center gap-5 text-center">
-          {partners.length > 0 && (
-            <>
-              <div className="kicker">{t('partnersWith').toUpperCase()}</div>
-              <div className="flex flex-wrap justify-center gap-x-10 gap-y-5">
-                {partners.map((p) => <span key={p.id} className="flex min-h-12 max-w-full items-center font-display font-bold text-basil-muted"><PartnerLogo wrap p={p} className="h-10 max-w-[140px] object-contain grayscale transition hover:grayscale-0" /></span>)}
-              </div>
-            </>
-          )}
-          {s.company_profile_url && <a href={s.company_profile_url} target="_blank" rel="noreferrer" download className="btn-primary"><Download size={18} />{t('downloadProfile')}</a>}
-        </section>
-      )}
+      <section className="container-bm section flex flex-wrap items-center justify-between gap-5">
+        <div className="w-full">
+          <h2 className="m-0 mb-3.5 text-[22px] font-extrabold sm:text-3xl">{t('partnersWith')}</h2>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+            {partners.map((p) => (
+              <span key={p.id} className="flex h-20 items-center justify-center rounded-[16px] border border-basil-line bg-white px-3 text-center text-sm font-bold text-basil-deep">
+                <Logo name={p.name} src={p.logo_url} />
+              </span>
+            ))}
+          </div>
+        </div>
+        {s.company_profile_url && (
+          <a href={s.company_profile_url} target="_blank" rel="noreferrer" download className="flex items-center gap-3 rounded-[18px] bg-basil px-6 py-[18px] font-bold text-white no-underline hover:bg-basil-deep hover:text-white"><Download size={22} />{t('downloadProfile')}</a>
+        )}
+      </section>
     </>
   );
+}
+
+/** Partner logo, or the name if there is no logo or it fails to load. */
+function Logo({ name, src }: { name: string; src: string }) {
+  const [bad, setBad] = useState(false);
+  return src && !bad ? <img src={src} alt={name} loading="lazy" onError={() => setBad(true)} className="max-h-12 max-w-[140px] object-contain" /> : <>{name}</>;
 }

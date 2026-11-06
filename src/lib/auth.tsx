@@ -1,12 +1,17 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { supabase } from './supabase';
 import { CMS_ROLES, type AppRole } from './types';
+import { accessFromRoles, sortPortals, type PortalAccess } from './roles';
 
 export interface AuthUser {
   id: string;
   email: string;
   name: string;
+  /** Roles given directly (user_roles). */
   roles: AppRole[];
+  /** Every portal the person can switch between: implied roles (GM ⇒ Finance, Account Manager, Reception),
+   *  company-wide or project-limited grants, projects they lead and trips they drive. */
+  access: PortalAccess[];
 }
 
 interface AuthCtx {
@@ -22,44 +27,43 @@ interface AuthCtx {
 
 const Ctx = createContext<AuthCtx | null>(null);
 
-// ---- demo-mode accounts (browser only; never used when Supabase is configured) ----
-const DEMO_USERS = 'basil-demo-users-v1';
-const DEMO_SESSION = 'basil-demo-session-v1';
-type DemoUser = AuthUser & { password: string };
-const readUsers = (): DemoUser[] => {
-  try {
-    return JSON.parse(localStorage.getItem(DEMO_USERS) ?? '[]');
-  } catch {
-    return [];
+/** Plain-language sign-in errors. "Invalid API key" means the site was built with a key that does not
+ *  belong to its Supabase project — a hosting setting, not the user's password. */
+function friendly(e: { message?: string }): Error {
+  const m = e.message ?? String(e);
+  if (/invalid api key|no api key|apikey/i.test(m)) {
+    const host = (() => { try { return new URL(import.meta.env.VITE_SUPABASE_URL as string).host; } catch { return 'the database'; } })();
+    return new Error(`The website's database key is not valid for ${host}. In Vercel → Settings → Environment Variables, set SUPABASE_URL and SUPABASE_ANON_KEY from the same Supabase project (Settings → API), then redeploy.`);
   }
-};
-
-async function loadRoles(userId: string): Promise<AppRole[]> {
-  if (!supabase) return [];
-  const { data } = await supabase.from('user_roles').select('role').eq('user_id', userId);
-  return (data ?? []).map((r: { role: AppRole }) => r.role);
+  if (m === 'Invalid login credentials') return new Error('Email or password is not correct.');
+  if (/email not confirmed/i.test(m)) return new Error('Please confirm your email first — check your inbox for the link.');
+  return new Error(m);
 }
+
+async function loadRoles(userId: string): Promise<{ roles: AppRole[]; access: PortalAccess[] }> {
+  const { data } = await supabase.from('user_roles').select('role').eq('user_id', userId);
+  const roles = (data ?? []).map((r: { role: AppRole }) => r.role);
+  const { data: portals, error } = await supabase.rpc('my_portals');
+  const access = !error && Array.isArray(portals) && portals.length ? (portals as PortalAccess[]) : accessFromRoles(roles);
+  return { roles, access };
+}
+/** Roles the person effectively holds company-wide (base + implied + company-wide grants). */
+export const effectiveRoles = (u: AuthUser | null): AppRole[] =>
+  u ? sortPortals([...u.roles, ...u.access.filter((a) => a.project_id === null).map((a) => a.role)]) : [];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!supabase) {
-      const email = localStorage.getItem(DEMO_SESSION);
-      const u = readUsers().find((x) => x.email === email);
-      setUser(u ? { id: u.id, email: u.email, name: u.name, roles: u.roles } : null);
-      setLoading(false);
-      return;
-    }
     const apply = async (s: { user: { id: string; email?: string; user_metadata?: { full_name?: string } } } | null) => {
       if (!s) {
         setUser(null);
         setLoading(false);
         return;
       }
-      const roles = await loadRoles(s.user.id);
-      setUser({ id: s.user.id, email: s.user.email ?? '', name: s.user.user_metadata?.full_name ?? s.user.email ?? '', roles });
+      const { roles, access } = await loadRoles(s.user.id);
+      setUser({ id: s.user.id, email: s.user.email ?? '', name: s.user.user_metadata?.full_name ?? s.user.email ?? '', roles, access });
       setLoading(false);
     };
     supabase.auth.getSession().then(({ data }) => apply(data.session));
@@ -68,69 +72,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {
-    if (supabase) {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-      void import('@/os/security/lib').then((m) => m.recordLoginEvent('password'));
-      return;
-    }
-    const u = readUsers().find((x) => x.email.toLowerCase() === email.toLowerCase());
-    if (!u || u.password !== password) throw new Error('Email or password is not correct.');
-    localStorage.setItem(DEMO_SESSION, u.email);
-    setUser({ id: u.id, email: u.email, name: u.name, roles: u.roles });
-    void import('@/os/security/lib').then((m) => m.recordLoginEvent('password', u.id));
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw friendly(error);
   }, []);
 
   const signUp = useCallback(async (email: string, password: string, name: string) => {
     if (password.length < 8) throw new Error('Use at least 8 characters for your password.');
-    if (supabase) {
-      const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
-      if (error) throw error;
-      return { needsConfirm: !data.session };
-    }
-    const users = readUsers();
-    if (users.some((x) => x.email.toLowerCase() === email.toLowerCase())) throw new Error('That email already has an account.');
-    // Same rule as the database trigger: the very first account becomes Super Admin.
-    const roles: AppRole[] = users.length === 0 ? ['super_admin'] : [];
-    const u: DemoUser = { id: crypto.randomUUID(), email, name: name || email, roles, password };
-    localStorage.setItem(DEMO_USERS, JSON.stringify([...users, u]));
-    localStorage.setItem(DEMO_SESSION, email);
-    setUser({ id: u.id, email, name: u.name, roles });
-    return { needsConfirm: false };
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
+    if (error) throw friendly(error);
+    return { needsConfirm: !data.session };
   }, []);
 
   const resetPassword = useCallback(async (email: string) => {
-    if (!supabase) return;
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${location.origin}/login` });
-    if (error) throw error;
+    if (error) throw friendly(error);
   }, []);
 
   const signOut = useCallback(async () => {
-    if (supabase) await supabase.auth.signOut();
-    localStorage.removeItem(DEMO_SESSION);
+    await supabase.auth.signOut();
     setUser(null);
   }, []);
 
   const value = useMemo<AuthCtx>(() => {
-    const hasRole = (...roles: AppRole[]) => !!user && (user.roles.includes('super_admin') || roles.some((r) => user.roles.includes(r)));
+    const eff = effectiveRoles(user);
+    const hasRole = (...roles: AppRole[]) => !!user && (user.roles.includes('super_admin') || roles.some((r) => eff.includes(r)));
     return { user, loading, signIn, signUp, resetPassword, signOut, hasRole, canEditWebsite: hasRole(...CMS_ROLES) };
   }, [user, loading, signIn, signUp, resetPassword, signOut]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
-
-/** MFA helpers (Supabase TOTP). Demo mode: no factors, assurance level always aal1. */
-export const mfa = {
-  async assurance() {
-    if (!supabase) return { currentLevel: 'aal1', nextLevel: 'aal1' };
-    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-    return { currentLevel: data?.currentLevel ?? 'aal1', nextLevel: data?.nextLevel ?? 'aal1' };
-  },
-  async needsChallenge() {
-    const a = await mfa.assurance();
-    return a.nextLevel === 'aal2' && a.currentLevel !== 'aal2';
-  },
-};
 
 export function useAuth() {
   const c = useContext(Ctx);

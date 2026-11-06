@@ -33,7 +33,7 @@ export default function Services() {
 
   return (
     <>
-      <PageHero kicker={t('services').toUpperCase()} title={<>One team, from brief <span className="text-glow">to final cut.</span></>} sub="Six services, one crew, one invoice." />
+      <PageHero kicker={t('services').toUpperCase()} title={<>One team, from brief <span className="text-glow">to final cut.</span></>} sub="Every service, one crew, one invoice." />
 
       <section className="container-bm section">
         <div className="grid grid-cols-2 gap-2.5 sm:gap-4 lg:grid-cols-3">

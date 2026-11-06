@@ -1,15 +1,13 @@
 // CRM: organisations & contacts, the leads pipeline, and the website-bookings inbox.
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowRight, Building2, CalendarClock, Flame, Inbox, Phone, Plus, Search, UserPlus } from 'lucide-react';
 import { useActing } from '@/os/lib/session';
-import { demoTable, insertRow, newId, nowIso, rpc, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
+import { insertRow, nowIso, rpc, updateRow, usePeople, personName, useTable } from '@/os/lib/store';
 import { useToast } from '@/os/cms/toast';
 import { Card, Empty, Field, Pill, Sheet, Stat, StageTracker, Tabs, inputCls, tshShort } from '@/os/ui';
-import { PageTitle } from '@/os/OsLayout';
 import type { Booking } from '@/lib/types';
 import { LEAD_STAGES, LOST_REASONS, ORG_TYPES, daysBetween, dmy, leadScore, stageTone, todayIso, type Contact, type Lead, type LeadStage, type Organisation, type ShareEvent, type Showcase } from './lib';
-import { markBooking, useBookings, useClients } from './kit';
+import { GoLink, PageHead, markBooking, useBookings, useClients } from './kit';
 
 export function useCrm() {
   const orgs = useTable<Organisation>('crm_organisations', { order: 'name' }).rows;
@@ -29,15 +27,8 @@ export function useLeadHeat() {
   };
 }
 
-export async function moveLead(lead: Lead, stage: LeadStage, actor: string, lostReason = '') {
-  await rpc('move_lead', { _lead: lead.id, _stage: stage, _lost_reason: lostReason || null }, () => {
-    const rows = demoTable('leads');
-    const r = rows.find((x) => x.id === lead.id);
-    if (!r) throw new Error('Lead not found');
-    if (stage === 'Lost' && !lostReason) throw new Error('Choose a lost reason');
-    Object.assign(r, { stage, lost_reason: stage === 'Lost' ? lostReason : '', probability: stage === 'Won' ? 100 : stage === 'Lost' ? 0 : r.probability, stage_changed_at: nowIso() });
-    demoTable('lead_activity').push({ id: newId(), lead_id: lead.id, kind: 'stage', from_stage: lead.stage, to_stage: stage, body: lostReason, actor_id: actor, created_at: nowIso() });
-  });
+export async function moveLead(lead: Lead, stage: LeadStage, _actor: string, lostReason = '') {
+  await rpc('move_lead', { _lead: lead.id, _stage: stage, _lost_reason: lostReason || null });
 }
 
 const OPEN = (l: Lead) => l.stage !== 'Won' && l.stage !== 'Lost';
@@ -182,15 +173,15 @@ export function LeadSheet({ lead, orgs, onClose }: { lead: Lead | 'new' | null; 
               {LEAD_STAGES.filter((s) => s !== l.stage && s !== 'Lost').map((s) => <button key={s} type="button" className="btn-outline min-h-[44px]" onClick={() => move(s)}>{s}</button>)}
             </div>
             {l.stage !== 'Lost' && (
-              <div className="flex flex-wrap items-end gap-2">
+              <div className="flex flex-wrap items-end gap-2 [&>label]:min-w-0 [&>label]:flex-1">
                 <Field label="Lost reason"><select className={inputCls} value={lost} onChange={(e) => setLost(e.target.value)}><option value="">Choose…</option>{LOST_REASONS.map((r) => <option key={r}>{r}</option>)}</select></Field>
                 <button type="button" className="min-h-[44px] rounded-xl border border-red-300 bg-white px-4 font-bold text-red-700" onClick={() => move('Lost')}>Mark lost</button>
               </div>
             )}
-            <div className="flex flex-wrap gap-2 text-sm">
-              <Link to={`/os/growth/proposals?lead=${l.id}`} className="font-bold">Write proposal →</Link>
-              <Link to={`/os/share/showcases?lead=${l.id}`} className="font-bold">Build showcase →</Link>
-              <Link to={`/os/share/deals?lead=${l.id}`} className="font-bold">Open deal room →</Link>
+            <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
+              <GoLink to={`/os/growth/proposals?lead=${l.id}`} className="btn-outline">Write proposal <ArrowRight size={14} /></GoLink>
+              <GoLink to={`/os/share/showcases?lead=${l.id}`} className="btn-outline">Build showcase <ArrowRight size={14} /></GoLink>
+              <GoLink to={`/os/share/deals?lead=${l.id}`} className="btn-outline">Open deal room <ArrowRight size={14} /></GoLink>
             </div>
             <span className="text-xs text-basil-muted">Owner {personName(people, l.owner_id)} · created {dmy(l.created_at)}</span>
           </div>
@@ -278,27 +269,28 @@ export function Organisations() {
   };
   return (
     <div>
-      <PageTitle tag="GROWTH · CRM" title="Organisations & contacts" sub="Hospitals, banks, NGOs, universities and government — linked to client records once they buy.">
+      <PageHead tag="GROWTH · CRM" title="Organisations & contacts" sub="Hospitals, banks, NGOs, universities and government — linked to client records once they buy.">
         <button type="button" className="btn-primary" onClick={() => setEdit({ type: 'Corporate' })}><Plus size={16} />Organisation</button>
-      </PageTitle>
+      </PageHead>
       <label className="relative mb-4 block"><span className="sr-only">Search</span><Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-basil-muted" /><input className={`${inputCls} pl-9`} placeholder="Search organisations" value={q} onChange={(e) => setQ(e.target.value)} /></label>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {shown.map((o) => {
           const cs = contacts.filter((c) => c.organisation_id === o.id);
           const ls = leads.filter((l) => l.organisation_id === o.id);
           return (
-            <Card key={o.id} title={<span className="flex items-center gap-2"><Building2 size={16} className="text-basil" />{o.name}</span>} action={<button type="button" className="text-sm font-bold text-basil" onClick={() => setEdit(o)}>Edit</button>}>
+            <Card key={o.id} title={<span className="flex items-center gap-2"><Building2 size={16} className="text-basil" />{o.name}</span>} action={<button type="button" className="min-h-[44px] rounded-xl border border-basil-line bg-white px-3 text-sm font-bold text-basil" onClick={() => setEdit(o)}>Edit</button>}>
               <div className="mb-2 flex flex-wrap gap-1.5"><Pill tone="blue">{o.type}</Pill>{o.client_id ? <Pill tone="green">Client · {clients.find((c) => c.id === o.client_id)?.name ?? o.client_id}</Pill> : <Pill tone="grey">Prospect</Pill>}{ls.length > 0 && <Pill tone="gold">{ls.length} lead{ls.length > 1 ? 's' : ''} · {tshShort(ls.reduce((s, l) => s + l.value, 0))}</Pill>}</div>
               <div className="text-sm text-basil-muted">{o.city}</div>
               <ul className="m-0 mt-2 flex list-none flex-col gap-1 p-0">
                 {cs.map((c) => (
-                  <li key={c.id}><button type="button" className="w-full border-0 bg-transparent p-0 text-left text-sm" onClick={() => setContact(c)}><b>{c.full_name}</b> <span className="text-basil-muted">· {c.title} · {c.phone}</span></button></li>
+                  <li key={c.id}><button type="button" className="min-h-[44px] w-full rounded-lg border-0 bg-transparent p-0 text-left text-sm" onClick={() => setContact(c)}><b>{c.full_name}</b> <span className="text-basil-muted">· {c.title} · {c.phone}</span></button></li>
                 ))}
               </ul>
-              <button type="button" className="mt-2 border-0 bg-transparent p-0 text-sm font-bold text-basil" onClick={() => setContact({ organisation_id: o.id, is_primary: cs.length === 0 })}>+ Contact</button>
+              <button type="button" className="mt-1 min-h-[44px] border-0 bg-transparent p-0 text-sm font-bold text-basil" onClick={() => setContact({ organisation_id: o.id, is_primary: cs.length === 0 })}>+ Contact</button>
             </Card>
           );
         })}
+        {shown.length === 0 && <Empty icon={<Building2 />} title={q ? 'No match' : 'No organisations yet'} />}
       </div>
       <Sheet open={!!edit} onClose={() => setEdit(null)} title={edit?.id ? 'Edit organisation' : 'New organisation'}>
         {edit && (
@@ -339,9 +331,9 @@ export function Organisations() {
 export function PipelinePage() {
   return (
     <div>
-      <PageTitle tag="GROWTH · PIPELINE" title="Leads pipeline" sub="New → Contacted → Meeting → Proposal Sent → Negotiation → Won / Lost. Red cards have an overdue next action.">
-        <Link to="/os/growth/inbox" className="btn-outline"><Inbox size={16} />Inbox <ArrowRight size={14} /></Link>
-      </PageTitle>
+      <PageHead tag="GROWTH · PIPELINE" title="Leads pipeline" sub="New → Contacted → Meeting → Proposal Sent → Negotiation → Won / Lost. Red cards have an overdue next action.">
+        <GoLink to="/os/growth/inbox" className="btn-outline"><Inbox size={16} />Inbox <ArrowRight size={14} /></GoLink>
+      </PageHead>
       <Pipeline />
     </div>
   );

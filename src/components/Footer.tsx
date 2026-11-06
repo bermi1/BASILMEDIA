@@ -3,14 +3,14 @@ import { Link } from 'react-router-dom';
 import { useSettings } from '@/hooks/useData';
 import { useI18n } from '@/lib/i18n';
 import { submit } from '@/lib/db';
-import { isEmail, isProfileUrl, normaliseTzPhone, waLink } from '@/lib/format';
+import { isEmail, normaliseTzPhone, waLink } from '@/lib/format';
 import { SOCIALS } from './icons';
 
 export function SocialRow({ dark = true }: { dark?: boolean }) {
   const s = useSettings();
   return (
     <div className="flex flex-wrap gap-2.5">
-      {SOCIALS.filter(({ key }) => isProfileUrl(s.socials?.[key])).map(({ key, label, Icon }) => (
+      {SOCIALS.filter(({ key }) => s.socials?.[key]).map(({ key, label, Icon }) => (
         <a
           key={key}
           href={s.socials[key]}
@@ -55,24 +55,21 @@ export function Footer() {
             <div className="font-mono text-[11px] tracking-[0.2em] text-basil-haze">{t('ready')}</div>
             <div className="mt-1 font-display text-[22px] font-extrabold leading-[1.1] text-white sm:text-[clamp(28px,3.5vw,42px)]">{t('readyTitle')}</div>
           </div>
-          <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex sm:gap-3">
-            <Link to="/#book" className="flex h-12 items-center justify-center rounded-2xl bg-white px-5 font-extrabold text-basil no-underline hover:bg-basil-ice">{t('book')}</Link>
-            <a href={waLink(s.whatsapp || s.phone)} target="_blank" rel="noreferrer" className="flex h-12 items-center justify-center rounded-2xl border border-white/45 px-5 font-bold text-white no-underline hover:bg-white/10 hover:text-white">WhatsApp</a>
+          <div className="flex shrink-0 flex-wrap items-center gap-2 sm:gap-3">
+            <Link to="/#book" className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-full bg-white px-4 text-sm font-extrabold text-basil no-underline hover:bg-basil-ice">{t('book')}</Link>
+            <a href={waLink(s.whatsapp || s.phone)} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center justify-center whitespace-nowrap rounded-full border border-white/45 px-4 text-sm font-bold text-white no-underline hover:bg-white/10 hover:text-white">WhatsApp</a>
           </div>
         </div>
       </div>
       <div className="container-bm grid grid-cols-2 gap-x-6 gap-y-7 pb-5 pt-8 sm:pt-12 lg:grid-cols-[1.6fr_1fr_1fr_1.6fr] lg:gap-10">
         <div className="col-span-2 flex flex-col gap-3.5 lg:col-span-1">
-          <div className="flex items-center gap-3">
-            <img src={s.logo_url || '/logo.svg'} alt="Basil Media" className="h-12 w-12 sm:h-16 sm:w-16" />
-            <span className="font-display text-xl font-extrabold text-white sm:text-2xl">Basil <span className="text-basil-sky">Media</span></span>
-          </div>
+          <img src={s.logo_reverse_url && !s.logo_reverse_url.endsWith('/logo-reverse.svg') ? s.logo_reverse_url : '/brand/basil-media-logo-white.svg'} alt="Basil Media — Health Education Innovation" className="h-24 w-auto self-start sm:h-28" />
           <p className="m-0 max-w-[380px] text-sm leading-relaxed">{s.footer_about}</p>
           <SocialRow />
         </div>
         <nav aria-label="Footer" className="flex flex-col gap-2 text-sm">
           <b className="font-display text-white">{t('explore')}</b>
-          {[['/services', t('services')], ['/our-work', t('ourWork')], ['/about', t('about')], ['/find-me', t('findPhotos')], ['/contact', t('contact')]].map(([to, l]) => (
+          {[['/services', t('services')], ['/our-work', t('ourWork')], ['/about', t('about')], ['/health-news', t('healthNews')], ['/find-me', t('findPhotos')], ['/contact', t('contact')]].map(([to, l]) => (
             <Link key={to} to={to} className="text-basil-haze no-underline hover:text-white">{l}</Link>
           ))}
         </nav>
@@ -84,8 +81,8 @@ export function Footer() {
           {s.office_hours && <span className="text-xs">{s.office_hours}</span>}
         </div>
         <div className="col-span-2 flex flex-col gap-2.5 lg:col-span-1">
-          <b className="font-display text-white">Basil Brief</b>
-          <span className="text-sm">Health, youth, innovation &amp; business — every Monday.</span>
+          <b className="font-display text-white">Basil Health Brief</b>
+          <span className="text-sm">Weekly health news for clinicians · English or Kiswahili.</span>
           <form onSubmit={(e) => (e.preventDefault(), quickSubscribe())} className="flex gap-2 rounded-2xl border border-basil-haze/25 bg-white/[0.08] p-1.5">
             <label className="sr-only" htmlFor="foot-sub">{t('phoneOrEmail')}</label>
             <input id="foot-sub" value={contact} onChange={(e) => setContact(e.target.value)} placeholder={t('phoneOrEmail')} className="min-w-0 flex-1 border-0 bg-transparent px-2.5 text-white outline-none placeholder:text-basil-haze/70" />
@@ -104,5 +101,18 @@ export function Footer() {
         </span>
       </div>
     </footer>
+  );
+}
+
+export function WhatsAppButton() {
+  const { t } = useI18n();
+  const s = useSettings();
+  return (
+    <a href={waLink(s.whatsapp || s.phone, 'Hello Basil Media, ')} target="_blank" rel="noreferrer" className="fixed bottom-[22px] right-[22px] z-30 hidden h-14 w-14 items-center justify-center md:flex gap-2.5 rounded-full bg-[#25D366] font-bold text-white no-underline shadow-[0_14px_30px_rgba(37,211,102,0.45)] transition hover:scale-105 hover:text-white md:bottom-[22px] md:right-[22px] md:h-auto md:w-auto md:py-3.5 md:pl-4 md:pr-5" aria-label="Chat with us on WhatsApp">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth="1.8" strokeLinejoin="round" aria-hidden="true">
+        <path d="M4 20 L5.3 16.2 A8 8 0 1 1 8 18.8 Z" />
+      </svg>
+      <span className="hidden md:inline">{t('chat')}</span>
+    </a>
   );
 }
