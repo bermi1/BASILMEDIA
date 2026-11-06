@@ -27,7 +27,9 @@ npm install
 npm run dev
 ```
 
-With no `.env`, the app runs in **demo mode**: content and accounts live in your browser (localStorage) so you can try the site
+The app connects to Basil Media's Supabase project by default (its public publishable key is built in; the database's
+Row Level Security protects the data). Set `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` to point at another project,
+or `VITE_DEMO=1` to run in **demo mode**: content and accounts live in your browser (localStorage) so you can try the site
 and the CMS immediately. Go to `/login`, choose *Create the first account* — it becomes Super Admin — then open the Website CMS.
 
 ## Connect Supabase (free tier or self-hosted)

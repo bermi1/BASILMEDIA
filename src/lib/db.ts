@@ -18,7 +18,8 @@ function emit() {
 }
 
 // ---------- demo store ----------
-const KEY = 'basil-demo-db-v1';
+// The key changes whenever the starter content changes, so browsers never keep a stale copy.
+const KEY = `basil-demo-db-${JSON.stringify(SEED).length.toString(36)}-${JSON.stringify(DEFAULT_SETTINGS).length.toString(36)}`;
 type DemoDb = { settings: SiteSettings } & { [K in TableName]: Row<K>[] };
 
 function loadDemo(): DemoDb {

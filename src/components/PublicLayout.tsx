@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Header } from './Header';
-import { Footer, WhatsAppButton } from './Footer';
+import { Footer } from './Footer';
+import { ChatWidget } from './ChatWidget';
 import { Cursor } from './Cursor';
 import { MobileTabBar } from './MobileTabBar';
 
@@ -26,7 +27,7 @@ export function PublicLayout() {
       </AnimatePresence>
       {/* Phones: only the landing page carries the footer; the tab bar does the rest. */}
       <div className={pathname === '/' ? '' : 'hidden md:block'}><Footer /></div>
-      <WhatsAppButton />
+      <ChatWidget />
       <MobileTabBar />
       <Cursor />
     </div>

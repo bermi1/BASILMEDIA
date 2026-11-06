@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /os
+Disallow: /app
+Disallow: /login
+Disallow: /g/
+Disallow: /sign/
+Disallow: /d/
+Sitemap: https://basilmedia.vercel.app/sitemap.xml

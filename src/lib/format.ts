@@ -25,3 +25,13 @@ export const isEmail = (s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s.tri
 export function waLink(phone: string, text = '') {
   return `https://wa.me/${phone.replace(/[^\d]/g, '')}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
 }
+
+/** True only for a real profile link (e.g. instagram.com/basilmedia), not a bare placeholder like instagram.com/. */
+export function isProfileUrl(u?: string | null) {
+  if (!u) return false;
+  try {
+    return new URL(u).pathname.replace(/\/+$/, '').length > 1;
+  } catch {
+    return false;
+  }
+}

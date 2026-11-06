@@ -5,12 +5,14 @@ import { useSeo } from '@/hooks/useSeo';
 import { useI18n } from '@/lib/i18n';
 import { Reveal } from '@/components/Reveal';
 import { PageHero } from '@/components/PageHero';
+import { PartnerLogo, uniquePartners } from '@/components/PartnerLogo';
 
 export default function About() {
   const s = useSettings();
   const { t } = useI18n();
   useSeo('About Us', s.mission);
-  const { rows: partners } = useRows('partners');
+  const { rows: partnerRows } = useRows('partners');
+  const partners = uniquePartners(partnerRows);
   const { rows: services } = useRows('services', { publishedOnly: true });
   const lead = (s.about_story.match(/^.*?[.!?](\s|$)/)?.[0] ?? s.about_story).trim();
 
@@ -49,7 +51,7 @@ export default function About() {
             <>
               <div className="kicker">{t('partnersWith').toUpperCase()}</div>
               <div className="flex flex-wrap justify-center gap-x-10 gap-y-5">
-                {partners.map((p) => <span key={p.id} className="flex h-12 items-center font-display font-bold text-basil-muted">{p.logo_url ? <img src={p.logo_url} alt={p.name} className="h-10 max-w-[140px] object-contain grayscale transition hover:grayscale-0" loading="lazy" /> : p.name}</span>)}
+                {partners.map((p) => <span key={p.id} className="flex min-h-12 max-w-full items-center font-display font-bold text-basil-muted"><PartnerLogo wrap p={p} className="h-10 max-w-[140px] object-contain grayscale transition hover:grayscale-0" /></span>)}
               </div>
             </>
           )}

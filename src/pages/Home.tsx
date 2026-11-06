@@ -8,6 +8,7 @@ import { HeroSlides } from '@/components/HeroSlides';
 import { gradient } from '@/components/Media';
 import { Reveal } from '@/components/Reveal';
 import { BookingForm } from '@/components/BookingForm';
+import { PartnerLogo, uniquePartners } from '@/components/PartnerLogo';
 import { WatchMore, WorkGrid } from '@/components/WorkVideos';
 import { Play } from '@/components/icons';
 
@@ -27,7 +28,8 @@ export default function Home() {
   const s = useSettings();
   const { t } = useI18n();
   useSeo('Basil Media — Video, Photography, Podcasts & Live Streaming in Dar es Salaam', s.hero_subtitle);
-  const { rows: partners } = useRows('partners');
+  const { rows: partnerRows } = useRows('partners');
+  const partners = uniquePartners(partnerRows);
   const { rows: projects } = useRows('projects_public', { publishedOnly: true });
   const { rows: highlights } = useRows('highlights', { publishedOnly: true });
   const { rows: services } = useRows('services', { publishedOnly: true });
@@ -68,7 +70,7 @@ export default function Home() {
               <div className="flex w-max animate-marquee items-center gap-10 sm:gap-14">
                 {[...partners, ...partners].map((p, i) => (
                   <span key={i} className="flex h-9 items-center font-display text-[14px] font-bold text-[#6A7E99] sm:h-11 sm:text-base" aria-hidden={i >= partners.length}>
-                    {p.logo_url ? <img src={p.logo_url} alt={p.name} className="h-8 max-w-[130px] object-contain opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 sm:h-11" loading="lazy" /> : p.name}
+                    <PartnerLogo p={p} className="h-8 max-w-[130px] object-contain opacity-70 grayscale transition hover:opacity-100 hover:grayscale-0 sm:h-11" />
                   </span>
                 ))}
               </div>

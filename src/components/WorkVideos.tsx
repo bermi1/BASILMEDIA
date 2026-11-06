@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { parseVideo, youtubeThumb } from '@/lib/video';
 import { useSettings } from '@/hooks/useData';
+import { isProfileUrl } from '@/lib/format';
 import { VideoEmbed } from './VideoEmbed';
 import { gradient } from './Media';
 import { Instagram, Play, YouTube } from './icons';
@@ -82,7 +83,7 @@ export function WorkGrid({ items, max = 8, dark = false }: { items: WorkVideo[];
 /** "Watch more" — sends people to the full archive on Instagram and YouTube. */
 export function WatchMore({ dark = false }: { dark?: boolean }) {
   const s = useSettings();
-  const ig = s.socials?.instagram, yt = s.socials?.youtube;
+  const ig = isProfileUrl(s.socials?.instagram) ? s.socials.instagram : '', yt = isProfileUrl(s.socials?.youtube) ? s.socials.youtube : '';
   const cls = `flex h-11 items-center gap-2 whitespace-nowrap rounded-full px-5 text-[14px] font-semibold no-underline transition ${dark ? 'border border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white' : 'border border-basil-edge bg-white text-basil-ink hover:border-basil hover:text-basil'}`;
   if (!ig && !yt) return null;
   return (

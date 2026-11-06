@@ -37,13 +37,14 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   footer_about:
     'Video, photography, podcasts and live streaming from Dar es Salaam — delivered through our own studio platform.',
   socials: {
-    instagram: 'https://instagram.com/',
+    instagram: 'https://www.instagram.com/basilmedia_tz/',
     youtube: 'https://www.youtube.com/@basilmediatz',
-    facebook: 'https://facebook.com/',
-    linkedin: 'https://linkedin.com/',
-    tiktok: 'https://tiktok.com/',
-    x: 'https://x.com/',
+    facebook: '',
+    linkedin: '',
+    tiktok: '',
+    x: '',
   },
+
   stats: [
     { value: 250, suffix: '+', label: 'projects delivered' },
     { value: 60, suffix: '+', label: 'clients' },
