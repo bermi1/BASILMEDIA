@@ -29,6 +29,7 @@ const WINDOW: Record<string, [number, number]> = { health: [48, 72], business: [
 
 // Last stories per desk, kept for this visit so switching desks or coming back shows them at once.
 const memo: Record<string, Item[]> = {};
+const live = new Set<string>(); // desks whose stories came straight from the newsrooms this visit
 
 export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: { desk?: string; title?: string }) {
   const [items, setItems] = useState<Item[] | null>(memo[desk] ?? null);
@@ -43,6 +44,8 @@ export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: 
   useEffect(() => {
     // Only fresh news: the last 48 hours (72 hours on a quiet day). Older stories are deleted by the server.
     const [win, maxWin] = WINDOW[desk] ?? WINDOW.health;
+    let alive = true;
+    let apiDone = false; // the empty note shows only when both the live and the stored copy are empty
     const query = (withDesk: boolean) => {
       let q = supabase.from('health_feed_items').select('id,image_url,title,summary,url,zone,source_name,published_at,critical,critical_reason,fetched_at')
         .gte('published_at', new Date(Date.now() - maxWin * 36e5).toISOString()).neq('image_url', '').order('published_at', { ascending: false }).limit(150);
@@ -54,8 +57,8 @@ export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: 
       .then(({ data }) => {
         const all = (data ?? []) as (Item & { fetched_at: string })[];
         const fresh = all.filter((i) => Date.now() - new Date(i.published_at).getTime() <= win * 36e5);
-        memo[desk] = fresh.length >= 5 ? fresh : all;
-        setItems(memo[desk]);
+        const stored = fresh.length >= 5 ? fresh : all;
+        if (alive && !live.has(desk) && (stored.length || apiDone)) { memo[desk] = stored; setItems(stored); }
         // Feed older than 2 hours? Ask the server to update it (it refuses if someone already did recently).
         const newest = all.reduce((a, i) => (i.fetched_at > a ? i.fetched_at : a), '');
         if (!refreshed.current && (!newest || Date.now() - new Date(newest).getTime() > 2 * 36e5)) {
@@ -65,6 +68,17 @@ export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: 
       });
     setItems(memo[desk] ?? null);
     load();
+    // Fresh stories straight from the newsrooms (cached on Vercel for 2 hours): used whenever it has any,
+    // so the news never depends on the stored copy being refreshed.
+    fetch(`/api/news?desk=${desk}`).then((r) => (r.ok ? r.json() : null)).catch(() => null).then((d: { items?: Item[] } | null) => {
+      apiDone = true;
+      if (!alive) return;
+      if (!d?.items?.length) { setItems((cur) => cur ?? memo[desk] ?? []); return; }
+      memo[desk] = d.items;
+      live.add(desk);
+      setItems(d.items);
+    });
+    return () => { alive = false; };
   }, [desk]);
   if (items && !items.length) {
     return <p className="mt-8 rounded-2xl border border-dashed border-basil-edge bg-basil-mist p-6 text-center text-sm text-basil-muted">Stories for this desk appear here as soon as the next update runs (several times a day).</p>;

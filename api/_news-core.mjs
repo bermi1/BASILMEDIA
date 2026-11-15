@@ -71,10 +71,10 @@ export function parseFeed(xml) {
 const meta = (html, prop) =>
   (html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]*content=["']([^"']+)["']`, 'i')) ??
     html.match(new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${prop}["']`, 'i')) ?? [])[1] ?? '';
-export async function articleMeta(url) {
+export async function articleMeta(url, timeoutMs = 8000) {
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 8000);
+    const t = setTimeout(() => ctrl.abort(), timeoutMs);
     const r = await fetch(url, { signal: ctrl.signal, redirect: 'follow', headers: { 'User-Agent': 'BasilMediaHealthNews/1.0 (+https://basilmedia.co.tz)', Accept: 'text/html' } });
     clearTimeout(t);
     if (!r.ok) return {};
@@ -176,4 +176,46 @@ export async function ingest({ url: base, serviceKey: key, maxAgeHours = MAX_AGE
     await sb(base, key, `health_feed_items?published_at=lt.${new Date(cutoff).toISOString()}`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } }).catch(() => {});
   }
   return report;
+}
+
+/** Read-only: fresh stories for one desk straight from its sources, nothing written anywhere. Same rules as
+ *  ingest() — keyword filter, age limit per desk, only stories with their own photo, no repeated placeholder
+ *  pictures — but with tight time limits so a web request answers within a few seconds. */
+export async function collectDesk(sources, desk, { feedTimeoutMs = 7000, metaTimeoutMs = 4000, maxLookups = 36 } = {}) {
+  const cutoff = Date.now() - (DESK_MAX_AGE_HOURS[desk] ?? MAX_AGE_HOURS) * 36e5;
+  const perSource = await Promise.all(sources.map(async (s) => {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), feedTimeoutMs);
+      const res = await fetch(s.url, { signal: ctrl.signal, headers: { 'User-Agent': 'BasilMediaHealthNews/1.0 (+https://basilmedia.co.tz)', Accept: '*/*' } });
+      clearTimeout(t);
+      if (!res.ok) return [];
+      const raw = s.format === 'who_don' ? parseWhoDon(await res.json()) : parseFeed(await res.text());
+      const out = [];
+      for (const it of raw) {
+        if (!it.title || !/^https?:\/\//.test(it.url)) continue;
+        const text = `${it.title} ${it.summary}`;
+        if (s.health_only && !HEALTH.test(text)) continue;
+        if (!keywordMatch(s.keywords, text)) continue;
+        const at = new Date(it.published_at || Date.now());
+        const when = isNaN(at.getTime()) ? new Date() : at;
+        if (when.getTime() < cutoff) continue;
+        const why = desk === 'health' ? criticalOf(text, s.format) : '';
+        out.push({ id: it.url, source_name: s.name, title: it.title.slice(0, 300), summary: it.summary, url: it.url, image_url: it.image_url ?? '', zone: zoneOf(text, s.zone), published_at: when.toISOString(), critical: !!why, critical_reason: why });
+      }
+      return out;
+    } catch {
+      return [];
+    }
+  }));
+  const all = [...new Map(perSource.flat().map((r) => [r.url, r])).values()].sort((a, b) => b.published_at.localeCompare(a.published_at));
+  const need = all.filter((r) => !r.image_url).slice(0, maxLookups);
+  await inBatches(need, 12, async (r) => {
+    const m = await articleMeta(r.url, metaTimeoutMs);
+    if (m.image) r.image_url = m.image;
+    if (m.description && m.description.length > r.summary.length) r.summary = m.description;
+  });
+  const seen = new Map();
+  for (const r of all) if (r.image_url) seen.set(r.image_url, (seen.get(r.image_url) ?? 0) + 1);
+  return all.filter((r) => r.image_url && (seen.get(r.image_url) ?? 0) < 3).slice(0, 60);
 }

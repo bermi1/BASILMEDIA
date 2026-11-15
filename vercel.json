@@ -1,4 +1,19 @@
 {
-  "rewrites": [{ "source": "/((?!assets/|media/|api/|.*\\..*).*)", "destination": "/index.html" }],
-  "crons": [{ "path": "/api/news-ingest", "schedule": "0 4 * * *" }]
+  "rewrites": [
+    {
+      "source": "/((?!assets/|media/|api/|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/news-ingest",
+      "schedule": "0 4 * * *"
+    }
+  ],
+  "functions": {
+    "api/news.mjs": {
+      "maxDuration": 30
+    }
+  }
 }
