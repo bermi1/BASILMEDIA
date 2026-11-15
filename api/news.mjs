@@ -17,9 +17,10 @@ export default async function handler(req, res) {
     // databases without desks yet: every source is a health source
     if (!r.ok && desk === 'health') r = await fetch(`${URL_.replace(/\/$/, '')}/rest/v1/news_sources?select=name,url,format,zone,health_only&enabled=eq.true`, { headers: { apikey: KEY, Authorization: `Bearer ${KEY}` } });
     const sources = r.ok ? await r.json() : [];
+    const sourceStatus = r.status;
     const items = await collectDesk(sources, desk);
     res.setHeader('Cache-Control', items.length ? 'public, s-maxage=7200, stale-while-revalidate=86400' : 'public, s-maxage=300');
-    res.status(200).json({ desk, updated: new Date().toISOString(), items });
+    res.status(200).json({ desk, updated: new Date().toISOString(), sources: Array.isArray(sources) ? sources.length : 0, sourceStatus, items });
   } catch (e) {
     res.setHeader('Cache-Control', 'public, s-maxage=120');
     res.status(200).json({ desk, items: [], error: String(e?.message ?? e).slice(0, 200) });
