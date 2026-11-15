@@ -27,10 +27,12 @@ function ago(iso: string) {
 /** How far back each desk looks (hours): [preferred window, fallback window on a quiet day]. */
 const WINDOW: Record<string, [number, number]> = { health: [48, 72], business: [96, 168], innovation: [96, 168], banking: [120, 168], youth: [168, 336] };
 
+// Last stories per desk, kept for this visit so switching desks or coming back shows them at once.
+const memo: Record<string, Item[]> = {};
+
 export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: { desk?: string; title?: string }) {
-  const [items, setItems] = useState<Item[] | null>(null);
+  const [items, setItems] = useState<Item[] | null>(memo[desk] ?? null);
   const [zone, setZone] = useState<(typeof ZONES)[number]['key']>('all');
-  const [more, setMore] = useState(false);
   const refreshed = useRef(false);
   const [sources, setSources] = useState<{ name: string; url: string }[]>([]);
   useEffect(() => {
@@ -52,7 +54,8 @@ export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: 
       .then(({ data }) => {
         const all = (data ?? []) as (Item & { fetched_at: string })[];
         const fresh = all.filter((i) => Date.now() - new Date(i.published_at).getTime() <= win * 36e5);
-        setItems(fresh.length >= 5 ? fresh : all);
+        memo[desk] = fresh.length >= 5 ? fresh : all;
+        setItems(memo[desk]);
         // Feed older than 2 hours? Ask the server to update it (it refuses if someone already did recently).
         const newest = all.reduce((a, i) => (i.fetched_at > a ? i.fetched_at : a), '');
         if (!refreshed.current && (!newest || Date.now() - new Date(newest).getTime() > 2 * 36e5)) {
@@ -60,7 +63,7 @@ export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: 
           fetch('/api/news-ingest').then((r) => (r.ok ? r.json() : null)).then((r) => r?.report && load()).catch(() => {});
         }
       });
-    setItems(null);
+    setItems(memo[desk] ?? null);
     load();
   }, [desk]);
   if (items && !items.length) {
@@ -70,7 +73,7 @@ export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: 
   const weekAgo = Date.now() - 72 * 36e5;
   const critical = desk === 'health' ? (items ?? []).filter((i) => i.critical && new Date(i.published_at).getTime() > weekAgo).slice(0, 3) : [];
   const list = (items ?? []).filter((i) => zone === 'all' || i.zone === zone);
-  const shown = list.slice(0, more ? 30 : 9);
+  const shown = list.slice(0, 60); // every story at once — no "Show more" step
   const updated = items?.length ? ago(items.reduce((a, i) => (i.published_at > a ? i.published_at : a), items[0].published_at)) : '';
 
   return (
@@ -97,7 +100,7 @@ export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: 
 
       <div role="tablist" aria-label="Zone" className="scrollbar-none -mx-4 mb-3 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:px-0">
         {ZONES.map((z) => (
-          <button key={z.key} role="tab" type="button" aria-selected={zone === z.key} onClick={() => (setZone(z.key), setMore(false))}
+          <button key={z.key} role="tab" type="button" aria-selected={zone === z.key} onClick={() => setZone(z.key)}
             className={`min-h-[40px] shrink-0 rounded-full px-3.5 text-sm font-semibold ${zone === z.key ? 'border-0 bg-basil text-white' : 'border border-basil-edge bg-white text-basil-deep'}`}>
             {z.label}
           </button>
@@ -105,7 +108,7 @@ export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: 
       </div>
 
       {!items ? (
-        <div className="flex flex-col gap-2">{[0, 1, 2].map((i) => <div key={i} className="h-16 animate-pulse rounded-2xl bg-basil-mist" />)}</div>
+        <div className="min-h-[240px]" />
       ) : !list.length ? (
         <p className="rounded-2xl bg-basil-mist p-4 text-sm text-basil-muted">No news for this region in the last 48 hours.</p>
       ) : (
@@ -132,7 +135,6 @@ export function LiveHealthFeed({ desk = 'health', title = 'Live health news' }: 
           ))}
         </ul>
       )}
-      {list.length > shown.length && <button type="button" onClick={() => setMore(true)} className="btn-outline mt-3 w-full">Show more</button>}
 
       {/* How this works — sources, rights and the automatic "critical" label, stated plainly */}
       <details className="group mt-4 rounded-2xl border border-basil-line bg-basil-mist/60 p-4 text-[13.5px] leading-relaxed text-[#33465F]">

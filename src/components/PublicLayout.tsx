@@ -20,7 +20,7 @@ export function PublicLayout() {
     scrollTo({ top: 0 });
   }, [pathname, hash]);
   return (
-    <div className="relative min-h-screen bg-white pb-[84px] md:pb-0">
+    <div className="theme-auto relative min-h-screen bg-white pb-[84px] md:pb-0">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-xl focus:bg-white focus:p-3">Skip to content</a>
       <ScrollProgress />
       <Header />

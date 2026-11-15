@@ -160,11 +160,13 @@ function NewsStats() {
     ]).then(([a, c, t, src, last]) => setSt({ stories: a.count ?? 0, critical: c.count ?? 0, tz: t.count ?? 0, sources: src.count ?? 0, updated: (last.data?.[0] as { last_fetched_at?: string } | undefined)?.last_fetched_at ?? '' }));
   }, []);
   const ago = (iso: string) => { if (!iso) return '—'; const m = Math.max(1, Math.round((Date.now() - new Date(iso).getTime()) / 60000)); return m < 60 ? `${m} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`; };
+  // Counters only once there is news to count: no row of zeros, no "…" placeholders while loading.
+  if (!st || !st.stories) return null;
   const tiles: [string, string][] = [
-    [st ? String(st.stories) : '·', 'stories, last 48 h'],
-    [st ? String(st.tz) : '·', 'from Tanzania'],
-    [st ? String(st.critical) : '·', 'critical alerts'],
-    [st ? String(st.sources) : '·', 'verified sources'],
+    [String(st.stories), 'stories, last 48 h'],
+    [String(st.tz), 'from Tanzania'],
+    [String(st.critical), 'critical alerts'],
+    [String(st.sources), 'verified sources'],
   ];
   return (
     <div className="w-full flex-[0_1_380px] rounded-3xl border border-white/20 bg-white/10 p-4 backdrop-blur-xl sm:p-5">
@@ -176,7 +178,7 @@ function NewsStats() {
           </div>
         ))}
       </div>
-      <div className="mt-3 flex items-center gap-2 text-[11.5px] text-basil-haze sm:text-xs"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />Updated {st ? ago(st.updated) : '…'} · refreshes every 2 hours</div>
+      <div className="mt-3 flex items-center gap-2 text-[11.5px] text-basil-haze sm:text-xs"><span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />Updated {ago(st.updated)} · refreshes every 2 hours</div>
     </div>
   );
 }

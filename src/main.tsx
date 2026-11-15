@@ -12,6 +12,10 @@ if (pending) {
   history.replaceState(null, '', pending);
 }
 
+// Pictures fade in once they have arrived instead of drawing in line by line (see img in index.css).
+document.addEventListener('load', (e) => { const t = e.target as HTMLElement; if (t.tagName === 'IMG') t.dataset.loaded = '1'; }, true);
+document.addEventListener('error', (e) => { const t = e.target as HTMLElement; if (t.tagName === 'IMG') t.dataset.loaded = '1'; }, true);
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     {supabaseConfigured ? <App /> : <SetupNeeded />}

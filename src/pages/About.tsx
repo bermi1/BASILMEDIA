@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Download } from 'lucide-react';
-import { useRows, useSettings } from '@/hooks/useData';
+import { settingsReady, useRows, useSettings } from '@/hooks/useData';
 import { useSeo } from '@/hooks/useSeo';
 import { useI18n } from '@/lib/i18n';
 import { Reveal } from '@/components/Reveal';
@@ -21,7 +21,9 @@ export default function About() {
       {/* Intro: the whole team photo (never cropped) beside the opening of our story */}
       <section className="container-bm section grid items-center gap-6 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
         <Reveal>
-          <img src={s.about_image_url || '/img/team/basil-media-team.webp'} alt="The Basil Media team" className="block h-auto w-full rounded-[24px] shadow-card" />
+          {settingsReady()
+            ? <img src={s.about_image_url || '/img/team/basil-media-team.webp'} alt="The Basil Media team" className="block h-auto w-full rounded-[24px] shadow-card" />
+            : <div className="aspect-[16/10] w-full rounded-[24px] bg-basil-mist" />}
         </Reveal>
         <Reveal>
           <div className="font-mono text-[11px] tracking-[0.18em] text-basil">WHO WE ARE</div>
@@ -51,10 +53,10 @@ export default function About() {
           <h2 className="h-section m-0 mb-5">{t('team')}</h2>
           <div className="grid gap-2.5 sm:gap-4 lg:grid-cols-[2fr_1fr]">
             <figure className="relative m-0 overflow-hidden rounded-[22px]">
-              <img src="/img/services/event-coverage-team.webp" alt="Basil Media crew covering an outdoor event" loading="lazy" className="aspect-[16/10] w-full object-cover object-top lg:h-full lg:aspect-auto" />
+              <img src="/img/services/event-coverage-team.webp" alt="Basil Media crew covering an outdoor event" className="aspect-[16/10] w-full object-cover object-top lg:h-full lg:aspect-auto" />
               <figcaption className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-basil-night/85 to-transparent p-4 pt-12 text-white sm:p-6"><b className="font-display text-lg sm:text-2xl">One crew, from brief to final cut</b><span className="block text-sm text-white/85">Filmmakers, photographers, editors and producers in Dar es Salaam.</span></figcaption>
             </figure>
-            <img src="/img/team/crew-on-set.webp" alt="Basil Media crew filming at a conference" loading="lazy" className="hidden w-full rounded-[22px] object-cover object-top lg:block lg:aspect-[3/4]" />
+            <img src="/img/team/crew-on-set.webp" alt="Basil Media crew filming at a conference" className="hidden w-full rounded-[22px] object-cover object-top lg:block lg:aspect-[3/4]" />
           </div>
         </div>
       </section>
@@ -64,7 +66,7 @@ export default function About() {
           {/* Centred, wrapping rows: the last row is balanced instead of leaving empty cells */}
           <div className="flex flex-wrap justify-center gap-2.5 sm:gap-4">
             {partners.map((p) => (
-              <span key={p.id} className="glow-card flex h-20 w-[calc((100%-0.625rem)/2)] items-center justify-center rounded-[16px] border border-basil-line bg-white px-3 text-center text-sm font-bold text-basil-deep sm:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-4rem)/5)]">
+              <span key={p.id} className="keep-light glow-card flex h-20 w-[calc((100%-0.625rem)/2)] items-center justify-center rounded-[16px] border border-basil-line bg-white px-3 text-center text-sm font-bold text-basil-deep sm:w-[calc((100%-2rem)/3)] lg:w-[calc((100%-4rem)/5)]">
                 <Logo name={p.name} src={p.logo_url} />
               </span>
             ))}
@@ -81,5 +83,5 @@ export default function About() {
 /** Partner logo, or the name if there is no logo or it fails to load. */
 function Logo({ name, src }: { name: string; src: string }) {
   const [bad, setBad] = useState(false);
-  return src && !bad ? <img src={src} alt={name} loading="lazy" onError={() => setBad(true)} className="max-h-12 max-w-[140px] object-contain" /> : <>{name}</>;
+  return src && !bad ? <img src={src} alt={name} onError={() => setBad(true)} className="max-h-12 max-w-[140px] object-contain" /> : <>{name}</>;
 }

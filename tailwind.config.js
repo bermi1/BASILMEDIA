@@ -5,20 +5,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Brand tokens taken from the Basil Media design (logo blue + white).
+        // Brand tokens taken from the Basil Media design (logo blue + white). The light-surface tokens (ice, mist,
+        // line, edge, ink, muted) are CSS variables so the public site can follow the visitor's dark mode (index.css).
         basil: {
           DEFAULT: '#0F6EC2',
           deep: '#0A2F5C',
           night: '#061E3D',
-          ice: '#EAF3FC',
-          mist: '#F5F9FE',
+          ice: 'rgb(var(--bm-ice) / <alpha-value>)',
+          mist: 'rgb(var(--bm-mist) / <alpha-value>)',
           sky: '#7CC0F5',
           soft: '#5FA9EC',
           bright: '#2B86DA',
-          line: '#DCE8F5',
-          edge: '#CFE0F3',
-          ink: '#0B1B33',
-          muted: '#4A5D78',
+          line: 'rgb(var(--bm-line) / <alpha-value>)',
+          edge: 'rgb(var(--bm-edge) / <alpha-value>)',
+          ink: 'rgb(var(--bm-ink) / <alpha-value>)',
+          muted: 'rgb(var(--bm-muted) / <alpha-value>)',
           haze: '#BFDDF8',
           frost: '#D6E8FA',
         },

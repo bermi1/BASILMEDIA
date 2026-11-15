@@ -7,20 +7,20 @@ import { PublicLayout } from '@/components/PublicLayout';
 import Home from '@/pages/Home';
 import { NotFound } from '@/pages/NotFound';
 
-// Everything except the home page is split out so the first load stays small on mobile data.
-const Services = lazy(() => import('@/pages/Services'));
-const OurWork = lazy(() => import('@/pages/OurWork'));
-const About = lazy(() => import('@/pages/About'));
-const Contact = lazy(() => import('@/pages/Contact'));
-const HealthNews = lazy(() => import('@/pages/HealthNews'));
-const NewsStory = lazy(() => import('@/pages/NewsStory'));
-const Subscribe = lazy(() => import('@/pages/Subscribe'));
+// Public pages load with the site, so moving between them is instant (no loading spinner).
+// The staff back office, phone app and signing pages are split out: visitors never download them.
+import Services from '@/pages/Services';
+import OurWork from '@/pages/OurWork';
+import About from '@/pages/About';
+import Contact from '@/pages/Contact';
+import HealthNews from '@/pages/HealthNews';
+import NewsStory from '@/pages/NewsStory';
+import Subscribe from '@/pages/Subscribe';
+import FindMe from '@/pages/FindMe';
+import RemoveMe from '@/pages/RemoveMe';
+import Login from '@/pages/Login';
+import { FacePrivacy, Privacy } from '@/pages/Privacy';
 const Gallery = lazy(() => import('@/pages/Gallery'));
-const FindMe = lazy(() => import('@/pages/FindMe'));
-const RemoveMe = lazy(() => import('@/pages/RemoveMe'));
-const Login = lazy(() => import('@/pages/Login'));
-const Privacy = lazy(() => import('@/pages/Privacy').then((m) => ({ default: m.Privacy })));
-const FacePrivacy = lazy(() => import('@/pages/Privacy').then((m) => ({ default: m.FacePrivacy })));
 const OsRoutes = lazy(() => import('@/os/OsRoutes'));
 const PhoneApp = lazy(() => import('@/app/AppShell'));
 const Sign = lazy(() => import('@/pages/Sign'));

@@ -1,17 +1,7 @@
-import { motion, useReducedMotion } from 'framer-motion';
 import type { ReactNode } from 'react';
 
-export function Reveal({ children, delay = 0, className = '' }: { children: ReactNode; delay?: number; className?: string }) {
-  const reduce = useReducedMotion();
-  return (
-    <motion.div
-      className={className}
-      initial={reduce ? false : { opacity: 0, y: 24 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {children}
-    </motion.div>
-  );
+/** A plain wrapper. Sections used to fade in as they scrolled into view; that hid content until it was
+ *  reached (it looked like lazy loading), so everything now shows at once. `delay` is kept for old callers. */
+export function Reveal({ children, className = '' }: { children: ReactNode; delay?: number; className?: string }) {
+  return <div className={className}>{children}</div>;
 }

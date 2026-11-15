@@ -1,13 +1,11 @@
-// Image with the design's blue gradient as fallback when no picture has been uploaded yet.
+// Image with a calm navy tone behind it while it loads (or when no picture has been uploaded yet).
 import type { CSSProperties, ReactNode } from 'react';
 
+// Calm, near-black navy tones behind a picture while it arrives: no bright blue "loading" boxes.
 const GRADS = [
-  'linear-gradient(200deg, #2B86DA, #0A2F5C)',
-  'linear-gradient(200deg, #0F6EC2, #061E3D)',
-  'linear-gradient(200deg, #5FA9EC, #0A2F5C)',
-  'linear-gradient(200deg, #0A2F5C, #0F6EC2)',
-  'linear-gradient(200deg, #0F6EC2, #2B86DA)',
-  'linear-gradient(200deg, #061E3D, #0F6EC2)',
+  'linear-gradient(200deg, #0E2442, #081830)',
+  'linear-gradient(200deg, #0B2039, #06152A)',
+  'linear-gradient(200deg, #102846, #0A1B33)',
 ];
 export const gradient = (i: number) => GRADS[((i % GRADS.length) + GRADS.length) % GRADS.length];
 

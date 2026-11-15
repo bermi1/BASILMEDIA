@@ -12,7 +12,7 @@ export default function NewsStory() {
   const [s, setS] = useState<Story | null | undefined>(undefined);
   useEffect(() => void get('news_stories', 'id', id).then((x) => setS(x && x.published ? x : null)).catch(() => setS(null)), [id]);
   useSeo(s?.title ?? 'Health News', s?.dek);
-  if (s === undefined) return <div className="container-bm py-24 text-basil-muted">Loading…</div>;
+  if (s === undefined) return <div className="min-h-[60vh]" />; // no "Loading…" text: the story appears as soon as it arrives
   if (!s) return <div className="container-bm py-24"><h1>Story not found</h1><Link to="/health-news">Back to Health News</Link></div>;
   return (
     <>

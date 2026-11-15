@@ -57,7 +57,7 @@ export function ChatWidget() {
                     {(['instagram', 'whatsapp'] as const).map((k) => <button key={k} type="button" role="tab" aria-selected={scan === k} onClick={() => setScan(k)} className={`h-7 rounded-full border-0 px-3 capitalize ${scan === k ? 'bg-basil text-white' : 'bg-transparent text-basil-muted'}`}>{k}</button>)}
                   </div>
                 )}
-                <img src={qr(scanUrl)} alt={`QR code to open Basil Media on ${scan === 'instagram' ? 'Instagram' : 'WhatsApp'}`} width={150} height={150} className="h-[150px] w-[150px] rounded-xl bg-white p-1.5" loading="lazy" />
+                <img src={qr(scanUrl)} alt={`QR code to open Basil Media on ${scan === 'instagram' ? 'Instagram' : 'WhatsApp'}`} width={150} height={150} className="keep-light h-[150px] w-[150px] rounded-xl bg-white p-1.5" loading="lazy" />
                 <span className="text-center text-[12px] text-basil-muted">Scan with your phone camera to open {scan === 'instagram' ? 'our Instagram' : 'WhatsApp chat'}</span>
               </div>
             </div>

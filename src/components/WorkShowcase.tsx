@@ -1,15 +1,15 @@
-// Landing-page work showcase: one stage that plays the selected piece (muted preview, tap for sound),
-// a rail of the other pieces with a progress line, auto-advance, swipe on phones. Portrait films stay
+// Landing-page work showcase: a big player on top for the chosen piece (silent preview; "Watch" opens the pop-up player) and
+// every other piece in one row beneath it, so all of them are seen; tap one to bring it up. Auto-advances,
+// swipes on phones. Portrait films stay
 // portrait — they sit on a soft blurred copy of their own poster, so the stage never changes size.
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Camera, ChevronLeft, ChevronRight, ExternalLink, Volume2 } from 'lucide-react';
+import { Camera, ChevronLeft, ChevronRight, ExternalLink, Play } from 'lucide-react';
 import { parseVideo, type Orientation } from '@/lib/video';
 import { useCover } from '@/lib/useCover';
 import { gradient } from '@/components/Media';
-import { VideoEmbed } from '@/components/VideoEmbed';
 
-export type ShowItem = { id: string; title: string; url: string; link?: string; poster: string; sub: string; shape: Orientation };
+export type ShowItem = { id: string; title: string; url: string; link?: string; poster: string; sub: string; shape: Orientation; desc?: string; client?: string };
 const DWELL = 7000;
 // Silent previews play on their own only on a computer with no data-saver; on phones the poster shows
 // until someone taps, so nobody's bundle is spent on video they did not ask for.
@@ -20,79 +20,95 @@ const autoPreview = () => {
   return window.matchMedia('(min-width: 1024px) and (hover: hover)').matches;
 };
 
-export function WorkShowcase({ items }: { items: ShowItem[] }) {
+export function WorkShowcase({ items, onOpen }: { items: ShowItem[]; onOpen: (i: number) => void }) {
   const [i, setI] = useState(0);
-  const [sound, setSound] = useState(false); // playing with sound: stop auto-advance
   const [hover, setHover] = useState(false);
   const [dir, setDir] = useState(1);
+  const strip = useRef<HTMLOListElement>(null);
   const n = items.length;
   const cur = items[Math.min(i, n - 1)];
   const reduce = typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-  const paused = sound || hover || reduce;
+  const paused = hover || reduce;
 
-  const go = (to: number) => { setDir(to > i || (i === n - 1 && to === 0) ? 1 : -1); setSound(false); setI(((to % n) + n) % n); };
+  const go = (to: number) => { setDir(to > i || (i === n - 1 && to === 0) ? 1 : -1); setI(((to % n) + n) % n); };
   useEffect(() => {
     if (paused || n < 2) return;
     const t = setTimeout(() => go(i + 1), DWELL);
     return () => clearTimeout(t);
   }); // re-armed every render on purpose: any change of slide or pause restarts the clock
+  // keep the playing item visible in the row below (scrolls the row only, never the page)
+  useEffect(() => {
+    const row = strip.current, card = row?.children[i] as HTMLElement | undefined;
+    if (!row || !card) return;
+    const left = card.offsetLeft - (row.clientWidth - card.offsetWidth) / 2;
+    row.scrollTo({ left: Math.max(0, left), behavior: reduce ? 'auto' : 'smooth' });
+  }, [i, reduce]);
+  const nudge = (d: number) => strip.current?.scrollBy({ left: d * strip.current.clientWidth * 0.8, behavior: 'smooth' });
 
   if (!cur) return null;
   return (
-    <div className="grid gap-3 lg:grid-cols-[1fr_300px] lg:gap-5" onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
-      {/* STAGE */}
-      <div className="relative">
-        <motion.div
-          className="relative aspect-square w-full touch-pan-y overflow-hidden rounded-[22px] bg-basil-night ring-1 ring-white/10 sm:aspect-[16/10] lg:aspect-auto lg:h-[480px]"
-          drag={sound ? false : 'x'} dragConstraints={{ left: 0, right: 0 }} dragElastic={0.18}
-          onDragEnd={(_, d) => { if (d.offset.x < -60) go(i + 1); else if (d.offset.x > 60) go(i - 1); }}
-        >
-          <AnimatePresence initial={false} custom={dir} mode="popLayout">
-            <motion.div key={cur.id} custom={dir} className="absolute inset-0"
-              initial={{ opacity: 0, x: dir * 40, scale: 1.02 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: dir * -40 }}
-              transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}>
-              <Stage item={cur} index={i} sound={sound} onSound={() => setSound(true)} />
-            </motion.div>
-          </AnimatePresence>
-          {n > 1 && !sound && (
-            <>
-              <button type="button" onClick={() => go(i - 1)} aria-label="Previous" className="absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-white/15 text-white backdrop-blur-md transition hover:bg-white hover:text-basil-night sm:flex"><ChevronLeft size={18} /></button>
-              <button type="button" onClick={() => go(i + 1)} aria-label="Next" className="absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-white/15 text-white backdrop-blur-md transition hover:bg-white hover:text-basil-night sm:flex"><ChevronRight size={18} /></button>
-            </>
-          )}
-        </motion.div>
-        {/* phones: dots under the stage */}
+    <div onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
+      {/* PLAYER — the chosen piece, big */}
+      <motion.div
+        className="relative aspect-square w-full touch-pan-y overflow-hidden rounded-[22px] bg-basil-night ring-1 ring-white/10 sm:aspect-[16/9] lg:aspect-auto lg:h-[540px]"
+        drag="x" dragConstraints={{ left: 0, right: 0 }} dragElastic={0.18}
+        onDragEnd={(_, d) => { if (d.offset.x < -60) go(i + 1); else if (d.offset.x > 60) go(i - 1); }}
+      >
+        <AnimatePresence initial={false} custom={dir} mode="popLayout">
+          <motion.div key={cur.id} custom={dir} className="absolute inset-0"
+            initial={{ opacity: 0, x: dir * 40, scale: 1.02 }} animate={{ opacity: 1, x: 0, scale: 1 }} exit={{ opacity: 0, x: dir * -40 }}
+            transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}>
+            <Stage item={cur} index={i} onOpen={() => onOpen(i)} />
+          </motion.div>
+        </AnimatePresence>
         {n > 1 && (
-          <div className="mt-3 flex justify-center gap-1.5 lg:hidden">
-            {items.map((x, k) => <button key={x.id} type="button" onClick={() => go(k)} aria-label={`Show ${x.title}`} className={`h-1.5 rounded-full border-0 p-0 transition-all ${k === i ? 'w-6 bg-white' : 'w-1.5 bg-white/30'}`} />)}
-          </div>
+          <>
+            <button type="button" onClick={() => go(i - 1)} aria-label="Previous" className="absolute left-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-white/15 text-white backdrop-blur-md transition hover:bg-white hover:text-basil-night sm:flex"><ChevronLeft size={18} /></button>
+            <button type="button" onClick={() => go(i + 1)} aria-label="Next" className="absolute right-3 top-1/2 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border-0 bg-white/15 text-white backdrop-blur-md transition hover:bg-white hover:text-basil-night sm:flex"><ChevronRight size={18} /></button>
+          </>
         )}
-      </div>
+      </motion.div>
 
-      {/* RAIL (desktop): every piece, the active one with a filling progress line */}
-      <ol className="m-0 hidden list-none flex-col gap-2 overflow-y-auto p-0 lg:flex lg:max-h-[480px]">
-        {items.map((x, k) => (
-          <li key={x.id}>
-            <button type="button" onClick={() => go(k)} aria-current={k === i} className={`group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border-0 p-2 text-left transition ${k === i ? 'bg-white/[0.12] ring-1 ring-white/25' : 'bg-white/[0.04] hover:bg-white/[0.08]'}`}>
-              <Thumb item={x} index={k} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-[10.5px] font-bold uppercase tracking-[0.14em] text-basil-sky">{x.sub}</span>
-                <span className={`line-clamp-2 text-[13px] font-medium leading-snug ${k === i ? 'text-white' : 'text-white/70 group-hover:text-white'}`}>{x.title}</span>
-              </span>
-              {k === i && (
-                <span className="absolute inset-x-0 bottom-0 h-[2px] bg-white/10">
-                  <motion.span key={`${cur.id}-${paused}`} className="block h-full origin-left bg-basil-sky" initial={{ scaleX: 0 }} animate={{ scaleX: paused ? 0 : 1 }} transition={{ duration: paused ? 0 : DWELL / 1000, ease: 'linear' }} />
-                </span>
-              )}
-            </button>
-          </li>
-        ))}
-      </ol>
+      {/* UP NEXT — every piece in one row beneath the player; tap one to bring it up */}
+      {n > 1 && (
+        <div className="mt-4 sm:mt-5">
+          <div className="mb-2.5 flex items-center justify-between gap-3">
+            <span className="font-mono text-[10.5px] tracking-[0.18em] text-white/60">{items.some((x) => x.url) ? 'MORE FILMS' : 'MORE GALLERIES'}</span>
+            <span className="hidden gap-1.5 sm:flex">
+              <button type="button" onClick={() => nudge(-1)} aria-label="Scroll left" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/[0.06] text-white transition hover:bg-white hover:text-basil-night"><ChevronLeft size={15} /></button>
+              <button type="button" onClick={() => nudge(1)} aria-label="Scroll right" className="flex h-8 w-8 items-center justify-center rounded-full border border-white/20 bg-white/[0.06] text-white transition hover:bg-white hover:text-basil-night"><ChevronRight size={15} /></button>
+            </span>
+          </div>
+          <ol ref={strip} className="scrollbar-none relative -mx-4 m-0 flex list-none snap-x snap-mandatory gap-2.5 overflow-x-auto scroll-px-4 px-4 py-1.5 sm:mx-0 sm:gap-3 sm:scroll-px-0 sm:px-0 sm:[mask-image:linear-gradient(90deg,transparent,#000_3%,#000_97%,transparent)]">
+            {items.map((x, k) => (
+              <li key={x.id} className="w-[42vw] max-w-[190px] shrink-0 snap-start sm:w-[200px] sm:max-w-none lg:w-[224px]">
+                <button type="button" onClick={() => go(k)} aria-current={k === i} aria-label={`Show ${x.title}`}
+                  className={`group block w-full rounded-2xl border-0 bg-transparent p-0 text-left transition duration-300 ${k === i ? '' : 'opacity-70 hover:opacity-100'}`}>
+                  <span className={`relative block aspect-[16/10] overflow-hidden rounded-2xl ring-2 transition duration-300 ${k === i ? 'ring-basil-sky shadow-[0_0_28px_rgba(124,192,245,0.45)]' : 'ring-white/5'}`}>
+                    <Thumb item={x} index={k} />
+                    <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent" />
+                    {k === i
+                      ? <span className="absolute left-1.5 top-1.5 flex items-center gap-1 rounded-full bg-basil-sky px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-basil-night"><Bars paused={paused} />Now {x.url ? 'playing' : 'showing'}</span>
+                      : x.url && <span className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-md transition group-hover:bg-white group-hover:text-basil-night"><Play size={10} /></span>}
+                    {k === i && (
+                      <span className="absolute inset-x-0 bottom-0 h-[3px] bg-white/15">
+                        <motion.span key={`${cur.id}-${paused}`} className="block h-full origin-left bg-basil-sky" initial={{ scaleX: 0 }} animate={{ scaleX: paused ? 0 : 1 }} transition={{ duration: paused ? 0 : DWELL / 1000, ease: 'linear' }} />
+                      </span>
+                    )}
+                  </span>
+                  <span className="mt-2 block truncate text-[10px] font-bold uppercase tracking-[0.14em] text-basil-sky">{x.sub}</span>
+                  <span className={`line-clamp-2 text-[12.5px] font-medium leading-snug ${k === i ? 'text-white' : 'text-white/75 group-hover:text-white'}`}>{x.title}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   );
 }
 
-function Stage({ item, index, sound, onSound }: { item: ShowItem; index: number; sound: boolean; onSound: () => void }) {
+function Stage({ item, index, onOpen }: { item: ShowItem; index: number; onOpen: () => void }) {
   const poster = useCover(item.link, item.poster);
   const v = parseVideo(item.url);
   const portrait = item.shape === 'portrait';
@@ -102,13 +118,6 @@ function Stage({ item, index, sound, onSound }: { item: ShowItem; index: number;
   useEffect(() => { const el = vid.current; if (el) { el.defaultMuted = true; el.muted = true; if (preview) el.play().catch(() => {}); } }, [item.url, preview]);
   const media = portrait ? 'h-full w-auto max-w-full aspect-[9/16] object-cover' : 'h-full w-full object-cover';
 
-  if (sound && item.url) {
-    return (
-      <div className="flex h-full w-full items-center justify-center bg-black">
-        <div className={portrait ? 'h-full aspect-[9/16] [&>*]:h-full' : 'w-full'}><VideoEmbed url={item.url} title={item.title} poster={poster} autoPlay aspect={portrait ? '9 / 16' : '16 / 9'} /></div>
-      </div>
-    );
-  }
   return (
     <div className="relative flex h-full w-full items-center justify-center" style={{ background: gradient(index) }}>
       {/* soft backdrop from the poster, so portrait films and odd photos never leave bare bars */}
@@ -125,18 +134,27 @@ function Stage({ item, index, sound, onSound }: { item: ShowItem; index: number;
           <b className="mt-0.5 line-clamp-2 font-display text-[15px] font-semibold leading-tight text-white sm:text-[19px]">{item.title}</b>
         </div>
         {item.url
-          ? <button type="button" onClick={onSound} className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-0 bg-white px-4 text-[13px] font-semibold text-basil-night shadow-[0_0_28px_rgba(124,192,245,0.5)] transition hover:scale-105"><Volume2 size={15} />{v.kind === 'file' && preview ? 'Watch with sound' : 'Play'}</button>
-          : item.link && <a href={item.link} target="_blank" rel="noreferrer" className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white px-4 text-[13px] font-semibold text-basil-night no-underline transition hover:scale-105 hover:text-basil-night"><ExternalLink size={14} />View photos</a>}
+          ? <button type="button" onClick={onOpen} className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-0 bg-white px-4 text-[13px] font-semibold text-basil-night shadow-[0_0_28px_rgba(124,192,245,0.5)] transition hover:scale-105"><Play size={14} />Watch full film</button>
+          : <button type="button" onClick={onOpen} className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border-0 bg-white px-4 text-[13px] font-semibold text-basil-night transition hover:scale-105"><ExternalLink size={14} />View photos</button>}
       </div>
     </div>
+  );
+}
+
+/** Three little equaliser bars on the item that is playing. */
+function Bars({ paused }: { paused: boolean }) {
+  return (
+    <span aria-hidden="true" className="flex h-2.5 items-end gap-[2px]">
+      {[0, 1, 2].map((k) => <motion.span key={k} className="w-[2px] rounded-full bg-basil-night" animate={paused ? { height: 4 } : { height: [3, 10, 5, 9, 3] }} transition={{ duration: 0.9, repeat: Infinity, delay: k * 0.15 }} />)}
+    </span>
   );
 }
 
 function Thumb({ item, index }: { item: ShowItem; index: number }) {
   const poster = useCover(item.link, item.poster);
   return (
-    <span className="relative h-14 w-20 shrink-0 overflow-hidden rounded-xl" style={{ background: gradient(index) }}>
-      {poster ? <img src={poster} alt="" loading="lazy" className="h-full w-full object-cover object-top" /> : <Camera size={18} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/80" />}
+    <span className="absolute inset-0 block transition duration-500 group-hover:scale-105" style={{ background: gradient(index) }}>
+      {poster ? <img src={poster} alt="" className="h-full w-full object-cover object-top" /> : <Camera size={18} className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/80" />}
     </span>
   );
 }
