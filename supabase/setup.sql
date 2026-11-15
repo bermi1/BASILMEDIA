@@ -1,4 +1,4 @@
--- Basil Media OS · complete database setup (generated from 43 migrations).
+-- Basil Media OS · complete database setup (generated from 44 migrations).
 -- Paste into Supabase → SQL Editor on an EMPTY project and press Run.
 
 -- ===================== 0001_foundation.sql =====================
@@ -5391,4 +5391,9 @@ update public.partners set name = 'The Aga Khan Hospital, Dar es Salaam', logo_u
  where name ilike 'aga khan hospital%' or logo_url like '%aga-khan-hospital.svg';
 delete from public.partners p using public.partners q
  where p.name ilike 'SATA%' and q.name = p.name and q.created_at < p.created_at;
+
+-- ===================== 0046_instaprenyua_spelling.sql =====================
+-- Basil Media OS · 0046 the programme is spelled "Instaprenyua" (two film titles had "Inspirenyua").
+update public.projects_public set title = replace(title, 'Inspirenyua', 'Instaprenyua'), description = replace(description, 'Inspirenyua', 'Instaprenyua')
+ where title ilike '%inspirenyua%' or description ilike '%inspirenyua%';
 
