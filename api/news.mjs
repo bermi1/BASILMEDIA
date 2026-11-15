@@ -4,9 +4,10 @@
 // visitors get it instantly and the newsrooms are asked at most every 2 hours per desk.
 import { collectDesk, DESK_MAX_AGE_HOURS } from './_news-core.mjs';
 
-// Same public project address and public (publishable) key the website itself uses (.env.production).
-const URL_ = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://vodhxhbjncvhogdgkmfy.supabase.co';
-const KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable__sBG8Fjlu-S4PYwaDTNAww_4oL-0cLm';
+// The public project address and public (publishable) key the website itself uses (.env.production).
+// Not the SUPABASE_URL / SUPABASE_ANON_KEY saved on Vercel: that pair is refused by this database (401).
+const URL_ = 'https://vodhxhbjncvhogdgkmfy.supabase.co';
+const KEY = 'sb_publishable__sBG8Fjlu-S4PYwaDTNAww_4oL-0cLm';
 
 export default async function handler(req, res) {
   const desk = String(req.query?.desk ?? 'health');

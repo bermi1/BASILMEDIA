@@ -10,7 +10,7 @@ const MIN_GAP_MS = 2 * 36e5;
 const PUBLIC_URL = 'https://vodhxhbjncvhogdgkmfy.supabase.co'; // same as VITE_SUPABASE_URL in .env.production
 
 export default async function handler(req, res) {
-  const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || PUBLIC_URL;
+  const url = PUBLIC_URL; // the site's own database (the SUPABASE_URL saved on Vercel does not match it)
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
   if (!url || !serviceKey) return res.status(503).json({ ok: false, error: 'SUPABASE_SERVICE_ROLE_KEY is not set on the host (Vercel → Settings → Environment Variables)' });
   const secret = process.env.CRON_SECRET;
