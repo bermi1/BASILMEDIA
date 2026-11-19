@@ -1,4 +1,4 @@
-// Landing-page work showcase: a big player on top for the chosen piece (silent preview; "Watch" opens the pop-up player) and
+// Landing-page work showcase: a big player on top for the chosen piece (its poster; the film itself only downloads when "Watch" opens the pop-up player) and
 // every other piece in one row beneath it, so all of them are seen; tap one to bring it up. Auto-advances,
 // swipes on phones. Portrait films stay
 // portrait — they sit on a soft blurred copy of their own poster, so the stage never changes size.
@@ -11,14 +11,6 @@ import { gradient } from '@/components/Media';
 
 export type ShowItem = { id: string; title: string; url: string; link?: string; poster: string; sub: string; shape: Orientation; desc?: string; client?: string };
 const DWELL = 7000;
-// Silent previews play on their own only on a computer with no data-saver; on phones the poster shows
-// until someone taps, so nobody's bundle is spent on video they did not ask for.
-const autoPreview = () => {
-  if (typeof window === 'undefined') return false;
-  const c = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
-  if (c?.saveData || /(^|-)2g|3g/.test(c?.effectiveType ?? '')) return false;
-  return window.matchMedia('(min-width: 1024px) and (hover: hover)').matches;
-};
 
 export function WorkShowcase({ items, onOpen }: { items: ShowItem[]; onOpen: (i: number) => void }) {
   const [i, setI] = useState(0);
@@ -112,18 +104,14 @@ function Stage({ item, index, onOpen }: { item: ShowItem; index: number; onOpen:
   const poster = useCover(item.link, item.poster);
   const v = parseVideo(item.url);
   const portrait = item.shape === 'portrait';
-  const vid = useRef<HTMLVideoElement>(null);
-  // iOS only autoplays when the element is muted before it starts
-  const [preview] = useState(autoPreview);
-  useEffect(() => { const el = vid.current; if (el) { el.defaultMuted = true; el.muted = true; if (preview) el.play().catch(() => {}); } }, [item.url, preview]);
   const media = portrait ? 'h-full w-auto max-w-full aspect-[9/16] object-cover' : 'h-full w-full object-cover';
 
   return (
     <div className="relative flex h-full w-full items-center justify-center" style={{ background: gradient(index) }}>
       {/* soft backdrop from the poster, so portrait films and odd photos never leave bare bars */}
       {poster && <img src={poster} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full scale-110 object-cover opacity-60 blur-2xl" />}
-      {v.kind === 'file' && (preview || !poster)
-        ? <video ref={vid} src={v.src} poster={poster || undefined} muted loop autoPlay={preview} playsInline preload="metadata" className={`relative ${media}`} />
+      {v.kind === 'file' && !poster
+        ? <video src={v.src} muted playsInline preload="metadata" className={`relative ${media}`} />
         : poster
           ? <img src={poster} alt="" className={`relative ${media} object-top`} />
           : <span className="relative flex flex-col items-center gap-1 text-white/85"><Camera size={30} /><span className="text-[10px] font-bold uppercase tracking-[0.18em]">Photo gallery</span></span>}

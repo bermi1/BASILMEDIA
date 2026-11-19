@@ -1,5 +1,6 @@
 // One data API for the public site and the Website CMS. It talks to Postgres through Supabase;
 // row-level security decides who may read and write.
+import { withLocalMedia } from './media';
 import { supabase } from './supabase';
 import { DEFAULT_SETTINGS } from './seed';
 import type { SiteSettings, TableName, Tables } from './types';
@@ -38,7 +39,7 @@ export async function list<T extends TableName>(table: T, opts: ListOptions = {}
   if (opts.limit) q = q.limit(opts.limit);
   const { data, error } = await q;
   if (error) throw error;
-  return (data ?? []) as unknown as Row<T>[];
+  return ((data ?? []) as unknown as Row<T>[]).map(withLocalMedia);
 }
 
 function defaultOrder(table: TableName) {

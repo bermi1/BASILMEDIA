@@ -43,3 +43,17 @@ describe('contact helpers', () => {
     expect(isProfileUrl('nonsense')).toBe(false);
   });
 });
+
+import { localMedia, withLocalMedia } from '../src/lib/media';
+describe('work films served by the website', () => {
+  const base = 'https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/work/';
+  it('points the shipped films and posters at /media/work/', () => {
+    expect(localMedia(`${base}work-3.mp4`)).toBe('/media/work/work-3.mp4');
+    expect(localMedia(`${base}work-3-poster.jpg`)).toBe('/media/work/work-3-poster.webp');
+    expect(withLocalMedia({ title: 'x', video_url: `${base}work-1.mp4`, image_url: `${base}work-1-poster.webp` })).toEqual({ title: 'x', video_url: '/media/work/work-1.mp4', image_url: '/media/work/work-1-poster.webp' });
+  });
+  it('leaves everything else alone', () => {
+    expect(localMedia(`${base}work-7.mp4`)).toBe(`${base}work-7.mp4`);
+    expect(localMedia('https://www.youtube.com/watch?v=x')).toBe('https://www.youtube.com/watch?v=x');
+  });
+});
