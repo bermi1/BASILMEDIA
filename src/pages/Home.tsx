@@ -17,6 +17,7 @@ import { WorkShowcase } from '@/components/WorkShowcase';
 import { WorkPlayer } from '@/components/WorkPlayer';
 import { Play } from '@/components/icons';
 
+const HERO_WORDS_SECONDS = 10;
 const CEO_MESSAGE = 'We started Basil Media to make health information something people actually want to watch. Every film, photo and podcast we make is built with clinicians and told for the people it is meant to help. Thank you for trusting us with your stories — let us keep telling them, together.';
 const STEPS: [string, string][] = [
   ['Brief', 'We listen and agree the plan and budget.'],
@@ -68,6 +69,8 @@ export default function Home() {
   const [catState, setCat] = useState('Videos');
   const [more, setMore] = useState(false);
   const [playing, setPlaying] = useState<number | null>(null);
+  // Hero words show for the first seconds of the film (again each time it starts over), then the film plays clean.
+  const [heroWords, setHeroWords] = useState(true);
   const cat = cats.includes(catState) ? catState : cats[0] ?? 'Videos';
   const shown = glance.filter((g) => kind(g) === cat);
 
@@ -75,9 +78,9 @@ export default function Home() {
     <>
       {/* HERO — the picture/video speaks; few words */}
       <section className="on-dark relative isolate flex h-[calc(76px+56.25vw)] items-end justify-center overflow-hidden text-center text-white sm:h-auto sm:min-h-[80vh]" style={{ background: 'radial-gradient(ellipse at 15% 20%, rgba(124,192,245,0.35), transparent 50%), radial-gradient(ellipse at 90% 85%, rgba(245,185,66,0.2), transparent 45%), linear-gradient(160deg, #0A2F5C, #061E3D)' }}>
-        <div className="absolute inset-x-0 bottom-0 top-[76px] sm:top-0"><HeroSlides images={photos} video={s.hero_video_url} /></div>
-        <div className="absolute inset-x-0 bottom-0 top-[76px] sm:top-0" style={{ background: 'linear-gradient(180deg, rgba(6,30,61,0.35) 0%, rgba(6,30,61,0) 35%, rgba(6,30,61,0.6) 72%, rgba(6,30,61,0.92) 100%)' }} />
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }} className="container-bm relative flex flex-col items-center pb-3 pt-0 sm:pb-16 sm:pt-24">
+        <div className="absolute inset-x-0 bottom-0 top-[76px] overflow-hidden sm:top-0"><HeroSlides images={photos} video={s.hero_video_url} onTime={(t) => setHeroWords(t < HERO_WORDS_SECONDS)} /></div>
+        <div className={`absolute inset-x-0 bottom-0 top-[76px] transition-opacity duration-1000 sm:top-0 ${heroWords ? 'opacity-100' : 'opacity-0'}`} style={{ background: 'linear-gradient(180deg, rgba(6,30,61,0.35) 0%, rgba(6,30,61,0) 35%, rgba(6,30,61,0.6) 72%, rgba(6,30,61,0.92) 100%)' }} />
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={heroWords ? { opacity: 1, y: 0 } : { opacity: 0, y: 12 }} transition={{ duration: heroWords ? 0.7 : 1, ease: [0.22, 1, 0.36, 1] }} aria-hidden={!heroWords} style={{ pointerEvents: heroWords ? undefined : 'none' }} className="container-bm relative flex flex-col items-center pb-3 pt-0 sm:pb-16 sm:pt-24">
           <h1 className="m-0 max-w-[640px] text-[15px] font-bold leading-[1.2] tracking-[-0.01em] sm:text-[clamp(20px,3vw,36px)] sm:leading-[1.15] sm:tracking-[-0.02em]">
             {settingsReady() && <>{s.tagline} <span className="text-glow">{s.tagline_highlight}</span></>}
           </h1>

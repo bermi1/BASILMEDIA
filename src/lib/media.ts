@@ -36,3 +36,9 @@ export function settingsWithLocalMedia<S extends Record<string, unknown>>(s: S):
   if (Array.isArray(out.hero_images)) out.hero_images = (out.hero_images as unknown[]).map(localMedia);
   return out as S;
 }
+
+/** Films with black cinema bars baked in: how much to enlarge them so the bars fall outside the frame
+ *  (the file itself stays exactly as delivered — full quality, nothing re-encoded). */
+export const LETTERBOX: Record<string, number> = {
+  '/media/hero/basil-reel-2026.mp4': 576 / 484, // 1024x576 with 46 px bars top and bottom
+};

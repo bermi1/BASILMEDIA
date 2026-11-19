@@ -4,8 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Volume2, VolumeX } from 'lucide-react';
 import { parseVideo } from '@/lib/video';
+import { LETTERBOX } from '@/lib/media';
 
-export function HeroSlides({ images, video, interval = 6000 }: { images: string[]; video?: string; interval?: number }) {
+/** onTime: the hero film's playing position in seconds (the page shows its words for the first seconds only). */
+export function HeroSlides({ images, video, interval = 6000, onTime }: { images: string[]; video?: string; interval?: number; onTime?: (t: number) => void }) {
   const [i, setI] = useState(0);
   const reduce = useReducedMotion();
   useEffect(() => {
@@ -25,7 +27,7 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
     const src = v.src;
     const poster = builtIn ? src.replace(/\.mp4$/, '-poster.webp') : images[0];
     if (reduce) return <img aria-hidden="true" src={poster} alt="" className="absolute inset-0 h-full w-full object-cover" />;
-    return <HeroVideo src={src} poster={poster} />;
+    return <HeroVideo src={src} poster={poster} onTime={onTime} />;
   }
   if (v.kind === 'youtube') {
     return (
@@ -53,7 +55,7 @@ export function HeroSlides({ images, video, interval = 6000 }: { images: string[
 }
 
 /** Background video: starts silent (browsers only autoplay muted video); a small button turns the music on. */
-function HeroVideo({ src, poster }: { src: string; poster: string }) {
+function HeroVideo({ src, poster, onTime }: { src: string; poster: string; onTime?: (t: number) => void }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const toggle = () => {
@@ -65,9 +67,8 @@ function HeroVideo({ src, poster }: { src: string; poster: string }) {
   };
   return (
     <>
-      <video ref={ref} key={src} aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" src={src} poster={poster} autoPlay muted loop playsInline preload="auto" />
-      {/* light Basil-blue coating: on brand, but the footage keeps its colour */}
-      <div aria-hidden="true" className="absolute inset-0 mix-blend-multiply" style={{ background: 'linear-gradient(135deg, rgba(15,110,194,0.28), rgba(10,47,92,0.12) 55%, rgba(43,134,218,0.22))' }} />
+      <video ref={ref} key={src} aria-hidden="true" className="absolute inset-0 h-full w-full object-cover" style={LETTERBOX[src] ? { transform: `scale(${LETTERBOX[src]})` } : undefined} src={src} poster={poster} autoPlay muted loop playsInline preload="auto" onTimeUpdate={(e) => onTime?.(e.currentTarget.currentTime)} />
+      {/* no colour layer on top: the film shows exactly as it was graded */}
       <button type="button" onClick={toggle} aria-pressed={!muted} aria-label={muted ? 'Turn sound on' : 'Turn sound off'}
         className="absolute right-2 top-2 z-20 flex h-7 items-center gap-1 rounded-full border border-white/30 bg-black/30 px-2.5 text-[11px] sm:bottom-6 sm:left-6 sm:right-auto sm:top-auto sm:h-10 sm:gap-1.5 sm:px-3.5 sm:text-[13px] font-semibold text-white backdrop-blur-md transition hover:bg-black/50 sm:bottom-6 sm:left-6">
         {muted ? <VolumeX size={16} /> : <Volume2 size={16} />}{muted ? 'Sound on' : 'Sound off'}
