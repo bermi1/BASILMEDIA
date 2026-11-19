@@ -20,18 +20,18 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   home_about_text: 'Basil Media is a Dar es Salaam studio telling the stories that move Tanzania forward: the clinicians, innovators and young people shaping what comes next.',
   logo_url: '/logo.svg',
   logo_reverse_url: '/logo-reverse.svg',
-  // Published text: the "About" description of the Basil Media Tz YouTube channel
-  // (https://www.youtube.com/@basilmediatz/about). See docs/CONTENT_SOURCES.md.
+  // Basil Media's own company profile text (About page).
   about_story:
-    'Basil Media is a youth-driven digital media platform dedicated to health education, innovation, and impactful storytelling. We exist to inform, inspire, and empower young people with reliable health information, creative ideas, and forward-thinking solutions that shape a healthier future.\n\nThrough engaging content, expert conversations, and real-life stories, Basil Media bridges the gap between medical knowledge, innovation, and the everyday lives of young people. Our focus spans health awareness, mental well-being, medical education, technology, entrepreneurship, and youth-led innovation.\n\nWe collaborate with healthcare professionals, institutions, innovators, and young change-makers to deliver content that is educational, relatable, and transformative.\n\nAt Basil Media, we believe the youth are not just the leaders of tomorrow—but the innovators of today. Learn. Innovate. Inspire.',
+    'Basil Media is a media production and digital communications company committed to empowering brands, institutions, organizations, and businesses through creative storytelling, innovative media solutions, and strategic digital visibility.\n\n' +
+    'We specialize in delivering professional media production services that help organizations communicate their impact, tell compelling stories, engage audiences, and strengthen their brand presence.',
   about_image_url: '/media/basil-media-studio-btv.webp',
   ceo_name: 'Emmanuel Basil',
   ceo_title: 'Founder & CEO, Basil Media',
   ceo_message: '',
   ceo_photo_url: '',
   mission:
-    'To tell the stories of Tanzanian institutions and people with honesty, craft and care, and to deliver every frame on time.',
-  vision: 'To be East Africa’s most trusted media house: the studio institutions call when the moment matters.',
+    'To deliver innovative, high-quality media and digital communication solutions while creating opportunities for young people to develop practical skills, gain experience, and participate in the creative economy.',
+  vision: 'To become a leading African media and communications company, using creativity, technology, and storytelling to inspire change, amplify impact, and create opportunities for the next generation.',
   company_profile_url: '',
   contact_email: 'hello@basilmedia.co.tz',
   phone: '+255 625 199 652',
