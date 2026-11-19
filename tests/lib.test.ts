@@ -52,6 +52,12 @@ describe('work films served by the website', () => {
     expect(localMedia(`${base}work-3-poster.jpg`)).toBe('/media/work/work-3-poster.webp');
     expect(withLocalMedia({ title: 'x', video_url: `${base}work-1.mp4`, image_url: `${base}work-1-poster.webp` })).toEqual({ title: 'x', video_url: '/media/work/work-1.mp4', image_url: '/media/work/work-1-poster.webp' });
   });
+  it('swaps the 13 MB founder photo for the small copy', () => {
+    expect(localMedia('https://vodhxhbjncvhogdgkmfy.supabase.co/storage/v1/object/public/media/site/img-6631-jpg-mw526q2jfsff.jpeg')).toBe('/img/team/ceo.webp');
+  });
+  it('plays the new hero reel', () => {
+    expect(localMedia('/media/hero/basil-hero-reel.mp4')).toBe('/media/hero/basil-reel-2026.mp4');
+  });
   it('leaves everything else alone', () => {
     expect(localMedia(`${base}work-7.mp4`)).toBe(`${base}work-7.mp4`);
     expect(localMedia('https://www.youtube.com/watch?v=x')).toBe('https://www.youtube.com/watch?v=x');

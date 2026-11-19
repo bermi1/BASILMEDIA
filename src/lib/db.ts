@@ -1,6 +1,6 @@
 // One data API for the public site and the Website CMS. It talks to Postgres through Supabase;
 // row-level security decides who may read and write.
-import { withLocalMedia } from './media';
+import { settingsWithLocalMedia, withLocalMedia } from './media';
 import { supabase } from './supabase';
 import { DEFAULT_SETTINGS } from './seed';
 import type { SiteSettings, TableName, Tables } from './types';
@@ -80,7 +80,7 @@ export async function submit<T extends 'bookings' | 'subscribers'>(table: T, row
 export async function getSettings(): Promise<SiteSettings> {
   const { data, error } = await supabase.from('site_settings').select('*').eq('id', 'site').maybeSingle();
   if (error) throw error;
-  return { ...DEFAULT_SETTINGS, ...(data ?? {}) } as SiteSettings;
+  return settingsWithLocalMedia({ ...DEFAULT_SETTINGS, ...(data ?? {}) }) as SiteSettings;
 }
 
 export async function saveSettings(patch: Partial<SiteSettings>) {
